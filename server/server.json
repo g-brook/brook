@@ -1,0 +1,12 @@
+{
+  "tunnel": [
+    {
+      "port": 8818,
+      "type": "tcp"
+    },
+    {
+      "port": 8812,
+      "type": "http"
+    }
+  ]
+}
