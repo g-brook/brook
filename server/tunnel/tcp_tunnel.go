@@ -4,7 +4,6 @@ import (
 	"common/configs"
 	"common/log"
 	"common/remote"
-	"fmt"
 	"io"
 	defin "server/define"
 	remote2 "server/remote"
@@ -89,7 +88,6 @@ func (t *TcpTunnel) Reader(conn *remote.ConnV2, traverse remote.TraverseBy) {
 		target := t.refChannels[firstKey]
 		t.fromChannels[firstKey] = conn
 		_, err := io.Copy(target.GetWriter(), conn.GetReader())
-		fmt.Println("已经复制了数据....％s", firstKey)
 		if err != nil {
 			log.Warn("Error....")
 		}

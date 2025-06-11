@@ -89,7 +89,7 @@ func inProcess(p *remote.Protocol, conn *remote.ConnV2) {
 	}
 	outBytes := remote.Encoder(response)
 	newConn := transform(conn, req)
-	err = newConn.Writer(outBytes)
+	_, err = newConn.Write(outBytes)
 	if err != nil {
 		log.Warn("Writer %s , marshal json, error %s ", cmd, err.Error())
 		return
@@ -133,7 +133,7 @@ func (t *InServer) onStart(cf *configs.ServerConfig) {
 		//remote.NewIdleServerHandler(5*time.Second),
 		t,
 	)
-	err := t.server.Start()
+	err := t.server.Start(remote.WithSmun(remote.DefaulServerSmux()))
 	if err != nil {
 		log.Error(err.Error())
 		os.Exit(1)

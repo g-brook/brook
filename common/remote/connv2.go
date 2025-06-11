@@ -3,7 +3,7 @@ package remote
 import (
 	"github.com/RussellLuo/timingwheel"
 	"github.com/google/uuid"
-	"github.com/xtaci/smux"
+	"github.com/panjf2000/gnet/v2"
 	"io"
 	"net"
 	"time"
@@ -12,7 +12,7 @@ import (
 // ConnV2
 // @Description:
 type ConnV2 struct {
-	session *smux.Session
+	conn gnet.Conn
 
 	id string
 
@@ -37,7 +37,7 @@ type ConnV2Handler interface {
 //	@receiver receiver
 //	@return io.Reader
 func (receiver *ConnV2) GetReader() io.Reader {
-	return receiver.session.
+	return receiver.conn
 }
 
 // GetWriter
@@ -126,7 +126,7 @@ func (receiver *ConnV2) Close() error {
 //	@receiver receiver
 //	@return net.Addr
 func (receiver *ConnV2) RemoteAddr() net.Addr {
-	return receiver.session.RemoteAddr()
+	return receiver.conn.RemoteAddr()
 }
 
 //
@@ -137,7 +137,7 @@ func (receiver *ConnV2) RemoteAddr() net.Addr {
 //
 
 func (receiver *ConnV2) LocalAddr() net.Addr {
-	return receiver.session.LocalAddr()
+	return receiver.conn.LocalAddr()
 }
 
 // GetNetConn
@@ -146,7 +146,7 @@ func (receiver *ConnV2) LocalAddr() net.Addr {
 //	@receiver receiver
 //	@return net.Conn
 func (receiver *ConnV2) GetNetConn() net.Conn {
-	return receiver.session
+	return receiver.conn
 }
 
 //
@@ -169,6 +169,7 @@ type ConnContext struct {
 	isTimeOut  bool
 	timer      *timingwheel.Timer
 	attr       map[string]interface{}
+	isSmux     bool
 }
 
 func NewConnContext() *ConnContext {
@@ -178,6 +179,7 @@ func NewConnContext() *ConnContext {
 		lastActive: time.Now(),
 		isTimeOut:  false,
 		attr:       make(map[string]interface{}),
+		isSmux:     false,
 	}
 }
 

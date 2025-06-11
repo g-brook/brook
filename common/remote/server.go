@@ -84,13 +84,8 @@ func newConn2(conn gnet.Conn, t *Server) *ConnV2 {
 	}
 	connLock.Lock()
 	defer connLock.Unlock()
-	config := smux.DefaultConfig()
-	session, err := smux.Server(conn, config)
-	if err != nil {
-		log.Error("Start server error,")
-	}
 	v2 := &ConnV2{
-		session: session,
+		conn:    conn,
 		id:      context.Id,
 		context: context,
 		server:  t,
@@ -116,6 +111,8 @@ type Server struct {
 	handlers []ServerHandler
 
 	InitConnHandler InitConnHandler
+
+	smuxFun func(conn *ConnV2, option *SmuxOption) error
 }
 
 func NewServer(port int32) *Server {
@@ -174,6 +171,9 @@ func (sever *Server) OnOpen(c gnet.Conn) (out []byte, action gnet.Action) {
 	c.SetContext(NewConnContext())
 	conn2 := newConn2(c, sever)
 	defer sever.removeIfConnection(conn2)
+	if sever.smuxFun != nil {
+		sever.smuxFun(conn2, nil)
+	}
 	sever.next(func(s ServerHandler) bool {
 		b := true
 		s.Open(conn2, func() {
@@ -229,6 +229,29 @@ func (sever *Server) removeIfConnection(v2 *ConnV2) {
 func (sever *Server) Start(opt ...ServerOption) error {
 	//load options config.
 	sever.opts = loadOptions(opt...)
+	if sever.opts.withSmux != nil && sever.opts.withSmux.enable {
+		sever.smuxFun = func(conn *ConnV2, option *SmuxOption) error {
+			config := smux.DefaultConfig()
+			session, err := smux.Server(conn, config)
+			if err != nil {
+				log.Error("Start server error.", err)
+				return err
+			}
+			conn.context.isSmux = true
+			stream, err := session.Accept()
+			if err != nil {
+				log.Error("Start server error.", err)
+				return err
+			}
+			go func() {
+				for {
+					bytes := make([]byte, 4096)
+					stream.Read(bytes)
+				}
+			}()
+			return nil
+		}
+	}
 	err := gnet.Run(sever, fmt.Sprintf("tcp://:%d", sever.port),
 		gnet.WithMulticore(true),
 		gnet.WithLogger(&log.GnetLogger{}),
