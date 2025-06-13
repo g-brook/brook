@@ -1,7 +1,7 @@
 package main
 
 import (
-	"server/run"
+	"github.com/brook/server/run"
 )
 
 //

@@ -1,7 +1,7 @@
 package command
 
 import (
-	"common/configs"
+	"github.com/brook/common/configs"
 	"github.com/spf13/cobra"
 )
 

@@ -1,10 +1,11 @@
 package remote
 
 import (
-	"common/log"
 	"fmt"
+	"github.com/brook/common/log"
 	"github.com/panjf2000/gnet/v2"
 	"github.com/xtaci/smux"
+	"io"
 	"sync"
 )
 
@@ -104,7 +105,7 @@ type Server struct {
 	// port.
 	port int32
 
-	opts *options
+	opts *sOptions
 
 	connections map[string]*ConnV2
 
@@ -112,7 +113,7 @@ type Server struct {
 
 	InitConnHandler InitConnHandler
 
-	smuxFun func(conn *ConnV2, option *SmuxOption) error
+	smuxFun func(conn *SmuxAdapterConn, option *SmuxServerOption) error
 }
 
 func NewServer(port int32) *Server {
@@ -172,7 +173,13 @@ func (sever *Server) OnOpen(c gnet.Conn) (out []byte, action gnet.Action) {
 	conn2 := newConn2(c, sever)
 	defer sever.removeIfConnection(conn2)
 	if sever.smuxFun != nil {
-		sever.smuxFun(conn2, nil)
+		pr, pw := io.Pipe()
+		conn := &SmuxAdapterConn{
+			reader:  pr,
+			writer:  pw,
+			rawConn: c,
+		}
+		sever.smuxFun(conn, nil)
 	}
 	sever.next(func(s ServerHandler) bool {
 		b := true
@@ -227,17 +234,17 @@ func (sever *Server) removeIfConnection(v2 *ConnV2) {
 //
 //	@Description: Start tcp serve.
 func (sever *Server) Start(opt ...ServerOption) error {
-	//load options config.
-	sever.opts = loadOptions(opt...)
+	//load sOptions config.
+	sever.opts = serverOptions(opt...)
 	if sever.opts.withSmux != nil && sever.opts.withSmux.enable {
-		sever.smuxFun = func(conn *ConnV2, option *SmuxOption) error {
+		sever.smuxFun = func(conn *SmuxAdapterConn, option *SmuxServerOption) error {
 			config := smux.DefaultConfig()
 			session, err := smux.Server(conn, config)
 			if err != nil {
 				log.Error("Start server error.", err)
 				return err
 			}
-			conn.context.isSmux = true
+			//conn.context.isSmux = true
 			stream, err := session.Accept()
 			if err != nil {
 				log.Error("Start server error.", err)

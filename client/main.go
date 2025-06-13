@@ -3,13 +3,13 @@ package main
 import (
 	"bufio"
 	"bytes"
-	run "client/run"
-	"common/configs"
-	"common/log"
-	"common/remote"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/brook/client/run"
+	"github.com/brook/common/configs"
+	"github.com/brook/common/log"
+	"github.com/brook/common/remote"
 	"io"
 	"net"
 	"net/http"
@@ -88,7 +88,7 @@ func communication() (string, error) {
 	byts := remote.Encoder(request)
 	_, _ = dial.Write(byts)
 	m := <-ch
-	if m.RspCode == remote.Rsp_success {
+	if m.RspCode == remote.RspSuccess {
 		fmt.Println("建立通道成功.")
 		_ = json.Unmarshal(m.Data, &registerRequest)
 		return registerRequest.BindId, nil
@@ -99,7 +99,7 @@ func communication() (string, error) {
 
 func reader(conn net.Conn, ch chan remote.Protocol) {
 	// 从服务器读取一行消息
-	for true {
+	for {
 		reader := bufio.NewReader(conn)
 		decoder, err := remote.Decoder(reader)
 		if err != nil {

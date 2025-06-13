@@ -1,15 +1,15 @@
 package run
 
 import (
-	"common/command"
-	"common/configs"
-	"common/log"
-	"common/utils"
 	"fmt"
+	"github.com/brook/common/command"
+	"github.com/brook/common/configs"
+	"github.com/brook/common/log"
+	"github.com/brook/common/utils"
+	"github.com/brook/server/remote"
+	"github.com/brook/server/tunnel"
 	"github.com/spf13/cobra"
 	"os"
-	"server/remote"
-	"server/tunnel"
 	"sync"
 )
 

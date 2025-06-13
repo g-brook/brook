@@ -4,12 +4,31 @@ import "time"
 
 type ClientOption func(*cOptions)
 
+type SmuxClientOption struct {
+	// enable smux client.
+	Enable bool
+
+	KeepAlive bool
+
+	Timeout time.Duration
+}
+
 // Options
 // @Description: 设置的设数.
 type cOptions struct {
 	KeepAlive time.Duration
 
 	Timeout time.Duration
+
+	Smux *SmuxClientOption
+}
+
+func NewSmuxClientOption() *SmuxClientOption {
+	return &SmuxClientOption{
+		Enable:    true,
+		KeepAlive: true,
+		Timeout:   time.Second * 5,
+	}
 }
 
 func clientOptions(opt ...ClientOption) *cOptions {
@@ -18,4 +37,10 @@ func clientOptions(opt ...ClientOption) *cOptions {
 		optionsFun(o)
 	}
 	return o
+}
+
+func WithSmux(opt *SmuxClientOption) ClientOption {
+	return func(c *cOptions) {
+		c.Smux = opt
+	}
 }

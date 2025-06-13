@@ -36,12 +36,12 @@ const (
 	Communication Cmd = 3
 )
 
-// Rsp_success RspCode.
+// RspSuccess RspCode.
 const (
-	// Rsp_success success.
-	Rsp_success RspCode = 0
+	// RspSuccess success.
+	RspSuccess RspCode = 0
 
-	Rsp_fail = 101
+	RspFail = 101
 )
 
 // Protocol
@@ -70,7 +70,7 @@ func NewRequest(cmd Cmd, data []byte) Protocol {
 		Cmd:     cmd,
 		ReqId:   increment(),
 		PType:   REQUEST,
-		RspCode: Rsp_success,
+		RspCode: RspSuccess,
 	}
 }
 
@@ -79,7 +79,7 @@ func NewResponse(cmd Cmd, reqId int64) Protocol {
 		ReqId:   reqId,
 		Cmd:     cmd,
 		PType:   RESPONSE,
-		RspCode: Rsp_success,
+		RspCode: RspSuccess,
 	}
 }
 

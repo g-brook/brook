@@ -2,8 +2,8 @@ package exchange
 
 import (
 	bytes2 "bytes"
-	"common/log"
 	"encoding/binary"
+	"github.com/brook/common/log"
 	"io"
 )
 

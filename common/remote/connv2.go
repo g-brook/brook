@@ -75,7 +75,7 @@ func (receiver *ConnV2) GetContext() *ConnContext {
 //	@return int
 //	@return error
 func (receiver *ConnV2) Read(out []byte) (int, error) {
-	return receiver.conn.Read(out)
+	return io.ReadFull(receiver.GetReader(), out)
 }
 
 // Writer
@@ -85,11 +85,7 @@ func (receiver *ConnV2) Read(out []byte) (int, error) {
 //	@param out
 //	@return error
 func (receiver *ConnV2) Write(out []byte) (int, error) {
-	err := receiver.conn.AsyncWrite(out, nil)
-	if err != nil {
-		return 0, err
-	}
-	return len(out), nil
+	return receiver.conn.Write(out)
 }
 
 // GetServer

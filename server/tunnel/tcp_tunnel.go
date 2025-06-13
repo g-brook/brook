@@ -1,12 +1,12 @@
 package tunnel
 
 import (
-	"common/configs"
-	"common/log"
-	"common/remote"
+	"github.com/brook/common/configs"
+	"github.com/brook/common/log"
+	"github.com/brook/common/remote"
+	defin "github.com/brook/server/define"
+	server "github.com/brook/server/remote"
 	"io"
-	defin "server/define"
-	remote2 "server/remote"
 )
 
 // TcpTunnel
@@ -18,14 +18,14 @@ type TcpTunnel struct {
 
 	server *remote.Server
 
-	inServer *remote2.InServer
+	inServer *server.InServer
 
 	refChannels map[string]*remote.ConnV2
 
 	fromChannels map[string]*remote.ConnV2
 }
 
-func NewTcpTunnel(cfg *configs.TunnelConfig, server *remote2.InServer) *TcpTunnel {
+func NewTcpTunnel(cfg *configs.TunnelConfig, server *server.InServer) *TcpTunnel {
 	return &TcpTunnel{
 		cfg:          cfg,
 		inServer:     server,

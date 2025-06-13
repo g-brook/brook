@@ -1,43 +1,39 @@
 package remote
 
 import (
-	"common/utils"
+	"github.com/brook/common/utils"
 	"time"
 )
 
-type ServerOption func(opts *options)
+type ServerOption func(opts *sOptions)
 
 // Options
 // @Description: 设置的设数.
-type options struct {
+type sOptions struct {
 	timeout int64
 
-	withSmux *SmuxOption
+	withSmux *SmuxServerOption
 }
 
-// SmuxOption
+// SmuxServerOption
 // @Description:
-type SmuxOption struct {
+type SmuxServerOption struct {
 	enable bool
 }
 
-func DefaulServerSmux() *SmuxOption {
-	return &SmuxOption{enable: true}
+func DefaultServerSmux() *SmuxServerOption {
+	return &SmuxServerOption{enable: true}
 }
 
-func NewSmuxOption() {
-
-}
-
-func loadOptions(opt ...ServerOption) *options {
-	o := new(options)
+func serverOptions(opt ...ServerOption) *sOptions {
+	o := new(sOptions)
 	for _, optionsFun := range opt {
 		optionsFun(o)
 	}
 	return o
 }
 
-func (t *options) Timeout() int64 {
+func (t *sOptions) Timeout() int64 {
 	return utils.NumberDefault(t.timeout, time.Duration(30000).Milliseconds())
 }
 
@@ -45,8 +41,8 @@ func (t *options) Timeout() int64 {
 //
 //	@Description: Smux渠道.
 //	@receiver t
-//	@return *SmuxOption
-func (t *options) Smux() *SmuxOption {
+//	@return *SmuxServerOption
+func (t *sOptions) Smux() *SmuxServerOption {
 	return t.withSmux
 }
 
@@ -55,8 +51,8 @@ func (t *options) Smux() *SmuxOption {
 //	@Description:
 //	@param smux
 //	@return ServerOption
-func WithSmun(smux *SmuxOption) ServerOption {
-	return func(opts *options) {
+func WithSmun(smux *SmuxServerOption) ServerOption {
+	return func(opts *sOptions) {
 		opts.withSmux = smux
 	}
 }
@@ -67,7 +63,7 @@ func WithSmun(smux *SmuxOption) ServerOption {
 //	@param timeout
 //	@return ServerOption
 func WithTimeout(timeout time.Duration) ServerOption {
-	return func(opts *options) {
+	return func(opts *sOptions) {
 		opts.timeout = timeout.Milliseconds()
 	}
 }

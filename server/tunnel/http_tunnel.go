@@ -1,17 +1,17 @@
 package tunnel
 
 import (
-	"common/configs"
-	"common/log"
-	"common/remote"
 	"errors"
 	"fmt"
+	"github.com/brook/common/configs"
+	"github.com/brook/common/log"
+	"github.com/brook/common/remote"
+	defin "github.com/brook/server/define"
+	server "github.com/brook/server/remote"
 	"io"
 	"net"
 	"net/http"
 	"net/http/httputil"
-	defin "server/define"
-	remote2 "server/remote"
 	"sync"
 )
 
@@ -46,7 +46,7 @@ func (t *TcpListener) PutConn(conn net.Conn) {
 type HttpTunnel struct {
 	remote.BaseServerHandler
 	config      *configs.TunnelConfig
-	server      *remote2.InServer
+	server      *server.InServer
 	tl          *TcpListener
 	tc          sync.WaitGroup
 	refChannels map[string]*remote.ConnV2
@@ -80,7 +80,7 @@ func (h *HttpTunnel) Reader(conn *remote.ConnV2, traverse remote.TraverseBy) {
 	traverse()
 }
 
-func NewHttpTunnel(config *configs.TunnelConfig, server *remote2.InServer) *HttpTunnel {
+func NewHttpTunnel(config *configs.TunnelConfig, server *server.InServer) *HttpTunnel {
 	return &HttpTunnel{config: config, server: server, tc: sync.WaitGroup{}, refChannels: make(map[string]*remote.ConnV2), fromChannels: make(map[string]*remote.ConnV2)}
 }
 

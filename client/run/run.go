@@ -2,10 +2,11 @@ package run
 
 import (
 	"bufio"
-	"common/command"
-	"common/configs"
-	"common/remote"
 	"fmt"
+	"github.com/brook/common/command"
+	"github.com/brook/common/configs"
+	"github.com/brook/common/log"
+	"github.com/brook/common/remote"
 	"github.com/spf13/cobra"
 	"net"
 	"os"
@@ -45,37 +46,17 @@ func Start() {
 }
 
 func run(config *configs.ClientConfig) {
-	//Connection to server.
-	transport := remote.NewTransport(1, config)
-	transport.Connection(config.ServerHost, config.ServerPort)
-}
-
-func connectionServer(host string, port int32) {
-	//client := remote.NewClient(host, port)
-	//ch := make(chan remote.Protocol)
-	//address := fmt.Sprintf("%s:%d", host, port)
-	//dial, err := net.Dial("tcp", address)
-	//go reader(dial, ch)
-	//if err != nil {
-	//	return "", errors.New("connection error")
-	//}
-	//registerRequest := remote.CommunicationInfo{}
-	//bytes, _ := json.Marshal(registerRequest)
-	//request := remote.NewRequest(remote.Communication, bytes)
-	//byts := remote.Encoder(request)
-	//_, _ = dial.Write(byts)
-	//m := <-ch
-	//if m.RspCode == remote.Rsp_success {
-	//	fmt.Println("建立通道成功.")
-	//	_ = json.Unmarshal(m.Data, &registerRequest)
-	//	return registerRequest.BindId, nil
-	//}
-	//return "", errors.New("bind error")
+	service := NewService()
+	err := service.Run(config)
+	if err != nil {
+		log.Error("Start client brook error", err)
+		return
+	}
 }
 
 func reader(conn net.Conn, ch chan remote.Protocol) {
 	// 从服务器读取一行消息
-	for true {
+	for {
 		reader := bufio.NewReader(conn)
 		decoder, err := remote.Decoder(reader)
 		if err != nil {

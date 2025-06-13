@@ -1,7 +1,7 @@
 package log
 
 import (
-	"common/configs"
+	"github.com/brook/common/configs"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"gopkg.in/natefinch/lumberjack.v2"

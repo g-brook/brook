@@ -1,8 +1,8 @@
 package configs
 
 import (
-	"common/utils"
 	"fmt"
+	"github.com/brook/common/utils"
 )
 
 var DefServerPort int32 = 8909

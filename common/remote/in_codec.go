@@ -2,9 +2,9 @@ package remote
 
 import (
 	bytes2 "bytes"
-	"common/log"
 	"encoding/binary"
 	"errors"
+	"github.com/brook/common/log"
 	"io"
 )
 

@@ -1,10 +1,10 @@
 package remote
 
 import (
-	"common/log"
-	"common/remote"
 	"fmt"
-	defin "server/define"
+	"github.com/brook/common/log"
+	"github.com/brook/common/remote"
+	defin "github.com/brook/server/define"
 )
 
 func init() {

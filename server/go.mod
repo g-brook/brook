@@ -1,4 +1,4 @@
-module server
+module github.com/brook/server
 
 go 1.24.0
 

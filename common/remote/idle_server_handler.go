@@ -1,8 +1,8 @@
 package remote
 
 import (
-	"common/log"
 	"github.com/RussellLuo/timingwheel"
+	"github.com/brook/common/log"
 	"time"
 )
 

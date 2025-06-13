@@ -1,12 +1,12 @@
 package remote
 
 import (
-	"common/configs"
-	"common/log"
-	"common/remote"
 	"encoding/json"
+	"github.com/brook/common/configs"
+	"github.com/brook/common/log"
+	"github.com/brook/common/remote"
+	defin "github.com/brook/server/define"
 	"os"
-	defin "server/define"
 )
 
 const isTunnelConnKey = "Tunnel-Conn"
@@ -81,11 +81,11 @@ func inProcess(p *remote.Protocol, conn *remote.ConnV2) {
 		byts, err := json.Marshal(data)
 		response.Data = byts
 		if err != nil {
-			response.RspCode = remote.Rsp_fail
+			response.RspCode = remote.RspFail
 		}
 	}
 	if err != nil {
-		response.RspCode = remote.Rsp_fail
+		response.RspCode = remote.RspFail
 	}
 	outBytes := remote.Encoder(response)
 	newConn := transform(conn, req)
@@ -133,7 +133,7 @@ func (t *InServer) onStart(cf *configs.ServerConfig) {
 		//remote.NewIdleServerHandler(5*time.Second),
 		t,
 	)
-	err := t.server.Start(remote.WithSmun(remote.DefaulServerSmux()))
+	err := t.server.Start(remote.WithSmun(remote.DefaultServerSmux()))
 	if err != nil {
 		log.Error(err.Error())
 		os.Exit(1)

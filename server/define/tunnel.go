@@ -1,8 +1,6 @@
 package defin
 
-import (
-	"common/remote"
-)
+import "github.com/brook/common/remote"
 
 // Save all tunnels channel. port: server.
 var tunnels map[int32]Tunnel

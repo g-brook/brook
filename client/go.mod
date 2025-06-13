@@ -1,4 +1,4 @@
-module client
+module github.com/brook/client
 
 go 1.24.4
 
