@@ -1,4 +1,4 @@
-package remote
+package srv
 
 import (
 	bytes2 "bytes"
@@ -6,6 +6,7 @@ import (
 	"errors"
 	"github.com/brook/common/log"
 	"io"
+	"net"
 )
 
 const totalPacketSize = 4
@@ -44,21 +45,25 @@ func Encoder(data Protocol) []byte {
 //	@param reader
 //	@return inter.Protocol
 //	@return error
-func Decoder(reader io.Reader) (Protocol, error) {
+func Decoder(reader io.Reader) (*Protocol, error) {
 	lenByte := make([]byte, totalPacketSize)
 	if _, err := io.ReadFull(reader, lenByte); err != nil {
-		log.Error("ERROR %s", reader)
-		return Protocol{}, err
+		var opErr *net.OpError
+		if errors.As(err, &opErr) && opErr.Timeout() {
+			return nil, err
+		}
+		log.Error("ERROR %s", err)
+		return nil, err
 	}
 	dataLen := binary.BigEndian.Uint32(lenByte)
 	if dataLen < headerSize {
 		log.Error("packet size error")
-		return Protocol{}, errors.New("invalid packet size")
+		return nil, errors.New("invalid packet size")
 	}
 	data := make([]byte, dataLen-totalPacketSize)
 	if _, err := io.ReadFull(reader, data); err != nil {
 		log.Error(err.Error())
-		return Protocol{}, err
+		return nil, err
 	}
 	var req Protocol
 	//cmd. 0
@@ -72,5 +77,5 @@ func Decoder(reader io.Reader) (Protocol, error) {
 	req.RspCode = RspCode(int16(binary.BigEndian.Uint16(rspBytes)))
 	//data.
 	req.Data = data[12:]
-	return req, nil
+	return &req, nil
 }

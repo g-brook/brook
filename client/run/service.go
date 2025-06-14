@@ -3,7 +3,7 @@ package run
 import (
 	"context"
 	"github.com/brook/common/configs"
-	"github.com/brook/common/remote"
+	"github.com/brook/common/srv"
 )
 
 type Service struct {
@@ -19,8 +19,9 @@ func NewService() *Service {
 
 func (receiver *Service) Run(cfg *configs.ClientConfig) error {
 	//Connection to server.
-	transport := remote.NewTransport(1, cfg)
-	transport.Connection(remote.WithSmux(remote.NewSmuxClientOption()))
+	transport := srv.NewTransport(1, cfg)
+	transport.Connection()
+	//transport.Connection(srv.WithSmux(srv.NewSmuxClientOption()))
 	return receiver.background()
 }
 

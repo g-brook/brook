@@ -9,7 +9,7 @@ import (
 	"github.com/brook/client/run"
 	"github.com/brook/common/configs"
 	"github.com/brook/common/log"
-	"github.com/brook/common/remote"
+	"github.com/brook/common/srv"
 	"io"
 	"net"
 	"net/http"
@@ -18,7 +18,6 @@ import (
 func init() {
 	log.InitFunc(configs.LoggerConfig{LogPath: "./", LoggLevel: "info"})
 }
-
 func main() {
 	run.Start()
 	//s, err := communication()
@@ -29,13 +28,13 @@ func main() {
 	//dial, _ := net.Dial("tcp", "127.0.0.1:8909")
 	//go copy(dial)
 	////
-	//req := remote.RegisterReq{
+	//req := srv.RegisterReq{
 	//	TunnelPort: 8818,
 	//	BindId:     s,
 	//}
 	//by, _ := json.Marshal(req)
-	//request := remote.NewRequest(remote.Register, by)
-	//dial.Write(remote.Encoder(request))
+	//request := srv.NewRequest(srv.Register, by)
+	//dial.Write(srv.Encoder(request))
 	//time.Sleep(36000 * time.Second)
 }
 
@@ -76,41 +75,22 @@ func copy(dial net.Conn) {
 }
 
 func communication() (string, error) {
-	ch := make(chan remote.Protocol)
+	ch := make(chan srv.Protocol)
 	dial, err := net.Dial("tcp", "127.0.0.1:8909")
-	go reader(dial, ch)
 	if err != nil {
 		return "", errors.New("connection error")
 	}
-	registerRequest := remote.CommunicationInfo{}
+	registerRequest := srv.CommunicationInfo{}
 	bytes, _ := json.Marshal(registerRequest)
-	request := remote.NewRequest(remote.Communication, bytes)
-	byts := remote.Encoder(request)
+	request := srv.NewRequest(srv.Communication, bytes)
+	byts := srv.Encoder(request)
 	_, _ = dial.Write(byts)
 	m := <-ch
-	if m.RspCode == remote.RspSuccess {
+	if m.RspCode == srv.RspSuccess {
 		fmt.Println("建立通道成功.")
 		_ = json.Unmarshal(m.Data, &registerRequest)
 		return registerRequest.BindId, nil
 	}
 	return "", errors.New("bind error")
-
-}
-
-func reader(conn net.Conn, ch chan remote.Protocol) {
-	// 从服务器读取一行消息
-	for {
-		reader := bufio.NewReader(conn)
-		decoder, err := remote.Decoder(reader)
-		if err != nil {
-			fmt.Println("读取失败:", err)
-			return
-		}
-		if decoder.Cmd == remote.Communication {
-			ch <- decoder
-		} else {
-			fmt.Println("收到消息,", decoder.RspCode)
-		}
-	}
 
 }

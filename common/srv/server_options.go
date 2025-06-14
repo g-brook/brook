@@ -1,4 +1,4 @@
-package remote
+package srv
 
 import (
 	"github.com/brook/common/utils"

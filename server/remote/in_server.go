@@ -1,10 +1,11 @@
 package remote
 
 import (
+	"bufio"
 	"encoding/json"
 	"github.com/brook/common/configs"
 	"github.com/brook/common/log"
-	"github.com/brook/common/remote"
+	"github.com/brook/common/srv"
 	defin "github.com/brook/server/define"
 	"os"
 )
@@ -14,10 +15,10 @@ const isTunnelConnKey = "Tunnel-Conn"
 const tunnelPort = "Tunnel-Port"
 
 type InServer struct {
-	remote.BaseServerHandler
+	srv.BaseServerHandler
 
 	//Current server.
-	server *remote.Server
+	server *srv.Server
 }
 
 func New() *InServer {
@@ -26,16 +27,16 @@ func New() *InServer {
 	}
 }
 
-func (t *InServer) Reader(conn *remote.ConnV2, traverse remote.TraverseBy) {
+func (t *InServer) Reader(conn *srv.ConnV2, traverse srv.TraverseBy) {
 	tunnelConn := t.isTunnelConn(conn)
 	if !tunnelConn {
 		//Determining whether a communication channel is connected.
-		req, err := remote.Decoder(conn.GetReader())
+		req, err := srv.Decoder(conn.GetReader())
 		if err != nil {
 			return
 		}
 		//Start process.
-		inProcess(&req, conn)
+		inProcess(req, conn)
 	} else {
 		port := t.getTunnelPort(conn)
 		//Tunnel protocol
@@ -47,7 +48,7 @@ func (t *InServer) Reader(conn *remote.ConnV2, traverse remote.TraverseBy) {
 	}
 	traverse()
 }
-func (t *InServer) isTunnelConn(conn *remote.ConnV2) bool {
+func (t *InServer) isTunnelConn(conn *srv.ConnV2) bool {
 	attr, b := conn.GetContext().GetAttr(isTunnelConnKey)
 	if b {
 		return attr.(bool)
@@ -55,7 +56,7 @@ func (t *InServer) isTunnelConn(conn *remote.ConnV2) bool {
 	return false
 }
 
-func (t *InServer) getTunnelPort(conn *remote.ConnV2) int32 {
+func (t *InServer) getTunnelPort(conn *srv.ConnV2) int32 {
 	attr, b := conn.GetContext().GetAttr(tunnelPort)
 	if b {
 		return attr.(int32)
@@ -63,7 +64,7 @@ func (t *InServer) getTunnelPort(conn *remote.ConnV2) int32 {
 	return 0
 }
 
-func inProcess(p *remote.Protocol, conn *remote.ConnV2) {
+func inProcess(p *srv.Protocol, conn *srv.ConnV2) {
 	cmd := p.Cmd
 	entry, ok := handlers[cmd]
 	if !ok {
@@ -75,33 +76,36 @@ func inProcess(p *remote.Protocol, conn *remote.ConnV2) {
 		log.Warn("Cmd %s , unmarshal json, error %s ", cmd, err.Error())
 		return
 	}
-	response := remote.NewResponse(p.Cmd, p.ReqId)
+	response := srv.NewResponse(p.Cmd, p.ReqId)
 	data, err := entry.process(req, conn)
 	if data != nil {
 		byts, err := json.Marshal(data)
 		response.Data = byts
 		if err != nil {
-			response.RspCode = remote.RspFail
+			response.RspCode = srv.RspFail
 		}
 	}
 	if err != nil {
-		response.RspCode = remote.RspFail
+		response.RspCode = srv.RspFail
 	}
-	outBytes := remote.Encoder(response)
+	outBytes := srv.Encoder(response)
 	newConn := transform(conn, req)
-	_, err = newConn.Write(outBytes)
+	writer := bufio.NewWriterSize(newConn, len(outBytes))
+	_, err = writer.Write(outBytes)
 	if err != nil {
 		log.Warn("Writer %s , marshal json, error %s ", cmd, err.Error())
 		return
 	}
+_:
+	writer.Flush()
 }
 
-func transform(conn *remote.ConnV2,
-	req remote.InBound) *remote.ConnV2 {
-	if req.Cmd() == remote.Register {
+func transform(conn *srv.ConnV2,
+	req srv.InBound) *srv.ConnV2 {
+	if req.Cmd() == srv.Register {
 		switch req.(type) {
-		case remote.RegisterReq:
-			bindId := req.(remote.RegisterReq).BindId
+		case srv.RegisterReq:
+			bindId := req.(srv.RegisterReq).BindId
 			newConn, ok := conn.GetServer().GetConnection(bindId)
 			if ok {
 				return newConn
@@ -128,12 +132,13 @@ func (t *InServer) Start(cf *configs.ServerConfig) *InServer {
 }
 
 func (t *InServer) onStart(cf *configs.ServerConfig) {
-	t.server = remote.NewServer(cf.ServerPort)
+	t.server = srv.NewServer(cf.ServerPort)
 	t.server.AddHandler(
-		//remote.NewIdleServerHandler(5*time.Second),
+		//srv.NewIdleServerHandler(5*time.Second),
 		t,
 	)
-	err := t.server.Start(remote.WithSmun(remote.DefaultServerSmux()))
+	//srv.WithSmun(srv.DefaultServerSmux())
+	err := t.server.Start()
 	if err != nil {
 		log.Error(err.Error())
 		os.Exit(1)
@@ -141,25 +146,25 @@ func (t *InServer) onStart(cf *configs.ServerConfig) {
 }
 
 type handlerEntry struct {
-	newRequest func(data []byte) (remote.InBound, error)
-	process    func(request remote.InBound, conn *remote.ConnV2) (any, error)
+	newRequest func(data []byte) (srv.InBound, error)
+	process    func(request srv.InBound, conn *srv.ConnV2) (any, error)
 }
 
-var handlers = make(map[remote.Cmd]handlerEntry)
+var handlers = make(map[srv.Cmd]handlerEntry)
 
 // Register  [T inter.InBound]
 //
 //	@Description: register process.
 //	@param cmd
 //	@param process
-func Register[T remote.InBound](cmd remote.Cmd, process InProcess[T]) {
+func Register[T srv.InBound](cmd srv.Cmd, process InProcess[T]) {
 	handlers[cmd] = handlerEntry{
-		newRequest: func(data []byte) (remote.InBound, error) {
+		newRequest: func(data []byte) (srv.InBound, error) {
 			var req T
 			err := json.Unmarshal(data, &req)
 			return req, err
 		},
-		process: func(r remote.InBound, conn *remote.ConnV2) (any, error) {
+		process: func(r srv.InBound, conn *srv.ConnV2) (any, error) {
 			req := r.(T)
 			return process(req, conn)
 		},

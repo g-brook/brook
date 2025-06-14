@@ -1,4 +1,4 @@
-package remote
+package srv
 
 // Plugin
 // @Description: 一个插件的处理机制.

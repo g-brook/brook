@@ -1,17 +1,9 @@
-package remote
+package srv
 
 import (
-	"github.com/RussellLuo/timingwheel"
 	"github.com/brook/common/log"
 	"time"
 )
-
-var newWheel *timingwheel.TimingWheel
-
-func init() {
-	newWheel = timingwheel.NewTimingWheel(time.Millisecond, 100)
-	newWheel.Start()
-}
 
 type IdleServerHandler struct {
 	BaseServerHandler

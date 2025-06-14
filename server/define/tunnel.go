@@ -1,6 +1,6 @@
 package defin
 
-import "github.com/brook/common/remote"
+import "github.com/brook/common/srv"
 
 // Save all tunnels channel. port: server.
 var tunnels map[int32]Tunnel
@@ -46,12 +46,12 @@ type Tunnel interface {
 	//  @param v2 connection.
 	//  @param request request.
 	//
-	RegisterConn(v2 *remote.ConnV2, request remote.RegisterReq)
+	RegisterConn(v2 *srv.ConnV2, request srv.RegisterReq)
 
 	//
 	// Receiver
 	//  @Description: copy data to tunnel.
 	//  @param v2
 	//
-	Receiver(v2 *remote.ConnV2)
+	Receiver(v2 *srv.ConnV2)
 }

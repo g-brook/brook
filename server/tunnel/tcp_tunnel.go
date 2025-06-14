@@ -3,7 +3,7 @@ package tunnel
 import (
 	"github.com/brook/common/configs"
 	"github.com/brook/common/log"
-	"github.com/brook/common/remote"
+	"github.com/brook/common/srv"
 	defin "github.com/brook/server/define"
 	server "github.com/brook/server/remote"
 	"io"
@@ -12,25 +12,25 @@ import (
 // TcpTunnel
 // @Description: Tcp Tunnel is manager.
 type TcpTunnel struct {
-	remote.BaseServerHandler
+	srv.BaseServerHandler
 
 	cfg *configs.TunnelConfig
 
-	server *remote.Server
+	server *srv.Server
 
 	inServer *server.InServer
 
-	refChannels map[string]*remote.ConnV2
+	refChannels map[string]*srv.ConnV2
 
-	fromChannels map[string]*remote.ConnV2
+	fromChannels map[string]*srv.ConnV2
 }
 
 func NewTcpTunnel(cfg *configs.TunnelConfig, server *server.InServer) *TcpTunnel {
 	return &TcpTunnel{
 		cfg:          cfg,
 		inServer:     server,
-		refChannels:  make(map[string]*remote.ConnV2),
-		fromChannels: make(map[string]*remote.ConnV2),
+		refChannels:  make(map[string]*srv.ConnV2),
+		fromChannels: make(map[string]*srv.ConnV2),
 	}
 }
 
@@ -39,9 +39,9 @@ func (t *TcpTunnel) Start() {
 }
 
 func (t *TcpTunnel) doStart() {
-	server := remote.NewServer(t.Port())
+	server := srv.NewServer(t.Port())
 	server.AddHandler(t)
-	server.AddInitConnHandler(func(conn *remote.ConnV2) {
+	server.AddInitConnHandler(func(conn *srv.ConnV2) {
 		conn.AddHandler(t)
 	})
 	t.server = server
@@ -54,19 +54,19 @@ func (t *TcpTunnel) doStart() {
 	}
 }
 
-func (t *TcpTunnel) RegisterConn(v2 *remote.ConnV2, request remote.RegisterReq) {
+func (t *TcpTunnel) RegisterConn(v2 *srv.ConnV2, request srv.RegisterReq) {
 	//t.refChannels = append(t.refChannels, v2)
 	t.refChannels[v2.GetContext().Id] = v2
 	log.Info("Bind tcp tunnel conn t(tunnel/server): %d c(client): %d", t.Port(), v2.RemoteAddr())
 }
 
-func (t *TcpTunnel) Receiver(conn *remote.ConnV2) {
+func (t *TcpTunnel) Receiver(conn *srv.ConnV2) {
 	id := conn.GetContext().Id
 	toConn, ok := t.fromChannels[id]
 	if ok {
 		_, err := io.Copy(toConn.GetWriter(), conn.GetReader())
 		if err != nil {
-			log.Error("Copy to remote fail %v", err)
+			log.Error("Copy to srv fail %v", err)
 		}
 	} else {
 		log.Warn("Not found tunnel conn,%s", id)
@@ -77,7 +77,7 @@ func (t *TcpTunnel) Port() int32 {
 	return t.cfg.Port
 }
 
-func (t *TcpTunnel) Reader(conn *remote.ConnV2, traverse remote.TraverseBy) {
+func (t *TcpTunnel) Reader(conn *srv.ConnV2, traverse srv.TraverseBy) {
 	length := len(t.refChannels)
 	if length > 0 {
 		var keys = make([]string, 0, length)
@@ -95,10 +95,10 @@ func (t *TcpTunnel) Reader(conn *remote.ConnV2, traverse remote.TraverseBy) {
 	traverse()
 }
 
-func (t *TcpTunnel) DoOpen(conn *remote.ConnV2) {
+func (t *TcpTunnel) DoOpen(conn *srv.ConnV2) {
 	//not function.
 }
 
-func (t *TcpTunnel) DoClose(conn *remote.ConnV2) {
+func (t *TcpTunnel) DoClose(conn *srv.ConnV2) {
 	delete(t.refChannels, conn.GetContext().Id)
 }

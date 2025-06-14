@@ -1,14 +1,11 @@
 package run
 
 import (
-	"bufio"
 	"fmt"
 	"github.com/brook/common/command"
 	"github.com/brook/common/configs"
 	"github.com/brook/common/log"
-	"github.com/brook/common/remote"
 	"github.com/spf13/cobra"
-	"net"
 	"os"
 )
 
@@ -52,22 +49,4 @@ func run(config *configs.ClientConfig) {
 		log.Error("Start client brook error", err)
 		return
 	}
-}
-
-func reader(conn net.Conn, ch chan remote.Protocol) {
-	// 从服务器读取一行消息
-	for {
-		reader := bufio.NewReader(conn)
-		decoder, err := remote.Decoder(reader)
-		if err != nil {
-			fmt.Println("读取失败:", err)
-			return
-		}
-		if decoder.Cmd == remote.Communication {
-			ch <- decoder
-		} else {
-			fmt.Println("收到消息,", decoder.RspCode)
-		}
-	}
-
 }
