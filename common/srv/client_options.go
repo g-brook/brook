@@ -20,6 +20,8 @@ type cOptions struct {
 
 	Timeout time.Duration
 
+	PingTime time.Duration
+
 	Smux *SmuxClientOption
 }
 
@@ -42,5 +44,11 @@ func clientOptions(opt ...ClientOption) *cOptions {
 func WithSmux(opt *SmuxClientOption) ClientOption {
 	return func(c *cOptions) {
 		c.Smux = opt
+	}
+}
+
+func WithPingTime(t time.Duration) ClientOption {
+	return func(c *cOptions) {
+		c.PingTime = t
 	}
 }

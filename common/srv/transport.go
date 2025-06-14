@@ -2,7 +2,6 @@ package srv
 
 import (
 	"encoding/json"
-	"fmt"
 	"github.com/RussellLuo/timingwheel"
 	"github.com/brook/common/configs"
 	"github.com/brook/common/log"
@@ -76,9 +75,9 @@ func (e *CheckHandler) Close(cct *ClientControl) {
 	addChecking(cct.cli)
 }
 
-func (b *CheckHandler) Read(buffer *Protocol, cct *ClientControl) (int, error) {
-	fmt.Println("收到消息了.")
-	return 1, nil
+func (b *CheckHandler) Read(_ *Protocol, cct *ClientControl) (int, error) {
+	log.Debug("PONG info: %S", cct.cli.getAddress())
+	return 0, nil
 }
 
 func (e *CheckHandler) Timeout(cct *ClientControl) {

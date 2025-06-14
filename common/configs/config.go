@@ -3,6 +3,7 @@ package configs
 import (
 	"fmt"
 	"github.com/brook/common/utils"
+	"time"
 )
 
 var DefServerPort int32 = 8909
@@ -65,6 +66,7 @@ func GetClientConfig(cfgPath string) (ClientConfig, error) {
 // ClientConfig
 // @Description: 客户端的配置信息.
 type ClientConfig struct {
-	ServerPort int32  `json:"serverPort"`
-	ServerHost string `json:"serverHost"`
+	ServerPort int32         `json:"serverPort"`
+	ServerHost string        `json:"serverHost"`
+	PingTime   time.Duration `json:"pingTime"`
 }

@@ -182,11 +182,11 @@ func (c *Client) Connection(network string, option ...ClientOption) error {
 	c.network = network
 	c.opts = clientOptions(option...)
 	go c.handleLoop()
+	go c.readLoop()
 	err := c.doConnection()
 	if err != nil {
 		return err
 	}
-	go c.readLoop()
 	return nil
 }
 
@@ -205,10 +205,13 @@ func (c *Client) doConnection() error {
 			err,
 		)
 	} else {
-		_ = dial.SetReadDeadline(time.Now().Add(10 * time.Second))
+		if c.opts.PingTime > 0 {
+			_ = dial.SetReadDeadline(time.Now().Add(c.opts.PingTime))
+		}
 		c.conn = dial
 		c.cct.state <- Open
 		c.cct.cli = c
+		log.Info("👍---->Connection %s success OK.✅--->", c.getAddress())
 	}
 	if c.opts.Smux != nil && c.opts.Smux.Enable {
 		return c.handlerSmux()
@@ -246,20 +249,23 @@ func (c *Client) error(str string, err error) error {
 }
 
 func (c *Client) readLoop() {
-
-loop:
 	for {
+		if c.rw == nil || c.conn == nil {
+			continue
+		}
 		protocol, err := Decoder(c.rw)
 		if err != nil {
 			if err == io.EOF {
 				_ = c.error("Close connection:"+c.getAddress(), err)
 				c.cct.state <- Closed
 				c.cct.close <- true
-				break loop
+				continue
 			}
 			var opErr *net.OpError
 			if errors.As(err, &opErr) && opErr.Timeout() {
-				_ = c.conn.SetReadDeadline(time.Now().Add(10 * time.Second))
+				if c.opts.PingTime > 0 {
+					_ = c.conn.SetReadDeadline(time.Now().Add(c.opts.PingTime))
+				}
 				c.cct.timeout <- true
 			}
 		} else {
@@ -293,7 +299,6 @@ func (c *Client) handleLoop() {
 		}
 		return nil
 	}
-
 	for {
 		select {
 		case c.state = <-c.cct.state:
@@ -317,14 +322,12 @@ func (c *Client) handleLoop() {
 				}
 			}
 		case bytes := <-c.cct.write:
-		_:
-			c.rw.Write(bytes)
+			_, _ = c.rw.Write(bytes)
 		case <-c.cct.timeout:
 			for _, t := range c.handlers {
 				t.Timeout(c.cct)
 			}
 		}
-
 	}
 }
 

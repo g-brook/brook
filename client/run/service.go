@@ -4,6 +4,7 @@ import (
 	"context"
 	"github.com/brook/common/configs"
 	"github.com/brook/common/srv"
+	"time"
 )
 
 type Service struct {
@@ -20,7 +21,7 @@ func NewService() *Service {
 func (receiver *Service) Run(cfg *configs.ClientConfig) error {
 	//Connection to server.
 	transport := srv.NewTransport(1, cfg)
-	transport.Connection()
+	transport.Connection(srv.WithPingTime(cfg.PingTime * time.Millisecond))
 	//transport.Connection(srv.WithSmux(srv.NewSmuxClientOption()))
 	return receiver.background()
 }

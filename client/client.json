@@ -1,4 +1,5 @@
 {
   "serverPort": 8909,
-  "serverHost": "127.0.0.1"
+  "serverHost": "127.0.0.1",
+  "pingTime": 30000
 }
