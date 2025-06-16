@@ -16,7 +16,7 @@ func init() {
 type InProcess[T srv.InBound] func(request T, conn *srv.ConnV2) (any, error)
 
 func pingProcess(request srv.Heartbeat, conn *srv.ConnV2) (any, error) {
-	log.Info("Receiver Ping message : %s:%s", request.Value, conn.RemoteAddr().String())
+	log.Debug("Receiver Ping message : %s:%s", request.Value, conn.RemoteAddr().String())
 	heartbeat := srv.Heartbeat{Value: "PONG"}
 	return heartbeat, nil
 }

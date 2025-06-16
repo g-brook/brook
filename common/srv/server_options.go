@@ -46,12 +46,12 @@ func (t *sOptions) Smux() *SmuxServerOption {
 	return t.withSmux
 }
 
-// WithSmun
+// WithServerSmux
 //
 //	@Description:
 //	@param smux
 //	@return ServerOption
-func WithSmun(smux *SmuxServerOption) ServerOption {
+func WithServerSmux(smux *SmuxServerOption) ServerOption {
 	return func(opts *sOptions) {
 		opts.withSmux = smux
 	}

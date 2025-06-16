@@ -22,7 +22,13 @@ func (receiver *Service) Run(cfg *configs.ClientConfig) error {
 	//Connection to server.
 	transport := srv.NewTransport(1, cfg)
 	transport.Connection(srv.WithPingTime(cfg.PingTime * time.Millisecond))
-	//transport.Connection(srv.WithSmux(srv.NewSmuxClientOption()))
+
+	//Start tunnel connection.
+	tunnelTransport := srv.NewTransport(1, cfg)
+	tunnelTransport.Connection(
+		srv.WithPingTime(cfg.PingTime*time.Millisecond),
+		srv.WithClientSmux(srv.NewSmuxClientOption()))
+
 	return receiver.background()
 }
 

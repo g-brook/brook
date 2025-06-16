@@ -39,14 +39,14 @@ func (t *TcpTunnel) Start() {
 }
 
 func (t *TcpTunnel) doStart() {
-	server := srv.NewServer(t.Port())
-	server.AddHandler(t)
-	server.AddInitConnHandler(func(conn *srv.ConnV2) {
+	newServer := srv.NewServer(t.Port())
+	newServer.AddHandler(t)
+	newServer.AddInitConnHandler(func(conn *srv.ConnV2) {
 		conn.AddHandler(t)
 	})
-	t.server = server
+	t.server = newServer
 	defin.AddTunnel(t)
-	err := t.server.Start()
+	err := t.server.Start(srv.WithServerSmux(srv.DefaultServerSmux()))
 	if err != nil {
 		log.Error("Start tunnel fail %v: %s", err, t.cfg.Port)
 	} else {

@@ -76,7 +76,7 @@ func (e *CheckHandler) Close(cct *ClientControl) {
 }
 
 func (b *CheckHandler) Read(_ *Protocol, cct *ClientControl) (int, error) {
-	log.Debug("PONG info: %S", cct.cli.getAddress())
+	log.Debug("Receiver PONG info: %S", cct.cli.getAddress())
 	return 0, nil
 }
 
@@ -97,7 +97,7 @@ func checking(cli *Client) {
 		if err != nil {
 			log.Warn("Reconnection %s Fail, next time still running.", cli.getAddress())
 		} else {
-			log.Info("👍---->Reconnection %s success OK.✅", cli.getAddress())
+			log.Info("👍<--Reconnection %s success OK.✅-->", cli.getAddress())
 		}
 	}
 	defer func() {
@@ -119,5 +119,4 @@ func addChecking(cli *Client) {
 		checking(cli)
 	})
 	timerMap[cli.id] = t
-
 }

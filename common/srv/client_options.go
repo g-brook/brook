@@ -41,7 +41,7 @@ func clientOptions(opt ...ClientOption) *cOptions {
 	return o
 }
 
-func WithSmux(opt *SmuxClientOption) ClientOption {
+func WithClientSmux(opt *SmuxClientOption) ClientOption {
 	return func(c *cOptions) {
 		c.Smux = opt
 	}

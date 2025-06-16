@@ -205,23 +205,27 @@ func (c *Client) doConnection() error {
 			err,
 		)
 	} else {
-		if c.opts.PingTime > 0 {
-			_ = dial.SetReadDeadline(time.Now().Add(c.opts.PingTime))
-		}
+		c.setTimeout(dial)
 		c.conn = dial
 		c.cct.state <- Open
 		c.cct.cli = c
 		log.Info("👍---->Connection %s success OK.✅--->", c.getAddress())
 	}
-	if c.opts.Smux != nil && c.opts.Smux.Enable {
-		return c.handlerSmux()
+	if c.isSmux() {
+		return c.openSmux()
 	} else {
 		c.rw = c.conn
 	}
 	return nil
 }
 
-func (c *Client) handlerSmux() error {
+func (c *Client) setTimeout(dial net.Conn) {
+	if c.opts.PingTime > 0 && !c.isSmux() {
+		_ = dial.SetReadDeadline(time.Now().Add(c.opts.PingTime))
+	}
+}
+
+func (c *Client) openSmux() error {
 	config := smux.DefaultConfig()
 	config.KeepAliveInterval = c.opts.Smux.Timeout
 	config.KeepAliveTimeout = c.opts.Smux.Timeout
@@ -249,33 +253,47 @@ func (c *Client) error(str string, err error) error {
 }
 
 func (c *Client) readLoop() {
-	for {
-		if c.rw == nil || c.conn == nil {
-			continue
-		}
+	smuxFunction := func() {
+		//Is Tunnel connection.
+	}
+	// Is not Tunnel connection.
+	clientFunction := func() {
 		protocol, err := Decoder(c.rw)
 		if err != nil {
 			if err == io.EOF {
 				_ = c.error("Close connection:"+c.getAddress(), err)
 				c.cct.state <- Closed
 				c.cct.close <- true
-				continue
-			}
-			var opErr *net.OpError
-			if errors.As(err, &opErr) && opErr.Timeout() {
-				if c.opts.PingTime > 0 {
-					_ = c.conn.SetReadDeadline(time.Now().Add(c.opts.PingTime))
+			} else {
+				var opErr *net.OpError
+				if errors.As(err, &opErr) && opErr.Timeout() {
+					c.setTimeout(c.conn)
+					c.cct.timeout <- true
 				}
-				c.cct.timeout <- true
 			}
+
 		} else {
 			c.cct.read <- protocol
+		}
+	}
+	for {
+		if c.rw == nil || c.conn == nil {
+			continue
+		}
+		if c.isSmux() {
+			smuxFunction()
+		} else {
+			clientFunction()
 		}
 	}
 }
 
 func (c *Client) getAddress() string {
 	return fmt.Sprintf("%s:%d", c.GetHost(), c.GetPort())
+}
+
+func (c *Client) isSmux() bool {
+	return c.opts.Smux != nil
 }
 
 // IsConnection

@@ -6,7 +6,6 @@ import (
 	"errors"
 	"github.com/brook/common/log"
 	"io"
-	"net"
 )
 
 const totalPacketSize = 4
@@ -48,11 +47,6 @@ func Encoder(data Protocol) []byte {
 func Decoder(reader io.Reader) (*Protocol, error) {
 	lenByte := make([]byte, totalPacketSize)
 	if _, err := io.ReadFull(reader, lenByte); err != nil {
-		var opErr *net.OpError
-		if errors.As(err, &opErr) && opErr.Timeout() {
-			return nil, err
-		}
-		log.Error("ERROR %s", err)
 		return nil, err
 	}
 	dataLen := binary.BigEndian.Uint32(lenByte)

@@ -179,7 +179,7 @@ func (sever *Server) OnOpen(c gnet.Conn) (out []byte, action gnet.Action) {
 			writer:  pw,
 			rawConn: c,
 		}
-		sever.smuxFun(conn, nil)
+		_ = sever.smuxFun(conn, nil)
 	}
 	sever.next(func(s ServerHandler) bool {
 		b := true
