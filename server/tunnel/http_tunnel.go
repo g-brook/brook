@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/brook/common/configs"
+	"github.com/brook/common/exchange"
 	"github.com/brook/common/log"
 	"github.com/brook/common/srv"
 	defin "github.com/brook/server/define"
@@ -121,7 +122,7 @@ func (h *HttpTunnel) Port() int32 {
 	return h.config.Port
 }
 
-func (h *HttpTunnel) RegisterConn(v2 *srv.ConnV2, request srv.RegisterReq) {
+func (h *HttpTunnel) RegisterConn(v2 *srv.ConnV2, request exchange.RegisterReq) {
 	//t.refChannels = append(t.refChannels, v2)
 	h.refChannels[v2.GetContext().Id] = v2
 	log.Info("Bind tcp tunnel conn t(tunnel/server): %d c(client): %d", h.Port(), v2.RemoteAddr())

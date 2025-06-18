@@ -1,4 +1,4 @@
-package srv
+package exchange
 
 import (
 	bytes2 "bytes"
@@ -25,7 +25,7 @@ const headerSize = totalPacketSize + cmdSize + ptypeSize + reqIdSize + rspCode
 //	@Description: encoder.
 //	@param data
 //	@return []byte
-func Encoder(data Protocol) []byte {
+func Encoder(data *Protocol) []byte {
 	b := new(bytes2.Buffer)
 	totalLen := len(data.Data) + headerSize
 	_ = binary.Write(b, binary.BigEndian, int32(totalLen))

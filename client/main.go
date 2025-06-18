@@ -3,20 +3,16 @@ package main
 import (
 	"bufio"
 	"bytes"
-	"encoding/json"
-	"errors"
-	"fmt"
 	"github.com/brook/client/run"
 	"github.com/brook/common/configs"
 	"github.com/brook/common/log"
-	"github.com/brook/common/srv"
 	"io"
 	"net"
 	"net/http"
 )
 
 func init() {
-	log.InitFunc(configs.LoggerConfig{LogPath: "./", LoggLevel: "info"})
+	log.InitFunc(configs.LoggerConfig{LogPath: "./", LoggLevel: "debug"})
 }
 func main() {
 	run.Start()
@@ -74,23 +70,23 @@ func copy(dial net.Conn) {
 	}
 }
 
-func communication() (string, error) {
-	ch := make(chan srv.Protocol)
-	dial, err := net.Dial("tcp", "127.0.0.1:8909")
-	if err != nil {
-		return "", errors.New("connection error")
-	}
-	registerRequest := srv.CommunicationInfo{}
-	bytes, _ := json.Marshal(registerRequest)
-	request := srv.NewRequest(srv.Communication, bytes)
-	byts := srv.Encoder(request)
-	_, _ = dial.Write(byts)
-	m := <-ch
-	if m.RspCode == srv.RspSuccess {
-		fmt.Println("建立通道成功.")
-		_ = json.Unmarshal(m.Data, &registerRequest)
-		return registerRequest.BindId, nil
-	}
-	return "", errors.New("bind error")
-
-}
+//func communication() (string, error) {
+//	ch := make(chan exchange.Protocol)
+//	dial, err := net.Dial("tcp", "127.0.0.1:8909")
+//	if err != nil {
+//		return "", errors.New("connection error")
+//	}
+//	registerRequest := exchange.CommunicationInfo{}
+//	bytes, _ := json.Marshal(registerRequest)
+//	request := exchange.NewRequest(exchange.Communication, bytes)
+//	byts := exchange.Encoder(request)
+//	_, _ = dial.Write(byts)
+//	m := <-ch
+//	if m.RspCode == exchange.RspSuccess {
+//		fmt.Println("建立通道成功.")
+//		_ = json.Unmarshal(m.Data, &registerRequest)
+//		return registerRequest.BindId, nil
+//	}
+//	return "", errors.New("bind error")
+//
+//}

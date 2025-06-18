@@ -2,26 +2,42 @@ package remote
 
 import (
 	"fmt"
+	"github.com/brook/common/exchange"
 	"github.com/brook/common/log"
 	"github.com/brook/common/srv"
 	defin "github.com/brook/server/define"
 )
 
 func init() {
-	Register(srv.Heart, pingProcess)
-	Register(srv.Register, registerProcess)
-	Register(srv.Communication, communicationProcess)
+	Register(exchange.Heart, pingProcess)
+	Register(exchange.Register, registerProcess)
+	Register(exchange.Communication, communicationProcess)
+	Register(exchange.QueryTunnel, queryTunnelConfigProcess)
 }
 
-type InProcess[T srv.InBound] func(request T, conn *srv.ConnV2) (any, error)
+type InProcess[T exchange.InBound] func(request T, conn *srv.ConnV2) (any, error)
 
-func pingProcess(request srv.Heartbeat, conn *srv.ConnV2) (any, error) {
+// pingProcess
+//
+//	@Description:
+//	@param request
+//	@param conn
+//	@return any
+//	@return error
+func pingProcess(request exchange.Heartbeat, conn *srv.ConnV2) (any, error) {
 	log.Debug("Receiver Ping message : %s:%s", request.Value, conn.RemoteAddr().String())
-	heartbeat := srv.Heartbeat{Value: "PONG"}
+	heartbeat := exchange.Heartbeat{Value: "PONG"}
 	return heartbeat, nil
 }
 
-func registerProcess(request srv.RegisterReq, conn *srv.ConnV2) (any, error) {
+// registerProcess
+//
+//	@Description:
+//	@param request
+//	@param conn
+//	@return any
+//	@return error
+func registerProcess(request exchange.RegisterReq, conn *srv.ConnV2) (any, error) {
 	port := request.TunnelPort
 	tunnel := defin.GetTunnel(port)
 	if tunnel == nil {
@@ -35,8 +51,26 @@ func registerProcess(request srv.RegisterReq, conn *srv.ConnV2) (any, error) {
 	return nil, nil
 }
 
-func communicationProcess(req srv.CommunicationInfo, conn *srv.ConnV2) (any, error) {
+// communicationProcess
+//
+//	@Description:
+//	@param req
+//	@param conn
+//	@return any
+//	@return error
+func communicationProcess(req exchange.CommunicationInfo, conn *srv.ConnV2) (any, error) {
 	id := conn.GetContext().Id
 	req.BindId = id
 	return req, nil
+}
+
+// queryTunnelConfigProcess
+//
+//	@Description: Query tunnel port config.
+//	@param req
+//	@param conn
+func queryTunnelConfigProcess(req exchange.QueryTunnelReq, conn *srv.ConnV2) (any, error) {
+	return exchange.QueryTunnelResp{
+		TunnelPort: 9999,
+	}, nil
 }

@@ -1,6 +1,10 @@
-package srv
+package exchange
 
-import "sync/atomic"
+import (
+	"encoding/json"
+	"errors"
+	"sync/atomic"
+)
 
 // Here are some definitions of variables and constants
 
@@ -34,6 +38,9 @@ const (
 
 	// Communication communication　connection.
 	Communication Cmd = 3
+
+	//QueryTunnel Query tunnel config.
+	QueryTunnel = 4
 )
 
 // RspSuccess RspCode.
@@ -64,23 +71,65 @@ type Protocol struct {
 	RspCode RspCode
 }
 
-func NewRequest(cmd Cmd, data []byte) Protocol {
-	return Protocol{
-		Data:    data,
-		Cmd:     cmd,
+// NewRequest
+//
+//	@Description: new request Protocol.
+//	@param cmd
+//	@param data
+//	@return *Protocol
+//	@return error
+func NewRequest(data InBound) (*Protocol, error) {
+	b, err := json.Marshal(data)
+	if err != nil {
+		return nil, errors.New("new Request error," + err.Error())
+	}
+	return &Protocol{
+		Data:    b,
 		ReqId:   increment(),
+		Cmd:     data.Cmd(),
 		PType:   REQUEST,
 		RspCode: RspSuccess,
-	}
+	}, nil
 }
 
-func NewResponse(cmd Cmd, reqId int64) Protocol {
-	return Protocol{
+// NewResponse
+//
+//	@Description: new response Protocol.
+//	@param cmd
+//	@param reqId
+//	@return *Protocol
+//	@return error
+func NewResponse(cmd Cmd, reqId int64) (*Protocol, error) {
+	return &Protocol{
 		ReqId:   reqId,
 		Cmd:     cmd,
 		PType:   RESPONSE,
 		RspCode: RspSuccess,
+	}, nil
+}
+
+// Bytes
+//
+//	@Description: to bytes.
+//	@receiver receiver
+//	@return []byte
+func (receiver *Protocol) Bytes() []byte {
+	return Encoder(receiver)
+}
+
+// Parse
+//
+//	@Description: parse
+//	@receiver receiver
+//	@param value
+//	@return error
+func Parse[T any](data []byte) (*T, error) {
+	var v T
+	err := json.Unmarshal(data, &v)
+	if err != nil {
+		return nil, err
 	}
+	return &v, nil
 }
 
 // InBound
@@ -106,16 +155,6 @@ type RegisterReq struct {
 func (r RegisterReq) Cmd() Cmd {
 
 	return Register
-}
-
-// Heartbeat
-// @Description: Ping InBound info. This is empty request,server use Cmd　discern.
-type Heartbeat struct {
-	Value string `json:"value"`
-}
-
-func (p Heartbeat) Cmd() Cmd {
-	return Heart
 }
 
 // CommunicationInfo

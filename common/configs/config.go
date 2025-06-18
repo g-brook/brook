@@ -13,6 +13,8 @@ var DefServerPort int32 = 8909
 type ServerConfig struct {
 	ServerPort int32 `json:"serverPort"`
 
+	TunnelPort int32 `json:"tunnelPort"`
+
 	Tunnel []TunnelConfig `json:"tunnel"`
 
 	Logger LoggerConfig `json:"logger"`

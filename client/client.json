@@ -1,5 +1,12 @@
 {
   "serverPort": 8909,
   "serverHost": "127.0.0.1",
-  "pingTime": 30000
+  "pingTime": 30000,
+  "clients": [
+    {
+      "type": "http",
+      "localAddress": "127.0.0.1:8080",
+      "remotePort": 8188
+    }
+  ]
 }

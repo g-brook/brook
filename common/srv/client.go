@@ -1,6 +1,7 @@
 package srv
 
 import (
+	"container/list"
 	"context"
 	"errors"
 	"fmt"
@@ -29,17 +30,19 @@ type ClientControl struct {
 	//Current client state.
 	state chan ClientState
 
-	read chan *Protocol
+	read chan *exchange.Protocol
 
 	errors chan error
 
 	close chan bool
 
+	timeout chan bool
+
 	write chan []byte
 
 	cli *Client
 
-	timeout chan bool
+	list *list.List
 }
 
 type ClientHandler interface {
@@ -57,7 +60,7 @@ type ClientHandler interface {
 	//  @return int
 	//  @return error
 	//
-	Read(buffer *Protocol, cct *ClientControl) (int, error)
+	Read(buffer *exchange.Protocol, cct *ClientControl) error
 
 	//
 	// Error
@@ -81,7 +84,7 @@ func (b BaseClientHandler) Close(cct *ClientControl) {
 
 }
 
-func (b BaseClientHandler) Read(buffer *Protocol, cct *ClientControl) (int, error) {
+func (b BaseClientHandler) Read(buffer *exchange.Protocol, cct *ClientControl) (int, error) {
 	return 0, nil
 }
 
@@ -110,15 +113,11 @@ type Client struct {
 
 	handlers []ClientHandler
 
-	session *smux.Session
-
 	cct *ClientControl
 
 	rw io.ReadWriter
 
 	state ClientState
-
-	codec exchange.Codec
 
 	network string
 }
@@ -137,10 +136,11 @@ func NewClient(host string, port int32) *Client {
 		cct: &ClientControl{
 			state:   make(chan ClientState, 1),
 			close:   make(chan bool, 1),
-			read:    make(chan *Protocol, 1000),
+			read:    make(chan *exchange.Protocol, 1000),
 			errors:  make(chan error),
 			timeout: make(chan bool, 1),
 			write:   make(chan []byte, 1000),
+			list:    list.New(),
 		},
 		handlers: make([]ClientHandler, 0),
 	}
@@ -181,6 +181,7 @@ func (c *Client) Reconnection() error {
 func (c *Client) Connection(network string, option ...ClientOption) error {
 	c.network = network
 	c.opts = clientOptions(option...)
+	c.AddHandler(c.opts.handlers...)
 	go c.handleLoop()
 	go c.readLoop()
 	err := c.doConnection()
@@ -209,13 +210,13 @@ func (c *Client) doConnection() error {
 		c.conn = dial
 		c.cct.state <- Open
 		c.cct.cli = c
-		log.Info("👍---->Connection %s success OK.✅--->", c.getAddress())
+		if c.isSmux() {
+			log.Info("👍---->Connection %s %s success OK.✅--->", c.getAddress(), "^ tunnel ^")
+		} else {
+			log.Info("👍---->Connection %s success OK.✅--->", c.getAddress())
+		}
 	}
-	if c.isSmux() {
-		return c.openSmux()
-	} else {
-		c.rw = c.conn
-	}
+	c.rw = c.conn
 	return nil
 }
 
@@ -225,21 +226,37 @@ func (c *Client) setTimeout(dial net.Conn) {
 	}
 }
 
-func (c *Client) openSmux() error {
-	config := smux.DefaultConfig()
-	config.KeepAliveInterval = c.opts.Smux.Timeout
-	config.KeepAliveTimeout = c.opts.Smux.Timeout
-	config.KeepAliveDisabled = !c.opts.Smux.Enable
-	if session, err := smux.Client(c.conn, config); err != nil {
-		return c.error("New smux Client error", err)
-	} else {
-		c.session = session
-		stream, err := session.Open()
-		if err != nil {
-			return c.error("Open session error", err)
-		}
-		c.rw = stream
+// OpenTunnel
+//
+//	@Description: Open connection to
+//	@receiver c
+//	@param name
+func (c *Client) OpenTunnel(name string) error {
+	if !c.isSmux() {
+		return nil
 	}
+	openSmux := func() (*smux.Session, error) {
+		config := smux.DefaultConfig()
+		config.KeepAliveInterval = c.opts.Smux.Timeout
+		config.KeepAliveTimeout = c.opts.Smux.Timeout
+		config.KeepAliveDisabled = !c.opts.Smux.Enable
+		if session, err := smux.Client(c.conn, config); err != nil {
+			return nil, c.error("New smux Client error", err)
+		} else {
+			return session, nil
+		}
+	}
+	session, err := openSmux()
+	if err != nil {
+		return err
+	}
+	//copy.
+	client := GetTunnelClient(name)
+	if client == nil {
+		log.Error("Not found [%s] tunnel client, Pleas check.", name)
+		return errors.New("not found tunnel client")
+	}
+	go client.Open(session)
 	return nil
 }
 
@@ -253,12 +270,12 @@ func (c *Client) error(str string, err error) error {
 }
 
 func (c *Client) readLoop() {
-	smuxFunction := func() {
-		//Is Tunnel connection.
+	if c.isSmux() {
+		return
 	}
 	// Is not Tunnel connection.
 	clientFunction := func() {
-		protocol, err := Decoder(c.rw)
+		protocol, err := exchange.Decoder(c.rw)
 		if err != nil {
 			if err == io.EOF {
 				_ = c.error("Close connection:"+c.getAddress(), err)
@@ -280,11 +297,7 @@ func (c *Client) readLoop() {
 		if c.rw == nil || c.conn == nil {
 			continue
 		}
-		if c.isSmux() {
-			smuxFunction()
-		} else {
-			clientFunction()
-		}
+		clientFunction()
 	}
 }
 
@@ -334,9 +347,10 @@ func (c *Client) handleLoop() {
 			c.cct.state <- Error
 		case b := <-c.cct.read:
 			for _, t := range c.handlers {
-				_, err := t.Read(b, c.cct)
+				err := t.Read(b, c.cct)
 				if err != nil {
 					_ = c.error("Read error", err)
+					break
 				}
 			}
 		case bytes := <-c.cct.write:

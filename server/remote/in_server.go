@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"encoding/json"
 	"github.com/brook/common/configs"
+	"github.com/brook/common/exchange"
 	"github.com/brook/common/log"
 	"github.com/brook/common/srv"
 	defin "github.com/brook/server/define"
@@ -31,7 +32,7 @@ func (t *InServer) Reader(conn *srv.ConnV2, traverse srv.TraverseBy) {
 	tunnelConn := t.isTunnelConn(conn)
 	if !tunnelConn {
 		//Determining whether a communication channel is connected.
-		req, err := srv.Decoder(conn.GetReader())
+		req, err := exchange.Decoder(conn.GetReader())
 		if err != nil {
 			return
 		}
@@ -64,7 +65,7 @@ func (t *InServer) getTunnelPort(conn *srv.ConnV2) int32 {
 	return 0
 }
 
-func inProcess(p *srv.Protocol, conn *srv.ConnV2) {
+func inProcess(p *exchange.Protocol, conn *srv.ConnV2) {
 	cmd := p.Cmd
 	entry, ok := handlers[cmd]
 	if !ok {
@@ -76,19 +77,19 @@ func inProcess(p *srv.Protocol, conn *srv.ConnV2) {
 		log.Warn("Cmd %s , unmarshal json, error %s ", cmd, err.Error())
 		return
 	}
-	response := srv.NewResponse(p.Cmd, p.ReqId)
+	response, _ := exchange.NewResponse(p.Cmd, p.ReqId)
 	data, err := entry.process(req, conn)
 	if data != nil {
 		byts, err := json.Marshal(data)
 		response.Data = byts
 		if err != nil {
-			response.RspCode = srv.RspFail
+			response.RspCode = exchange.RspFail
 		}
 	}
 	if err != nil {
-		response.RspCode = srv.RspFail
+		response.RspCode = exchange.RspFail
 	}
-	outBytes := srv.Encoder(response)
+	outBytes := exchange.Encoder(response)
 	newConn := transform(conn, req)
 	writer := bufio.NewWriterSize(newConn, len(outBytes))
 	_, err = writer.Write(outBytes)
@@ -101,11 +102,11 @@ _:
 }
 
 func transform(conn *srv.ConnV2,
-	req srv.InBound) *srv.ConnV2 {
-	if req.Cmd() == srv.Register {
+	req exchange.InBound) *srv.ConnV2 {
+	if req.Cmd() == exchange.Register {
 		switch req.(type) {
-		case srv.RegisterReq:
-			bindId := req.(srv.RegisterReq).BindId
+		case exchange.RegisterReq:
+			bindId := req.(exchange.RegisterReq).BindId
 			newConn, ok := conn.GetServer().GetConnection(bindId)
 			if ok {
 				return newConn
@@ -132,12 +133,13 @@ func (t *InServer) Start(cf *configs.ServerConfig) *InServer {
 }
 
 func (t *InServer) onStart(cf *configs.ServerConfig) {
+	go t.onStartServer(cf)
+	go t.onStartTunnelServer(cf)
+}
+
+func (t *InServer) onStartServer(cf *configs.ServerConfig) {
 	t.server = srv.NewServer(cf.ServerPort)
-	t.server.AddHandler(
-		//srv.NewIdleServerHandler(5*time.Second),
-		t,
-	)
-	//srv.WithSmun(srv.DefaultServerSmux())
+	t.server.AddHandler(t)
 	err := t.server.Start()
 	if err != nil {
 		log.Error(err.Error())
@@ -145,26 +147,41 @@ func (t *InServer) onStart(cf *configs.ServerConfig) {
 	}
 }
 
-type handlerEntry struct {
-	newRequest func(data []byte) (srv.InBound, error)
-	process    func(request srv.InBound, conn *srv.ConnV2) (any, error)
+func (t *InServer) onStartTunnelServer(cf *configs.ServerConfig) {
+	port := cf.TunnelPort
+	if port < cf.ServerPort {
+		port = cf.ServerPort + 10
+		cf.TunnelPort = port
+	}
+	t.server = srv.NewServer(port)
+	t.server.AddHandler(t)
+	err := t.server.Start(srv.WithServerSmux(srv.DefaultServerSmux()))
+	if err != nil {
+		log.Error(err.Error())
+		os.Exit(1)
+	}
 }
 
-var handlers = make(map[srv.Cmd]handlerEntry)
+type handlerEntry struct {
+	newRequest func(data []byte) (exchange.InBound, error)
+	process    func(request exchange.InBound, conn *srv.ConnV2) (any, error)
+}
+
+var handlers = make(map[exchange.Cmd]handlerEntry)
 
 // Register  [T inter.InBound]
 //
 //	@Description: register process.
 //	@param cmd
 //	@param process
-func Register[T srv.InBound](cmd srv.Cmd, process InProcess[T]) {
+func Register[T exchange.InBound](cmd exchange.Cmd, process InProcess[T]) {
 	handlers[cmd] = handlerEntry{
-		newRequest: func(data []byte) (srv.InBound, error) {
+		newRequest: func(data []byte) (exchange.InBound, error) {
 			var req T
 			err := json.Unmarshal(data, &req)
 			return req, err
 		},
-		process: func(r srv.InBound, conn *srv.ConnV2) (any, error) {
+		process: func(r exchange.InBound, conn *srv.ConnV2) (any, error) {
 			req := r.(T)
 			return process(req, conn)
 		},

@@ -23,6 +23,8 @@ type cOptions struct {
 	PingTime time.Duration
 
 	Smux *SmuxClientOption
+
+	handlers []ClientHandler
 }
 
 func NewSmuxClientOption() *SmuxClientOption {
@@ -50,5 +52,11 @@ func WithClientSmux(opt *SmuxClientOption) ClientOption {
 func WithPingTime(t time.Duration) ClientOption {
 	return func(c *cOptions) {
 		c.PingTime = t
+	}
+}
+
+func WithClientHandler(handler ...ClientHandler) ClientOption {
+	return func(c *cOptions) {
+		c.handlers = append(c.handlers, handler...)
 	}
 }

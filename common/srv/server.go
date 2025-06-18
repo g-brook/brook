@@ -254,6 +254,7 @@ func (sever *Server) Start(opt ...ServerOption) error {
 				for {
 					bytes := make([]byte, 4096)
 					stream.Read(bytes)
+					log.Info(string(bytes))
 				}
 			}()
 			return nil
