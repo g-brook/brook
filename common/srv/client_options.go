@@ -31,7 +31,7 @@ func NewSmuxClientOption() *SmuxClientOption {
 	return &SmuxClientOption{
 		Enable:    true,
 		KeepAlive: true,
-		Timeout:   time.Second * 5,
+		Timeout:   time.Second * 10000,
 	}
 }
 

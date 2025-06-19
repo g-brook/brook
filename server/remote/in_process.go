@@ -13,9 +13,10 @@ func init() {
 	Register(exchange.Register, registerProcess)
 	Register(exchange.Communication, communicationProcess)
 	Register(exchange.QueryTunnel, queryTunnelConfigProcess)
+	Register(exchange.OpenTunnel, openTunnelProcess)
 }
 
-type InProcess[T exchange.InBound] func(request T, conn *srv.ConnV2) (any, error)
+type InProcess[T exchange.InBound] func(request T, conn *srv.GChannel) (any, error)
 
 // pingProcess
 //
@@ -24,7 +25,7 @@ type InProcess[T exchange.InBound] func(request T, conn *srv.ConnV2) (any, error
 //	@param conn
 //	@return any
 //	@return error
-func pingProcess(request exchange.Heartbeat, conn *srv.ConnV2) (any, error) {
+func pingProcess(request exchange.Heartbeat, conn *srv.GChannel) (any, error) {
 	log.Debug("Receiver Ping message : %s:%s", request.Value, conn.RemoteAddr().String())
 	heartbeat := exchange.Heartbeat{Value: "PONG"}
 	return heartbeat, nil
@@ -37,7 +38,7 @@ func pingProcess(request exchange.Heartbeat, conn *srv.ConnV2) (any, error) {
 //	@param conn
 //	@return any
 //	@return error
-func registerProcess(request exchange.RegisterReq, conn *srv.ConnV2) (any, error) {
+func registerProcess(request exchange.RegisterReq, conn *srv.GChannel) (any, error) {
 	port := request.TunnelPort
 	tunnel := defin.GetTunnel(port)
 	if tunnel == nil {
@@ -58,7 +59,7 @@ func registerProcess(request exchange.RegisterReq, conn *srv.ConnV2) (any, error
 //	@param conn
 //	@return any
 //	@return error
-func communicationProcess(req exchange.CommunicationInfo, conn *srv.ConnV2) (any, error) {
+func communicationProcess(req exchange.CommunicationInfo, conn *srv.GChannel) (any, error) {
 	id := conn.GetContext().Id
 	req.BindId = id
 	return req, nil
@@ -69,8 +70,15 @@ func communicationProcess(req exchange.CommunicationInfo, conn *srv.ConnV2) (any
 //	@Description: Query tunnel port config.
 //	@param req
 //	@param conn
-func queryTunnelConfigProcess(req exchange.QueryTunnelReq, conn *srv.ConnV2) (any, error) {
+func queryTunnelConfigProcess(req exchange.QueryTunnelReq, conn *srv.GChannel) (any, error) {
+	tport := defin.Get[int32](defin.TunnelPortKey)
 	return exchange.QueryTunnelResp{
-		TunnelPort: 9999,
+		TunnelPort: tport,
+	}, nil
+}
+
+func openTunnelProcess(req exchange.OpenTunnelReq, conn *srv.GChannel) (any, error) {
+	return exchange.OpenTunnelResp{
+		SessionId: req.SessionId,
 	}, nil
 }

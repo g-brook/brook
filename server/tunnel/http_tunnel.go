@@ -50,20 +50,20 @@ type HttpTunnel struct {
 	server      *server.InServer
 	tl          *TcpListener
 	tc          sync.WaitGroup
-	refChannels map[string]*srv.ConnV2
+	refChannels map[string]srv.Channel
 
-	fromChannels map[string]*srv.ConnV2
+	fromChannels map[string]srv.Channel
 }
 
-func (h *HttpTunnel) Open(conn *srv.ConnV2, traverse srv.TraverseBy) {
-	h.tl.PutConn(conn.GetNetConn())
+func (h *HttpTunnel) Open(conn srv.Channel, traverse srv.TraverseBy) {
+	//h.tl.PutConn(conn)
 }
 
 func (h *HttpTunnel) Boot(conn *srv.Server, traverse srv.TraverseBy) {
 	h.tc.Done()
 }
 
-func (h *HttpTunnel) Reader(conn *srv.ConnV2, traverse srv.TraverseBy) {
+func (h *HttpTunnel) Reader(conn srv.Channel, traverse srv.TraverseBy) {
 	length := len(h.refChannels)
 	if length > 0 {
 		var keys = make([]string, 0, length)
@@ -82,7 +82,7 @@ func (h *HttpTunnel) Reader(conn *srv.ConnV2, traverse srv.TraverseBy) {
 }
 
 func NewHttpTunnel(config *configs.TunnelConfig, server *server.InServer) *HttpTunnel {
-	return &HttpTunnel{config: config, server: server, tc: sync.WaitGroup{}, refChannels: make(map[string]*srv.ConnV2), fromChannels: make(map[string]*srv.ConnV2)}
+	return &HttpTunnel{config: config, server: server, tc: sync.WaitGroup{}, refChannels: make(map[string]srv.Channel), fromChannels: make(map[string]srv.Channel)}
 }
 
 func (h *HttpTunnel) Start() {
@@ -122,13 +122,13 @@ func (h *HttpTunnel) Port() int32 {
 	return h.config.Port
 }
 
-func (h *HttpTunnel) RegisterConn(v2 *srv.ConnV2, request exchange.RegisterReq) {
+func (h *HttpTunnel) RegisterConn(v2 *srv.GChannel, request exchange.RegisterReq) {
 	//t.refChannels = append(t.refChannels, v2)
 	h.refChannels[v2.GetContext().Id] = v2
 	log.Info("Bind tcp tunnel conn t(tunnel/server): %d c(client): %d", h.Port(), v2.RemoteAddr())
 }
 
-func (h *HttpTunnel) Receiver(conn *srv.ConnV2) {
+func (h *HttpTunnel) Receiver(conn *srv.GChannel) {
 	id := conn.GetContext().Id
 	toConn, ok := h.fromChannels[id]
 	if ok {

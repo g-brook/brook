@@ -17,7 +17,7 @@ func NewIdleServerHandler(readerTime time.Duration) *IdleServerHandler {
 	}
 }
 
-func (b *IdleServerHandler) Open(conn *ConnV2, traverse TraverseBy) {
+func (b *IdleServerHandler) Open(conn *GChannel, traverse TraverseBy) {
 	if b.timeout > 0 {
 		timer := newWheel.ScheduleFunc(&TimeoutScheduler{
 			timeout: b.timeout,
@@ -33,7 +33,7 @@ func (b *IdleServerHandler) Open(conn *ConnV2, traverse TraverseBy) {
 	traverse()
 }
 
-func (b *IdleServerHandler) Reader(conn *ConnV2, traverse TraverseBy) {
+func (b *IdleServerHandler) Reader(conn *GChannel, traverse TraverseBy) {
 	if conn.GetContext().isTimeOut {
 		log.Warn("Timeout close connection:%s -> %s", conn.LocalAddr().String(), conn.RemoteAddr().String())
 		_ = conn.Close()

@@ -5,7 +5,6 @@ import (
 	"github.com/brook/common/log"
 	"github.com/panjf2000/gnet/v2"
 	"github.com/xtaci/smux"
-	"io"
 	"sync"
 )
 
@@ -13,7 +12,7 @@ var connLock sync.Mutex
 
 type TraverseBy func()
 
-type InitConnHandler func(conn *ConnV2)
+type InitConnHandler func(conn *GChannel)
 
 type ServerHandler interface {
 	//
@@ -21,21 +20,21 @@ type ServerHandler interface {
 	//  @Description: Close conn notify.
 	//  @param conn
 	//
-	Close(conn *ConnV2, traverse TraverseBy)
+	Close(ch Channel, traverse TraverseBy)
 
 	//
 	// Open
 	//  @Description: Open conn notify.
 	//  @param conn
 	//
-	Open(conn *ConnV2, traverse TraverseBy)
+	Open(ch Channel, traverse TraverseBy)
 
 	//
 	// Reader
 	//  @Description: Reader conn data notify.
 	//  @param conn
 	//
-	Reader(conn *ConnV2, traverse TraverseBy)
+	Reader(ch Channel, traverse TraverseBy)
 
 	//
 	// Writer
@@ -43,7 +42,7 @@ type ServerHandler interface {
 	//  @param conn
 	//  @param traverse
 	//	// Writer
-	Writer(conn *ConnV2, traverse TraverseBy)
+	Writer(ch Channel, traverse TraverseBy)
 
 	//
 	// Boot
@@ -57,26 +56,26 @@ type ServerHandler interface {
 type BaseServerHandler struct {
 }
 
-func (b BaseServerHandler) Writer(conn *ConnV2, traverse TraverseBy) {
+func (b BaseServerHandler) Writer(ch Channel, traverse TraverseBy) {
 	traverse()
 }
 
-func (b BaseServerHandler) Close(conn *ConnV2, traverse TraverseBy) {
+func (b BaseServerHandler) Close(ch Channel, traverse TraverseBy) {
 	traverse()
 }
 
-func (b BaseServerHandler) Open(conn *ConnV2, traverse TraverseBy) {
+func (b BaseServerHandler) Open(ch Channel, traverse TraverseBy) {
 	traverse()
 }
 
-func (b BaseServerHandler) Reader(conn *ConnV2, traverse TraverseBy) {
+func (b BaseServerHandler) Reader(ch Channel, traverse TraverseBy) {
 	traverse()
 }
 func (b BaseServerHandler) Boot(s *Server, traverse TraverseBy) {
 	traverse()
 }
 
-func newConn2(conn gnet.Conn, t *Server) *ConnV2 {
+func newConn2(conn gnet.Conn, t *Server) *GChannel {
 	ctx := conn.Context()
 	context := ctx.(*ConnContext)
 	value, ok := t.connections[context.Id]
@@ -85,7 +84,7 @@ func newConn2(conn gnet.Conn, t *Server) *ConnV2 {
 	}
 	connLock.Lock()
 	defer connLock.Unlock()
-	v2 := &ConnV2{
+	v2 := &GChannel{
 		conn:    conn,
 		id:      context.Id,
 		context: context,
@@ -107,20 +106,20 @@ type Server struct {
 
 	opts *sOptions
 
-	connections map[string]*ConnV2
+	connections map[string]*GChannel
 
 	handlers []ServerHandler
 
 	InitConnHandler InitConnHandler
 
-	smuxFun func(conn *SmuxAdapterConn, option *SmuxServerOption) error
+	startSmux func(conn *SmuxAdapterConn, option *SmuxServerOption) error
 }
 
 func NewServer(port int32) *Server {
 	return &Server{
 		port:        port,
 		handlers:    make([]ServerHandler, 0),
-		connections: make(map[string]*ConnV2),
+		connections: make(map[string]*GChannel),
 	}
 }
 
@@ -132,11 +131,11 @@ func (sever *Server) AddInitConnHandler(init InitConnHandler) {
 	sever.InitConnHandler = init
 }
 
-func (sever *Server) Connections() map[string]*ConnV2 {
+func (sever *Server) Connections() map[string]*GChannel {
 	return sever.connections
 }
 
-func (sever *Server) GetConnection(id string) (*ConnV2, bool) {
+func (sever *Server) GetConnection(id string) (*GChannel, bool) {
 	v2, ok := sever.connections[id]
 	return v2, ok
 }
@@ -172,38 +171,45 @@ func (sever *Server) OnOpen(c gnet.Conn) (out []byte, action gnet.Action) {
 	c.SetContext(NewConnContext())
 	conn2 := newConn2(c, sever)
 	defer sever.removeIfConnection(conn2)
-	if sever.smuxFun != nil {
-		pr, pw := io.Pipe()
-		conn := &SmuxAdapterConn{
-			reader:  pr,
-			writer:  pw,
-			rawConn: c,
-		}
-		_ = sever.smuxFun(conn, nil)
-	}
-	sever.next(func(s ServerHandler) bool {
-		b := true
-		s.Open(conn2, func() {
-			b = false
+	if sever.startSmux != nil {
+		conn2.context.isSmux = true
+		conn2.pipeConn = NewSmuxAdapterConn(c)
+		_ = sever.startSmux(conn2.pipeConn, nil)
+	} else {
+		sever.next(func(s ServerHandler) bool {
+			b := true
+			s.Open(conn2, func() {
+				b = false
+			})
+			return b
 		})
-		return b
-	})
+	}
 	return
 }
 
 func (sever *Server) OnTraffic(c gnet.Conn) gnet.Action {
 	conn2 := newConn2(c, sever)
+	//Call lastActive.
+	conn2.GetContext().LastActive()
 	defer sever.removeIfConnection(conn2)
-	sever.next(func(s ServerHandler) bool {
-		b := true
-		//Call lastActive.
-		conn2.GetContext().LastActive()
-		//Call Reader method.
-		s.Reader(conn2, func() {
-			b = false
+	if sever.startSmux != nil {
+		if conn2.pipeConn != nil {
+			buf, _ := conn2.Next(-1)
+			_, err := conn2.pipeConn.Copy(buf)
+			if err != nil {
+				log.Error("pipeConn.Copy error: %s", err)
+			}
+		}
+	} else {
+		sever.next(func(s ServerHandler) bool {
+			b := true
+			//Call Reader method.
+			s.Reader(conn2, func() {
+				b = false
+			})
+			return b
 		})
-		return b
-	})
+	}
 	return gnet.None
 }
 
@@ -220,7 +226,7 @@ func (sever *Server) GetPort() int32 {
 	return sever.port
 }
 
-func (sever *Server) removeIfConnection(v2 *ConnV2) {
+func (sever *Server) removeIfConnection(v2 *GChannel) {
 	if !v2.isConnection() {
 		//This use v2.id removing map element.
 		// v2.id eq context.id, so yet use v2.id.
@@ -230,32 +236,33 @@ func (sever *Server) removeIfConnection(v2 *ConnV2) {
 	}
 }
 
-// Start .
-//
-//	@Description: Start tcp serve.
+// Start is function start tcp server.
 func (sever *Server) Start(opt ...ServerOption) error {
 	//load sOptions config.
 	sever.opts = serverOptions(opt...)
 	if sever.opts.withSmux != nil && sever.opts.withSmux.enable {
-		sever.smuxFun = func(conn *SmuxAdapterConn, option *SmuxServerOption) error {
-			config := smux.DefaultConfig()
-			session, err := smux.Server(conn, config)
-			if err != nil {
-				log.Error("Start server error.", err)
-				return err
-			}
-			//conn.context.isSmux = true
-			stream, err := session.Accept()
-			if err != nil {
-				log.Error("Start server error.", err)
-				return err
-			}
+		sever.startSmux = func(conn *SmuxAdapterConn, option *SmuxServerOption) error {
 			go func() {
-				for {
-					bytes := make([]byte, 4096)
-					stream.Read(bytes)
-					log.Info(string(bytes))
+				config := smux.DefaultConfig()
+				session, err := smux.Server(conn, config)
+				if err != nil {
+					log.Error("Start server error.", err)
+					return
 				}
+				stream, err := session.AcceptStream()
+				if err != nil {
+					log.Error("Start server error.", err)
+					return
+				}
+				fmt.Println("Open session success", stream.ID())
+				sever.next(func(s ServerHandler) bool {
+					b := true
+					s.Reader(NewSChannel(stream), func() {
+						b = false
+					})
+					return b
+				})
+				return
 			}()
 			return nil
 		}
@@ -268,7 +275,7 @@ func (sever *Server) Start(opt ...ServerOption) error {
 		gnet.WithReusePort(true),
 	)
 	if err != nil {
-		log.Info("Error", err)
+		log.Error("Error", err)
 		return err
 	}
 	return nil

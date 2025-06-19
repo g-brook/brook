@@ -12,11 +12,9 @@ import (
 
 var timerMap = make(map[int32]*timingwheel.Timer)
 
-// RequestTracker
-// @Description:
+// RequestTracker is will wait response for remote server and save request id of the map.
 type RequestTracker struct {
-	mu sync.Mutex
-
+	mu      sync.Mutex
 	pending map[int64]chan *exchange.Protocol
 }
 
@@ -29,13 +27,12 @@ type RequestTracker struct {
 func (rt *RequestTracker) Register(reqId int64) chan *exchange.Protocol {
 	rt.mu.Lock()
 	defer rt.mu.Unlock()
-
 	ch := make(chan *exchange.Protocol, 1)
 	rt.pending[reqId] = ch
 	return ch
 }
 
-// Complete 响应到达：投递数据并移除
+// Complete delivers a response and removes the tracker entry.
 func (rt *RequestTracker) Complete(reqId int64, resp *exchange.Protocol) {
 	rt.mu.Lock()
 	ch, ok := rt.pending[reqId]
@@ -49,7 +46,7 @@ func (rt *RequestTracker) Complete(reqId int64, resp *exchange.Protocol) {
 	}
 }
 
-// Remove 主动取消
+// Remove   explicitly removes a request from tracker.
 func (rt *RequestTracker) Remove(reqId int64) {
 	rt.mu.Lock()
 	defer rt.mu.Unlock()
@@ -57,13 +54,10 @@ func (rt *RequestTracker) Remove(reqId int64) {
 }
 
 // Transport
-// @Description:
+// @Description:Transport manages client and request tracking.
 type Transport struct {
 
-	//
-	//  clients
-	//  @Description: all client.
-	//
+	// client　is net connection.
 	client *Client
 
 	host string
@@ -88,7 +82,6 @@ func NewTransport(config *configs.ClientConfig) *Transport {
 		config: config,
 		tracker: &RequestTracker{
 			pending: make(map[int64]chan *exchange.Protocol),
-			//mu:      sync.Mutex{},
 		},
 	}
 }
@@ -104,9 +97,17 @@ func (t *Transport) Connection(opts ...ClientOption) {
 		log.Warn("Connection to server error:%s", err)
 		addChecking(t.client)
 	} else {
-		err := t.client.OpenTunnel("http")
-		if err != nil {
-			log.Warn("Connection to server error:%s", err)
+		if t.client.isSmux() {
+			//req := exchange.OpenTunnelReq{
+			//	SessionId: "1",
+			//}
+			//async, _ := t.WriteAsync(req, 10)
+			//if async != nil && async.RspCode == exchange.RspSuccess {
+			//	log.Info("Connection to server success.")
+			//}
+			if err := t.client.OpenTunnel("http"); err != nil {
+				log.Warn("Connection to server error:%s", err)
+			}
 		}
 	}
 }
@@ -115,7 +116,10 @@ func (t *Transport) WriteAsync(message exchange.InBound, timeout time.Duration) 
 	request, _ := exchange.NewRequest(message)
 	ch := t.tracker.Register(request.ReqId)
 	defer t.tracker.Remove(request.ReqId)
-	t.client.cct.Write(request.Bytes())
+	err := t.client.cct.Write(request.Bytes())
+	if err != nil {
+		return nil, err
+	}
 	select {
 	case resp := <-ch:
 		return resp, nil
@@ -156,7 +160,7 @@ func (b *CheckHandler) Timeout(cct *ClientControl) {
 		Value: "PING",
 	}
 	request, _ := exchange.NewRequest(h)
-	cct.Write(request.Bytes())
+	_ = cct.Write(request.Bytes())
 }
 
 func checking(cli *Client) {

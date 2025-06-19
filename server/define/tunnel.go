@@ -49,12 +49,12 @@ type Tunnel interface {
 	//  @param v2 connection.
 	//  @param request request.
 	//
-	RegisterConn(v2 *srv.ConnV2, request exchange.RegisterReq)
+	RegisterConn(v2 *srv.GChannel, request exchange.RegisterReq)
 
 	//
 	// Receiver
 	//  @Description: copy data to tunnel.
 	//  @param v2
 	//
-	Receiver(v2 *srv.ConnV2)
+	Receiver(v2 *srv.GChannel)
 }

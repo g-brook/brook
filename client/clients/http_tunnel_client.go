@@ -2,12 +2,14 @@ package clients
 
 import (
 	"bufio"
+	"fmt"
 	"github.com/brook/common/log"
 	"github.com/brook/common/srv"
 	"github.com/xtaci/smux"
 	"io"
 	"net"
 	"net/http"
+	"time"
 )
 
 func init() {
@@ -29,33 +31,47 @@ func (h *HttpTunnelClient) Open(session *smux.Session) {
 		log.Error("Open session is nil")
 		return
 	}
-	rw, err := session.Open()
+	rw, err := session.OpenStream()
 	if err != nil {
-		log.Error("Open session fail")
+		log.Error("Open session fail", err)
 		return
+	} else {
+		fmt.Println("Open session success", rw.ID())
+		_, err := rw.Write([]byte("PING"))
+		fmt.Println(err)
 	}
 	h.rw = rw
-	h.bindHandler(rw)
+	go h.bindHandler(rw)
+	for {
+		time.Sleep(3 * time.Second)
+		h.rw.Write([]byte("ping"))
+		fmt.Println("发送一个数据.....")
+	}
 }
 
 func (h *HttpTunnelClient) bindHandler(rw io.ReadWriteCloser) {
-	loopRead := func() {
+	loopRead := func() error {
 		request, err := http.ReadRequest(bufio.NewReader(rw))
 		if err != nil {
-			log.Error("Read request fail")
-			return
+			log.Error("Read request fail", err.Error())
+			rw.Write([]byte("ping"))
+			return err
 		}
 		dial, err := net.Dial("tcp", "127.0.0.1:8080")
 		if err != nil {
-			return
+			return nil
 		}
 		defer dial.Close()
 		request.Write(dial)
 		response, _ := http.ReadResponse(bufio.NewReader(dial), request)
 		response.Write(rw)
+		return nil
 	}
 	for {
-		loopRead()
+		err := loopRead()
+		if err != nil {
+			break
+		}
 	}
 }
 

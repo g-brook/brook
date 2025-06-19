@@ -53,6 +53,13 @@ type ClientHandler interface {
 	Close(cct *ClientControl)
 
 	//
+	// Connection
+	//  @Description: Connection.
+	//  @param cct
+	//
+	Connection(cct *ClientControl)
+
+	//
 	// Read
 	//  @Description: bytes cli
 	//  @param bytes
@@ -84,8 +91,10 @@ func (b BaseClientHandler) Close(cct *ClientControl) {
 
 }
 
-func (b BaseClientHandler) Read(buffer *exchange.Protocol, cct *ClientControl) (int, error) {
-	return 0, nil
+func (b BaseClientHandler) Connection(cct *ClientControl) {}
+
+func (b BaseClientHandler) Read(buffer *exchange.Protocol, cct *ClientControl) error {
+	return nil
 }
 
 func (b BaseClientHandler) Error(err error, cct *ClientControl) {
@@ -179,16 +188,18 @@ func (c *Client) Reconnection() error {
 //	@receiver c
 //	@return error
 func (c *Client) Connection(network string, option ...ClientOption) error {
-	c.network = network
-	c.opts = clientOptions(option...)
-	c.AddHandler(c.opts.handlers...)
+	c.pre(network, option)
 	go c.handleLoop()
 	go c.readLoop()
 	err := c.doConnection()
-	if err != nil {
-		return err
-	}
-	return nil
+	return err
+}
+
+func (c *Client) pre(network string, option []ClientOption) {
+	c.network = network
+	c.opts = clientOptions(option...)
+	c.AddHandler(c.opts.handlers...)
+	c.cct.cli = c
 }
 
 func (c *Client) doConnection() error {
@@ -235,11 +246,12 @@ func (c *Client) OpenTunnel(name string) error {
 	if !c.isSmux() {
 		return nil
 	}
+	//Notify server this ch is tunnel ch.
 	openSmux := func() (*smux.Session, error) {
 		config := smux.DefaultConfig()
 		config.KeepAliveInterval = c.opts.Smux.Timeout
 		config.KeepAliveTimeout = c.opts.Smux.Timeout
-		config.KeepAliveDisabled = !c.opts.Smux.Enable
+		config.KeepAliveDisabled = !c.opts.Smux.KeepAlive
 		if session, err := smux.Client(c.conn, config); err != nil {
 			return nil, c.error("New smux Client error", err)
 		} else {
@@ -334,6 +346,11 @@ func (c *Client) handleLoop() {
 		select {
 		case c.state = <-c.cct.state:
 			log.Info("Client state change:%d", c.state)
+			if c.state == Open {
+				for _, t := range c.handlers {
+					t.Connection(c.cct)
+				}
+			}
 		case <-c.cct.close:
 			for _, t := range c.handlers {
 				t.Close(c.cct)
@@ -368,8 +385,13 @@ func (c *Client) handleLoop() {
 //	@Description: Write data..
 //	@receiver c
 //	@param bytes
-func (c *ClientControl) Write(bytes []byte) {
+func (c *ClientControl) Write(bytes []byte) error {
+	if c.cli.rw == nil {
+		log.Warn("Connection closed")
+		return errors.New("connection closed")
+	}
 	c.write <- bytes
+	return nil
 }
 
 // Close

@@ -13,6 +13,15 @@ type SmuxAdapterConn struct {
 	rawConn gnet.Conn
 }
 
+func NewSmuxAdapterConn(rawConn gnet.Conn) *SmuxAdapterConn {
+	pipe, writer := io.Pipe()
+	return &SmuxAdapterConn{
+		rawConn: rawConn,
+		reader:  pipe,
+		writer:  writer,
+	}
+}
+
 // 实现 io.Reader
 func (s *SmuxAdapterConn) Read(p []byte) (int, error) {
 	return s.reader.Read(p)
@@ -20,11 +29,11 @@ func (s *SmuxAdapterConn) Read(p []byte) (int, error) {
 
 // 实现 io.Writer
 func (s *SmuxAdapterConn) Write(p []byte) (int, error) {
-	err := s.rawConn.AsyncWrite(p, nil)
-	if err != nil {
-		return 0, err
-	}
-	return len(p), nil
+	return s.rawConn.Write(p)
+}
+
+func (s *SmuxAdapterConn) Copy(p []byte) (n int, err error) {
+	return s.writer.Write(p)
 }
 
 func (s *SmuxAdapterConn) Close() error {

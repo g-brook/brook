@@ -5,7 +5,6 @@ import (
 	"github.com/brook/common/exchange"
 	"github.com/brook/common/log"
 	"github.com/brook/common/srv"
-	defin "github.com/brook/server/define"
 	server "github.com/brook/server/remote"
 	"io"
 )
@@ -21,17 +20,17 @@ type TcpTunnel struct {
 
 	inServer *server.InServer
 
-	refChannels map[string]*srv.ConnV2
+	refChannels map[string]srv.Channel
 
-	fromChannels map[string]*srv.ConnV2
+	fromChannels map[string]srv.Channel
 }
 
 func NewTcpTunnel(cfg *configs.TunnelConfig, server *server.InServer) *TcpTunnel {
 	return &TcpTunnel{
 		cfg:          cfg,
 		inServer:     server,
-		refChannels:  make(map[string]*srv.ConnV2),
-		fromChannels: make(map[string]*srv.ConnV2),
+		refChannels:  make(map[string]srv.Channel),
+		fromChannels: make(map[string]srv.Channel),
 	}
 }
 
@@ -42,11 +41,11 @@ func (t *TcpTunnel) Start() {
 func (t *TcpTunnel) doStart() {
 	newServer := srv.NewServer(t.Port())
 	newServer.AddHandler(t)
-	newServer.AddInitConnHandler(func(conn *srv.ConnV2) {
+	newServer.AddInitConnHandler(func(conn *srv.GChannel) {
 		conn.AddHandler(t)
 	})
 	t.server = newServer
-	defin.AddTunnel(t)
+	//defin.AddTunnel(t)
 	err := t.server.Start(srv.WithServerSmux(srv.DefaultServerSmux()))
 	if err != nil {
 		log.Error("Start tunnel fail %v: %s", err, t.cfg.Port)
@@ -55,13 +54,13 @@ func (t *TcpTunnel) doStart() {
 	}
 }
 
-func (t *TcpTunnel) RegisterConn(v2 *srv.ConnV2, request exchange.RegisterReq) {
+func (t *TcpTunnel) RegisterConn(v2 srv.Channel, request exchange.RegisterReq) {
 	//t.refChannels = append(t.refChannels, v2)
-	t.refChannels[v2.GetContext().Id] = v2
-	log.Info("Bind tcp tunnel conn t(tunnel/server): %d c(client): %d", t.Port(), v2.RemoteAddr())
+	//t.refChannels[v2.GetContext().Id] = v2
+	//log.Info("Bind tcp tunnel conn t(tunnel/server): %d c(client): %d", t.Port(), v2.RemoteAddr())
 }
 
-func (t *TcpTunnel) Receiver(conn *srv.ConnV2) {
+func (t *TcpTunnel) Receiver(conn *srv.GChannel) {
 	id := conn.GetContext().Id
 	toConn, ok := t.fromChannels[id]
 	if ok {
@@ -78,7 +77,7 @@ func (t *TcpTunnel) Port() int32 {
 	return t.cfg.Port
 }
 
-func (t *TcpTunnel) Reader(conn *srv.ConnV2, traverse srv.TraverseBy) {
+func (t *TcpTunnel) Reader(conn srv.Channel, traverse srv.TraverseBy) {
 	length := len(t.refChannels)
 	if length > 0 {
 		var keys = make([]string, 0, length)
@@ -96,10 +95,10 @@ func (t *TcpTunnel) Reader(conn *srv.ConnV2, traverse srv.TraverseBy) {
 	traverse()
 }
 
-func (t *TcpTunnel) DoOpen(conn *srv.ConnV2) {
+func (t *TcpTunnel) DoOpen(conn *srv.GChannel) {
 	//not function.
 }
 
-func (t *TcpTunnel) DoClose(conn *srv.ConnV2) {
+func (t *TcpTunnel) DoClose(conn *srv.GChannel) {
 	delete(t.refChannels, conn.GetContext().Id)
 }

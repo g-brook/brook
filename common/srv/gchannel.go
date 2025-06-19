@@ -9,9 +9,9 @@ import (
 	"time"
 )
 
-// ConnV2
+// GChannel
 // @Description:
-type ConnV2 struct {
+type GChannel struct {
 	conn gnet.Conn
 
 	id string
@@ -20,15 +20,17 @@ type ConnV2 struct {
 
 	server *Server
 
-	handlers []ConnV2Handler
+	handlers []GChannelHandler
+
+	pipeConn *SmuxAdapterConn
 }
 
-// ConnV2Handler
+// GChannelHandler
 // @Description:
-type ConnV2Handler interface {
-	DoOpen(conn *ConnV2)
+type GChannelHandler interface {
+	DoOpen(conn *GChannel)
 
-	DoClose(conn *ConnV2)
+	DoClose(conn *GChannel)
 }
 
 // GetReader
@@ -36,7 +38,7 @@ type ConnV2Handler interface {
 //	@Description: Get from gnet.conn.
 //	@receiver receiver
 //	@return io.Reader
-func (receiver *ConnV2) GetReader() io.Reader {
+func (receiver *GChannel) GetReader() io.Reader {
 	return receiver.conn
 }
 
@@ -45,7 +47,7 @@ func (receiver *ConnV2) GetReader() io.Reader {
 //	@Description:
 //	@receiver receiver
 //	@return io.Writer
-func (receiver *ConnV2) GetWriter() io.Writer {
+func (receiver *GChannel) GetWriter() io.Writer {
 	return receiver.conn
 }
 
@@ -54,7 +56,7 @@ func (receiver *ConnV2) GetWriter() io.Writer {
 //	@Description:
 //	@receiver receiver
 //	@param handler
-func (receiver *ConnV2) AddHandler(handler ...ConnV2Handler) {
+func (receiver *GChannel) AddHandler(handler ...GChannelHandler) {
 	receiver.handlers = append(receiver.handlers, handler...)
 }
 
@@ -63,7 +65,7 @@ func (receiver *ConnV2) AddHandler(handler ...ConnV2Handler) {
 //	@Description:
 //	@receiver receiver
 //	@return *ConnContext
-func (receiver *ConnV2) GetContext() *ConnContext {
+func (receiver *GChannel) GetContext() *ConnContext {
 	return receiver.context
 }
 
@@ -74,7 +76,7 @@ func (receiver *ConnV2) GetContext() *ConnContext {
 //	@param out
 //	@return int
 //	@return error
-func (receiver *ConnV2) Read(out []byte) (int, error) {
+func (receiver *GChannel) Read(out []byte) (int, error) {
 	return io.ReadFull(receiver.GetReader(), out)
 }
 
@@ -84,8 +86,18 @@ func (receiver *ConnV2) Read(out []byte) (int, error) {
 //	@receiver receiver
 //	@param out
 //	@return error
-func (receiver *ConnV2) Write(out []byte) (int, error) {
+func (receiver *GChannel) Write(out []byte) (int, error) {
 	return receiver.conn.Write(out)
+}
+
+// Next
+//
+//	@Description: Next()
+//	@receiver reveiver
+//	@param pos
+//	@return net.Conn
+func (receiver *GChannel) Next(pos int) ([]byte, error) {
+	return receiver.conn.Next(pos)
 }
 
 // GetServer
@@ -93,7 +105,7 @@ func (receiver *ConnV2) Write(out []byte) (int, error) {
 //	@Description:
 //	@receiver receiver
 //	@return *Server
-func (receiver *ConnV2) GetServer() *Server {
+func (receiver *GChannel) GetServer() *Server {
 	return receiver.server
 }
 
@@ -102,7 +114,7 @@ func (receiver *ConnV2) GetServer() *Server {
 //	@Description:
 //	@receiver receiver
 //	@return error
-func (receiver *ConnV2) Close() error {
+func (receiver *GChannel) Close() error {
 	if receiver.context.timer != nil {
 		receiver.context.timer.Stop()
 	}
@@ -121,7 +133,7 @@ func (receiver *ConnV2) Close() error {
 //	@Description:
 //	@receiver receiver
 //	@return net.Addr
-func (receiver *ConnV2) RemoteAddr() net.Addr {
+func (receiver *GChannel) RemoteAddr() net.Addr {
 	return receiver.conn.RemoteAddr()
 }
 
@@ -132,7 +144,7 @@ func (receiver *ConnV2) RemoteAddr() net.Addr {
 //  @return net.Addr
 //
 
-func (receiver *ConnV2) LocalAddr() net.Addr {
+func (receiver *GChannel) LocalAddr() net.Addr {
 	return receiver.conn.LocalAddr()
 }
 
@@ -141,7 +153,7 @@ func (receiver *ConnV2) LocalAddr() net.Addr {
 //	@Description:
 //	@receiver receiver
 //	@return net.Conn
-func (receiver *ConnV2) GetNetConn() net.Conn {
+func (receiver *GChannel) GetNetConn() net.Conn {
 	return receiver.conn
 }
 
@@ -152,7 +164,7 @@ func (receiver *ConnV2) GetNetConn() net.Conn {
 //  @return bool
 //
 
-func (receiver *ConnV2) isConnection() bool {
+func (receiver *GChannel) isConnection() bool {
 	return !receiver.context.IsClosed
 }
 

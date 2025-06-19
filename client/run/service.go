@@ -17,13 +17,20 @@ func init() {
 }
 
 type Service struct {
-	ctx   context.Context
-	bgCtl chan struct{}
+	srv.BaseClientHandler
+	ctx       context.Context
+	bgCtl     chan struct{}
+	connState chan struct{}
+}
+
+func (receiver *Service) Connection(_ *srv.ClientControl) {
+	close(receiver.connState)
 }
 
 func NewService() *Service {
 	return &Service{ctx: context.Background(),
-		bgCtl: make(chan struct{}),
+		bgCtl:     make(chan struct{}),
+		connState: make(chan struct{}),
 	}
 }
 
@@ -31,11 +38,19 @@ func (receiver *Service) Run(cfg *configs.ClientConfig) error {
 	//Connection to server.
 	transport := srv.NewTransport(cfg)
 	transport.Connection(
-		srv.WithPingTime(cfg.PingTime * time.Millisecond))
+		srv.WithClientHandler(receiver),
+		srv.WithPingTime(cfg.PingTime*time.Millisecond))
+	<-receiver.connState
+	_ = receiver.openTunnel(cfg, transport)
+	return receiver.background()
+}
 
+func (receiver *Service) openTunnel(cfg *configs.ClientConfig, transport *srv.Transport) error {
 	req := exchange.QueryTunnelReq{}
-	p, _ := transport.WriteAsync(req, 5*time.Second)
-
+	p, err := transport.WriteAsync(req, 5*time.Second)
+	if err != nil {
+		return err
+	}
 	rsp, err := exchange.Parse[exchange.QueryTunnelResp](p.Data)
 	if err != nil {
 		log.Error(err.Error())
@@ -51,8 +66,7 @@ func (receiver *Service) Run(cfg *configs.ClientConfig) error {
 	tunnelTransport.Connection(
 		srv.WithPingTime(newCfg.PingTime*time.Millisecond),
 		srv.WithClientSmux(srv.NewSmuxClientOption()))
-
-	return receiver.background()
+	return nil
 }
 
 func (receiver *Service) background() error {

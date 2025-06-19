@@ -41,6 +41,9 @@ const (
 
 	//QueryTunnel Query tunnel config.
 	QueryTunnel = 4
+
+	// OpenTunnel Open Tunnel
+	OpenTunnel = 5
 )
 
 // RspSuccess RspCode.
