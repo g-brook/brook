@@ -1,6 +1,8 @@
-package srv
+package clis
 
-import "time"
+import (
+	"time"
+)
 
 type ClientOption func(*cOptions)
 

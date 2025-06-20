@@ -6,9 +6,10 @@ import (
 	"github.com/brook/common/configs"
 	"github.com/brook/common/exchange"
 	"github.com/brook/common/log"
-	"github.com/brook/common/srv"
+	"github.com/brook/common/transport"
 	defin "github.com/brook/server/define"
 	server "github.com/brook/server/remote"
+	srv2 "github.com/brook/server/srv"
 	"io"
 	"net"
 	"net/http"
@@ -45,25 +46,25 @@ func (t *TcpListener) PutConn(conn net.Conn) {
 }
 
 type HttpTunnel struct {
-	srv.BaseServerHandler
+	srv2.BaseServerHandler
 	config      *configs.TunnelConfig
 	server      *server.InServer
 	tl          *TcpListener
 	tc          sync.WaitGroup
-	refChannels map[string]srv.Channel
+	refChannels map[string]transport.Channel
 
-	fromChannels map[string]srv.Channel
+	fromChannels map[string]transport.Channel
 }
 
-func (h *HttpTunnel) Open(conn srv.Channel, traverse srv.TraverseBy) {
+func (h *HttpTunnel) Open(conn transport.Channel, traverse srv2.TraverseBy) {
 	//h.tl.PutConn(conn)
 }
 
-func (h *HttpTunnel) Boot(conn *srv.Server, traverse srv.TraverseBy) {
+func (h *HttpTunnel) Boot(conn *srv2.Server, traverse srv2.TraverseBy) {
 	h.tc.Done()
 }
 
-func (h *HttpTunnel) Reader(conn srv.Channel, traverse srv.TraverseBy) {
+func (h *HttpTunnel) Reader(conn transport.Channel, traverse srv2.TraverseBy) {
 	length := len(h.refChannels)
 	if length > 0 {
 		var keys = make([]string, 0, length)
@@ -82,13 +83,13 @@ func (h *HttpTunnel) Reader(conn srv.Channel, traverse srv.TraverseBy) {
 }
 
 func NewHttpTunnel(config *configs.TunnelConfig, server *server.InServer) *HttpTunnel {
-	return &HttpTunnel{config: config, server: server, tc: sync.WaitGroup{}, refChannels: make(map[string]srv.Channel), fromChannels: make(map[string]srv.Channel)}
+	return &HttpTunnel{config: config, server: server, tc: sync.WaitGroup{}, refChannels: make(map[string]transport.Channel), fromChannels: make(map[string]transport.Channel)}
 }
 
 func (h *HttpTunnel) Start() {
 	h.tc.Add(1)
 	go func() {
-		newServer := srv.NewServer(h.Port())
+		newServer := srv2.NewServer(h.Port())
 		newServer.AddHandler(h)
 		defin.AddTunnel(h)
 		err := newServer.Start()
@@ -122,19 +123,19 @@ func (h *HttpTunnel) Port() int {
 	return h.config.Port
 }
 
-func (h *HttpTunnel) RegisterConn(v2 *srv.GChannel, request exchange.RegisterReq) {
+func (h *HttpTunnel) RegisterConn(v2 *srv2.GChannel, request exchange.RegisterReq) {
 	//t.refChannels = append(t.refChannels, v2)
 	h.refChannels[v2.GetContext().Id] = v2
 	log.Info("Bind tcp tunnel conn t(tunnel/server): %d c(client): %d", h.Port(), v2.RemoteAddr())
 }
 
-func (h *HttpTunnel) Receiver(conn *srv.GChannel) {
+func (h *HttpTunnel) Receiver(conn *srv2.GChannel) {
 	id := conn.GetContext().Id
 	toConn, ok := h.fromChannels[id]
 	if ok {
 		_, err := io.Copy(toConn.GetWriter(), conn.GetReader())
 		if err != nil {
-			log.Error("Copy to srv fail %v", err)
+			log.Error("Copy to transport fail %v", err)
 		}
 	} else {
 		log.Warn("Not found tunnel conn,%s", id)

@@ -2,7 +2,7 @@ package defin
 
 import (
 	"github.com/brook/common/exchange"
-	"github.com/brook/common/srv"
+	"github.com/brook/server/srv"
 )
 
 // Save all tunnels channel. port: server.

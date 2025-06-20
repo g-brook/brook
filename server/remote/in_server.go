@@ -5,8 +5,9 @@ import (
 	"github.com/brook/common/configs"
 	"github.com/brook/common/exchange"
 	"github.com/brook/common/log"
-	"github.com/brook/common/srv"
+	"github.com/brook/common/transport"
 	defin "github.com/brook/server/define"
+	srv2 "github.com/brook/server/srv"
 	"os"
 )
 
@@ -15,10 +16,10 @@ const isTunnelConnKey = "Tunnel-Conn"
 const tunnelPort = "Tunnel-Port"
 
 type InServer struct {
-	srv.BaseServerHandler
+	srv2.BaseServerHandler
 
 	//Current server.
-	server *srv.Server
+	server *srv2.Server
 }
 
 func New() *InServer {
@@ -27,7 +28,7 @@ func New() *InServer {
 	}
 }
 
-func (t *InServer) Reader(ch srv.Channel, traverse srv.TraverseBy) {
+func (t *InServer) Reader(ch transport.Channel, traverse srv2.TraverseBy) {
 	//Determining whether a communication channel is connected.
 	req, err := exchange.Decoder(ch.GetReader())
 	if err != nil {
@@ -38,7 +39,7 @@ func (t *InServer) Reader(ch srv.Channel, traverse srv.TraverseBy) {
 	traverse()
 }
 
-func (t *InServer) isTunnelConn(conn *srv.GChannel) bool {
+func (t *InServer) isTunnelConn(conn *srv2.GChannel) bool {
 	attr, b := conn.GetContext().GetAttr(isTunnelConnKey)
 	if b {
 		return attr.(bool)
@@ -46,7 +47,7 @@ func (t *InServer) isTunnelConn(conn *srv.GChannel) bool {
 	return false
 }
 
-func (t *InServer) getTunnelPort(conn *srv.GChannel) int32 {
+func (t *InServer) getTunnelPort(conn *srv2.GChannel) int32 {
 	attr, b := conn.GetContext().GetAttr(tunnelPort)
 	if b {
 		return attr.(int32)
@@ -54,7 +55,7 @@ func (t *InServer) getTunnelPort(conn *srv.GChannel) int32 {
 	return 0
 }
 
-func inProcess(p *exchange.Protocol, conn srv.Channel) {
+func inProcess(p *exchange.Protocol, conn transport.Channel) {
 	cmd := p.Cmd
 	entry, ok := handlers[cmd]
 	if !ok {
@@ -110,7 +111,7 @@ func (t *InServer) onStart(cf *configs.ServerConfig) {
 }
 
 func (t *InServer) onStartServer(cf *configs.ServerConfig) {
-	t.server = srv.NewServer(cf.ServerPort)
+	t.server = srv2.NewServer(cf.ServerPort)
 	t.server.AddHandler(t)
 	err := t.server.Start()
 	if err != nil {
@@ -125,10 +126,10 @@ func (t *InServer) onStartTunnelServer(cf *configs.ServerConfig) {
 		port = cf.ServerPort + 10
 		cf.TunnelPort = port
 	}
-	t.server = srv.NewServer(port)
+	t.server = srv2.NewServer(port)
 	t.server.AddHandler(t)
 	defin.Set(defin.TunnelPortKey, port)
-	err := t.server.Start(srv.WithServerSmux(srv.DefaultServerSmux()))
+	err := t.server.Start(srv2.WithServerSmux(srv2.DefaultServerSmux()))
 	if err != nil {
 		log.Error(err.Error())
 		os.Exit(1)
@@ -137,7 +138,7 @@ func (t *InServer) onStartTunnelServer(cf *configs.ServerConfig) {
 
 type handlerEntry struct {
 	newRequest func(data []byte) (exchange.InBound, error)
-	process    func(request exchange.InBound, conn srv.Channel) (any, error)
+	process    func(request exchange.InBound, conn transport.Channel) (any, error)
 }
 
 var handlers = make(map[exchange.Cmd]handlerEntry)
@@ -154,7 +155,7 @@ func Register[T exchange.InBound](cmd exchange.Cmd, process InProcess[T]) {
 			err := json.Unmarshal(data, &req)
 			return req, err
 		},
-		process: func(r exchange.InBound, conn srv.Channel) (any, error) {
+		process: func(r exchange.InBound, conn transport.Channel) (any, error) {
 			req := r.(T)
 			return process(req, conn)
 		},

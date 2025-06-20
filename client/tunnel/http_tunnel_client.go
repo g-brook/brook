@@ -1,10 +1,10 @@
-package clients
+package tunnel
 
 import (
 	"bufio"
+	"github.com/brook/client/clis"
 	"github.com/brook/common/configs"
 	"github.com/brook/common/log"
-	"github.com/brook/common/srv"
 	"github.com/xtaci/smux"
 	"io"
 	"net"
@@ -12,9 +12,9 @@ import (
 )
 
 func init() {
-	srv.RegisterTunnelClient("http", func(config *configs.ClientTunnelConfig) srv.TunnelClient {
+	clis.RegisterTunnelClient("http", func(config *configs.ClientTunnelConfig) clis.TunnelClient {
 		client := HttpTunnelClient{
-			BaseTunnelClient: srv.BaseTunnelClient{
+			BaseTunnelClient: clis.BaseTunnelClient{
 				Cfg: config,
 			},
 		}
@@ -23,7 +23,7 @@ func init() {
 }
 
 type HttpTunnelClient struct {
-	srv.BaseTunnelClient
+	clis.BaseTunnelClient
 	rw io.ReadWriteCloser
 }
 

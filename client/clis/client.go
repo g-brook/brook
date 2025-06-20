@@ -1,4 +1,4 @@
-package srv
+package clis
 
 import (
 	"container/list"
@@ -179,6 +179,7 @@ func (c *Client) AddHandler(h ...ClientHandler) {
 	c.handlers = append(c.handlers, h...)
 }
 
+// Reconnection is
 func (c *Client) Reconnection() error {
 	if !c.IsConnection() {
 		return c.doConnection()
@@ -193,12 +194,12 @@ func (c *Client) Reconnection() error {
 //	@return error
 func (c *Client) Connection(network string, option ...ClientOption) error {
 	c.pre(network, option)
+	go c.handleLoop()
+	go c.readLoop()
 	err := c.doConnection()
 	if err != nil {
 		return err
 	}
-	go c.handleLoop()
-	go c.readLoop()
 	return nil
 }
 

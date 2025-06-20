@@ -2,6 +2,7 @@ package srv
 
 import (
 	"github.com/RussellLuo/timingwheel"
+	"github.com/brook/common/transport"
 	"github.com/google/uuid"
 	"github.com/panjf2000/gnet/v2"
 	"io"
@@ -12,17 +13,17 @@ import (
 // GChannel
 // @Description:
 type GChannel struct {
-	conn gnet.Conn
+	Conn gnet.Conn
 
-	id string
+	Id string
 
-	context *ConnContext
+	Context *ConnContext
 
-	server *Server
+	Server *Server
 
-	handlers []GChannelHandler
+	Handlers []GChannelHandler
 
-	pipeConn *SmuxAdapterConn
+	PipeConn *transport.SmuxAdapterConn
 }
 
 // GChannelHandler
@@ -39,7 +40,7 @@ type GChannelHandler interface {
 //	@receiver receiver
 //	@return io.Reader
 func (receiver *GChannel) GetReader() io.Reader {
-	return receiver.conn
+	return receiver.Conn
 }
 
 // GetWriter
@@ -48,7 +49,7 @@ func (receiver *GChannel) GetReader() io.Reader {
 //	@receiver receiver
 //	@return io.Writer
 func (receiver *GChannel) GetWriter() io.Writer {
-	return receiver.conn
+	return receiver.Conn
 }
 
 // AddHandler
@@ -57,7 +58,7 @@ func (receiver *GChannel) GetWriter() io.Writer {
 //	@receiver receiver
 //	@param handler
 func (receiver *GChannel) AddHandler(handler ...GChannelHandler) {
-	receiver.handlers = append(receiver.handlers, handler...)
+	receiver.Handlers = append(receiver.Handlers, handler...)
 }
 
 // GetContext
@@ -66,7 +67,7 @@ func (receiver *GChannel) AddHandler(handler ...GChannelHandler) {
 //	@receiver receiver
 //	@return *ConnContext
 func (receiver *GChannel) GetContext() *ConnContext {
-	return receiver.context
+	return receiver.Context
 }
 
 // Reader
@@ -87,7 +88,7 @@ func (receiver *GChannel) Read(out []byte) (int, error) {
 //	@param out
 //	@return error
 func (receiver *GChannel) Write(out []byte) (int, error) {
-	return receiver.conn.Write(out)
+	return receiver.Conn.Write(out)
 }
 
 // Next
@@ -97,7 +98,7 @@ func (receiver *GChannel) Write(out []byte) (int, error) {
 //	@param pos
 //	@return net.Conn
 func (receiver *GChannel) Next(pos int) ([]byte, error) {
-	return receiver.conn.Next(pos)
+	return receiver.Conn.Next(pos)
 }
 
 // GetServer
@@ -106,7 +107,7 @@ func (receiver *GChannel) Next(pos int) ([]byte, error) {
 //	@receiver receiver
 //	@return *Server
 func (receiver *GChannel) GetServer() *Server {
-	return receiver.server
+	return receiver.Server
 }
 
 // Close
@@ -115,14 +116,14 @@ func (receiver *GChannel) GetServer() *Server {
 //	@receiver receiver
 //	@return error
 func (receiver *GChannel) Close() error {
-	if receiver.context.timer != nil {
-		receiver.context.timer.Stop()
+	if receiver.Context.Timer != nil {
+		receiver.Context.Timer.Stop()
 	}
-	if receiver.conn != nil {
-		_ = receiver.conn.Close()
+	if receiver.Conn != nil {
+		_ = receiver.Conn.Close()
 	}
-	receiver.context.IsClosed = true
-	for _, handler := range receiver.handlers {
+	receiver.Context.IsClosed = true
+	for _, handler := range receiver.Handlers {
 		handler.DoClose(receiver)
 	}
 	return nil
@@ -134,7 +135,7 @@ func (receiver *GChannel) Close() error {
 //	@receiver receiver
 //	@return net.Addr
 func (receiver *GChannel) RemoteAddr() net.Addr {
-	return receiver.conn.RemoteAddr()
+	return receiver.Conn.RemoteAddr()
 }
 
 //
@@ -145,7 +146,7 @@ func (receiver *GChannel) RemoteAddr() net.Addr {
 //
 
 func (receiver *GChannel) LocalAddr() net.Addr {
-	return receiver.conn.LocalAddr()
+	return receiver.Conn.LocalAddr()
 }
 
 // GetNetConn
@@ -154,7 +155,7 @@ func (receiver *GChannel) LocalAddr() net.Addr {
 //	@receiver receiver
 //	@return net.Conn
 func (receiver *GChannel) GetNetConn() net.Conn {
-	return receiver.conn
+	return receiver.Conn
 }
 
 //
@@ -165,7 +166,7 @@ func (receiver *GChannel) GetNetConn() net.Conn {
 //
 
 func (receiver *GChannel) isConnection() bool {
-	return !receiver.context.IsClosed
+	return !receiver.Context.IsClosed
 }
 
 // ConnContext
@@ -174,8 +175,8 @@ type ConnContext struct {
 	IsClosed   bool
 	Id         string
 	lastActive time.Time
-	isTimeOut  bool
-	timer      *timingwheel.Timer
+	IsTimeOut  bool
+	Timer      *timingwheel.Timer
 	attr       map[string]interface{}
 	isSmux     bool
 }
@@ -185,7 +186,7 @@ func NewConnContext() *ConnContext {
 		IsClosed:   false,
 		Id:         uuid.New().String(),
 		lastActive: time.Now(),
-		isTimeOut:  false,
+		IsTimeOut:  false,
 		attr:       make(map[string]interface{}),
 		isSmux:     false,
 	}

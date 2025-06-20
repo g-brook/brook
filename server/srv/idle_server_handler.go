@@ -2,6 +2,7 @@ package srv
 
 import (
 	"github.com/brook/common/log"
+	"github.com/brook/common/utils"
 	"time"
 )
 
@@ -19,22 +20,22 @@ func NewIdleServerHandler(readerTime time.Duration) *IdleServerHandler {
 
 func (b *IdleServerHandler) Open(conn *GChannel, traverse TraverseBy) {
 	if b.timeout > 0 {
-		timer := newWheel.ScheduleFunc(&TimeoutScheduler{
+		timer := utils.NewWheel.ScheduleFunc(&TimeoutScheduler{
 			timeout: b.timeout,
 		}, func() {
-			conn.GetContext().isTimeOut = time.Now().After(conn.GetContext().GetLastActive())
-			if conn.GetContext().isTimeOut {
+			conn.GetContext().IsTimeOut = time.Now().After(conn.GetContext().GetLastActive())
+			if conn.GetContext().IsTimeOut {
 				log.Warn("Connection timeout:  %s -> %s", conn.LocalAddr().String(), conn.RemoteAddr().String())
-				_ = conn.conn.Wake(nil)
+				_ = conn.Conn.Wake(nil)
 			}
 		})
-		conn.context.timer = timer
+		conn.Context.Timer = timer
 	}
 	traverse()
 }
 
 func (b *IdleServerHandler) Reader(conn *GChannel, traverse TraverseBy) {
-	if conn.GetContext().isTimeOut {
+	if conn.GetContext().IsTimeOut {
 		log.Warn("Timeout close connection:%s -> %s", conn.LocalAddr().String(), conn.RemoteAddr().String())
 		_ = conn.Close()
 		return

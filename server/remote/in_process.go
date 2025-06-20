@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"github.com/brook/common/exchange"
 	"github.com/brook/common/log"
-	"github.com/brook/common/srv"
+	"github.com/brook/common/transport"
 	defin "github.com/brook/server/define"
 )
 
@@ -15,7 +15,7 @@ func init() {
 	Register(exchange.OpenTunnel, openTunnelProcess)
 }
 
-type InProcess[T exchange.InBound] func(request T, conn srv.Channel) (any, error)
+type InProcess[T exchange.InBound] func(request T, conn transport.Channel) (any, error)
 
 // pingProcess
 //
@@ -24,7 +24,7 @@ type InProcess[T exchange.InBound] func(request T, conn srv.Channel) (any, error
 //	@param conn
 //	@return any
 //	@return error
-func pingProcess(request exchange.Heartbeat, conn srv.Channel) (any, error) {
+func pingProcess(request exchange.Heartbeat, conn transport.Channel) (any, error) {
 	log.Debug("Receiver Ping message : %s:%v", request.Value, conn.RemoteAddr())
 	heartbeat := exchange.Heartbeat{Value: "PONG"}
 	return heartbeat, nil
@@ -37,7 +37,7 @@ func pingProcess(request exchange.Heartbeat, conn srv.Channel) (any, error) {
 //	@param conn
 //	@return any
 //	@return error
-func registerProcess(request exchange.RegisterReq, conn srv.Channel) (any, error) {
+func registerProcess(request exchange.RegisterReq, conn transport.Channel) (any, error) {
 	port := request.TunnelPort
 	tunnel := defin.GetTunnel(port)
 	if tunnel == nil {
@@ -57,14 +57,14 @@ func registerProcess(request exchange.RegisterReq, conn srv.Channel) (any, error
 //	@Description: Query tunnel port config.
 //	@param req
 //	@param conn
-func queryTunnelConfigProcess(req exchange.QueryTunnelReq, conn srv.Channel) (any, error) {
+func queryTunnelConfigProcess(req exchange.QueryTunnelReq, conn transport.Channel) (any, error) {
 	tport := defin.Get[int](defin.TunnelPortKey)
 	return exchange.QueryTunnelResp{
 		TunnelPort: tport,
 	}, nil
 }
 
-func openTunnelProcess(req exchange.OpenTunnelReq, conn srv.Channel) (any, error) {
+func openTunnelProcess(req exchange.OpenTunnelReq, conn transport.Channel) (any, error) {
 	return exchange.OpenTunnelResp{
 		SessionId: req.SessionId,
 	}, nil

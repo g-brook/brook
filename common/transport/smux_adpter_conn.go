@@ -1,4 +1,4 @@
-package srv
+package transport
 
 import (
 	"github.com/panjf2000/gnet/v2"

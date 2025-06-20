@@ -1,4 +1,4 @@
-package srv
+package transport
 
 import (
 	"bytes"
@@ -10,21 +10,21 @@ import (
 type SChannel struct {
 	r      io.Reader
 	w      io.Writer
-	stream *smux.Stream
+	Stream *smux.Stream
 	buf    bytes.Buffer
 }
 
 func (s *SChannel) RemoteAddr() net.Addr {
-	return s.stream.RemoteAddr()
+	return s.Stream.RemoteAddr()
 }
 
 func (s *SChannel) LocalAddr() net.Addr {
-	return s.stream.LocalAddr()
+	return s.Stream.LocalAddr()
 }
 
 func NewSChannel2(stream *smux.Stream) *SChannel {
 	r, w := io.Pipe()
-	return &SChannel{stream: stream, r: r, w: w, buf: bytes.Buffer{}}
+	return &SChannel{Stream: stream, r: r, w: w, buf: bytes.Buffer{}}
 }
 
 func (s *SChannel) Read(p []byte) (n int, err error) {
@@ -32,7 +32,7 @@ func (s *SChannel) Read(p []byte) (n int, err error) {
 }
 
 func (s *SChannel) Write(p []byte) (n int, err error) {
-	return s.stream.Write(p)
+	return s.Stream.Write(p)
 }
 
 func (s *SChannel) Copy(p []byte) (n int, err error) {

@@ -1,6 +1,7 @@
-package srv
+package tunnel
 
 import (
+	"github.com/brook/client/clis"
 	"github.com/brook/common/configs"
 	"github.com/brook/common/exchange"
 	"github.com/brook/common/log"
@@ -11,12 +12,12 @@ import (
 )
 
 func init() {
-	RegisterTunnelClient(utils.EchoTest, func(config *configs.ClientTunnelConfig) TunnelClient {
+	clis.RegisterTunnelClient(utils.EchoTest, func(config *configs.ClientTunnelConfig) clis.TunnelClient {
 		return &EchoTunnelClient{
-			tcc: &TunnelClientControl{
-				readers: make(chan *exchange.Protocol, 1),
-				writers: make(chan *exchange.Protocol, 1),
-				die:     make(chan struct{}),
+			tcc: &clis.TunnelClientControl{
+				Readers: make(chan *exchange.Protocol, 1),
+				Writers: make(chan *exchange.Protocol, 1),
+				Die:     make(chan struct{}),
 			},
 		}
 	})
@@ -24,7 +25,7 @@ func init() {
 
 type EchoTunnelClient struct {
 	rw      io.ReadWriteCloser
-	tcc     *TunnelClientControl
+	tcc     *clis.TunnelClientControl
 	session *smux.Session
 }
 
@@ -48,7 +49,7 @@ func (e *EchoTunnelClient) Open(session *smux.Session) error {
 }
 
 func (e *EchoTunnelClient) Close() {
-	close(e.tcc.die)
+	close(e.tcc.Die)
 	if e.session != nil {
 		_ = e.session.Close()
 	}
@@ -76,7 +77,7 @@ func (e *EchoTunnelClient) revLoop() {
 	defer timePing.Stop()
 	for {
 		select {
-		case <-e.tcc.die:
+		case <-e.tcc.Die:
 			return
 		case <-timePing.C:
 			heartbeat := exchange.Heartbeat{

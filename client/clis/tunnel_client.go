@@ -1,4 +1,4 @@
-package srv
+package clis
 
 import (
 	"github.com/brook/common/configs"
@@ -8,11 +8,11 @@ import (
 )
 
 type TunnelClientControl struct {
-	readers chan *exchange.Protocol
+	Readers chan *exchange.Protocol
 
-	writers chan *exchange.Protocol
+	Writers chan *exchange.Protocol
 
-	die chan struct{}
+	Die chan struct{}
 }
 
 type TunnelClient interface {
@@ -50,7 +50,7 @@ func (b *BaseTunnelClient) GetName() string {
 	return "BaseTunnelClient"
 }
 
-func (b *BaseTunnelClient) Open(session *smux.Session) error {
+func (b *BaseTunnelClient) Open(_ *smux.Session) error {
 	return nil
 }
 
@@ -72,7 +72,7 @@ func (b *BaseTunnelClient) Register(stream *smux.Stream) {
 	_, _ = b.Stream.Write(request.Bytes())
 }
 
-// at all tunnel clients by map.
+// at all tunnel tunnel by map.
 var tunnels = make(map[string]FactoryFun)
 
 // FactoryFun New tunnel client.

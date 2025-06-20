@@ -1,4 +1,4 @@
-package srv
+package clis
 
 import (
 	"fmt"
@@ -6,6 +6,7 @@ import (
 	"github.com/brook/common/configs"
 	"github.com/brook/common/exchange"
 	"github.com/brook/common/log"
+	"github.com/brook/common/utils"
 	"sync"
 	"time"
 )
@@ -191,7 +192,7 @@ func addChecking(tp *Transport) {
 	if _, ok := timerMap[tp.client.id]; ok {
 		return
 	}
-	t := newWheel.ScheduleFunc(&ClientScheduler{}, func() {
+	t := utils.NewWheel.ScheduleFunc(&ClientScheduler{}, func() {
 		checking(tp)
 	})
 	timerMap[tp.client.id] = t

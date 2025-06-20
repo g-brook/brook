@@ -3,6 +3,7 @@ package srv
 import (
 	"fmt"
 	"github.com/brook/common/log"
+	trp "github.com/brook/common/transport"
 	"github.com/panjf2000/gnet/v2"
 	"github.com/xtaci/smux"
 	"io"
@@ -21,21 +22,21 @@ type ServerHandler interface {
 	//  @Description: Close conn notify.
 	//  @param conn
 	//
-	Close(ch Channel, traverse TraverseBy)
+	Close(ch trp.Channel, traverse TraverseBy)
 
 	//
 	// Open
 	//  @Description: Open conn notify.
 	//  @param conn
 	//
-	Open(ch Channel, traverse TraverseBy)
+	Open(ch trp.Channel, traverse TraverseBy)
 
 	//
 	// Reader
 	//  @Description: Reader conn data notify.
 	//  @param conn
 	//
-	Reader(ch Channel, traverse TraverseBy)
+	Reader(ch trp.Channel, traverse TraverseBy)
 
 	//
 	// Writer
@@ -43,7 +44,7 @@ type ServerHandler interface {
 	//  @param conn
 	//  @param traverse
 	//	// Writer
-	Writer(ch Channel, traverse TraverseBy)
+	Writer(ch trp.Channel, traverse TraverseBy)
 
 	//
 	// Boot
@@ -57,19 +58,19 @@ type ServerHandler interface {
 type BaseServerHandler struct {
 }
 
-func (b BaseServerHandler) Writer(ch Channel, traverse TraverseBy) {
+func (b BaseServerHandler) Writer(_ trp.Channel, traverse TraverseBy) {
 	traverse()
 }
 
-func (b BaseServerHandler) Close(ch Channel, traverse TraverseBy) {
+func (b BaseServerHandler) Close(_ trp.Channel, traverse TraverseBy) {
 	traverse()
 }
 
-func (b BaseServerHandler) Open(ch Channel, traverse TraverseBy) {
+func (b BaseServerHandler) Open(_ trp.Channel, traverse TraverseBy) {
 	traverse()
 }
 
-func (b BaseServerHandler) Reader(ch Channel, traverse TraverseBy) {
+func (b BaseServerHandler) Reader(_ trp.Channel, traverse TraverseBy) {
 	traverse()
 }
 func (b BaseServerHandler) Boot(s *Server, traverse TraverseBy) {
@@ -86,10 +87,10 @@ func newConn2(conn gnet.Conn, t *Server) *GChannel {
 	connLock.Lock()
 	defer connLock.Unlock()
 	v2 := &GChannel{
-		conn:    conn,
-		id:      context.Id,
-		context: context,
-		server:  t,
+		Conn:    conn,
+		Id:      context.Id,
+		Context: context,
+		Server:  t,
 	}
 	t.connections[context.Id] = v2
 	if t.InitConnHandler != nil {
@@ -113,7 +114,7 @@ type Server struct {
 
 	InitConnHandler InitConnHandler
 
-	startSmux func(conn *SmuxAdapterConn, option *SmuxServerOption) error
+	startSmux func(conn *trp.SmuxAdapterConn, option *SmuxServerOption) error
 }
 
 func NewServer(port int) *Server {
@@ -173,9 +174,9 @@ func (sever *Server) OnOpen(c gnet.Conn) (out []byte, action gnet.Action) {
 	conn2 := newConn2(c, sever)
 	defer sever.removeIfConnection(conn2)
 	if sever.startSmux != nil {
-		conn2.context.isSmux = true
-		conn2.pipeConn = NewSmuxAdapterConn(c)
-		_ = sever.startSmux(conn2.pipeConn, nil)
+		conn2.Context.isSmux = true
+		conn2.PipeConn = trp.NewSmuxAdapterConn(c)
+		_ = sever.startSmux(conn2.PipeConn, nil)
 	} else {
 		sever.next(func(s ServerHandler) bool {
 			b := true
@@ -195,9 +196,9 @@ func (sever *Server) OnTraffic(c gnet.Conn) gnet.Action {
 	conn2.GetContext().LastActive()
 	defer sever.removeIfConnection(conn2)
 	if sever.startSmux != nil {
-		if conn2.pipeConn != nil {
+		if conn2.PipeConn != nil {
 			buf, _ := conn2.Next(-1)
-			_, err := conn2.pipeConn.Copy(buf)
+			_, err := conn2.PipeConn.Copy(buf)
 			if err != nil {
 				log.Error("pipeConn.Copy error: %s", err)
 			}
@@ -233,7 +234,7 @@ func (sever *Server) removeIfConnection(v2 *GChannel) {
 		//This use v2.id removing map element.
 		// v2.id eq context.id, so yet use v2.id.
 		//Because v2.context possible is nil.
-		delete(sever.connections, v2.id)
+		delete(sever.connections, v2.Id)
 		_ = v2.Close()
 	}
 }
@@ -243,7 +244,7 @@ func (sever *Server) Start(opt ...ServerOption) error {
 	//load sOptions config.
 	sever.opts = serverOptions(opt...)
 	if sever.opts.withSmux != nil && sever.opts.withSmux.enable {
-		sever.startSmux = func(conn *SmuxAdapterConn, option *SmuxServerOption) error {
+		sever.startSmux = func(conn *trp.SmuxAdapterConn, option *SmuxServerOption) error {
 			config := smux.DefaultConfig()
 			session, err := smux.Server(conn, config)
 			if err != nil {
@@ -257,7 +258,7 @@ func (sever *Server) Start(opt ...ServerOption) error {
 						break
 					}
 					log.Info("Start server success stream. %s", stream.RemoteAddr())
-					channel := NewSChannel2(stream)
+					channel := trp.NewSChannel2(stream)
 					sever.next(func(s ServerHandler) bool {
 						b := true
 						s.Open(channel, func() {
@@ -286,8 +287,8 @@ func (sever *Server) Start(opt ...ServerOption) error {
 	return nil
 }
 
-func (sever *Server) smuxReadLoop(ch *SChannel) {
-	stream := ch.stream
+func (sever *Server) smuxReadLoop(ch *trp.SChannel) {
+	stream := ch.Stream
 	for {
 		bs := make([]byte, 4096)
 		n, err := stream.Read(bs)
