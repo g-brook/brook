@@ -1,6 +1,9 @@
 package srv
 
-import "io"
+import (
+	"io"
+	"net"
+)
 
 type Channel interface {
 	io.Reader
@@ -9,4 +12,8 @@ type Channel interface {
 	GetReader() io.Reader
 
 	GetWriter() io.Writer
+
+	RemoteAddr() net.Addr
+
+	LocalAddr() net.Addr
 }

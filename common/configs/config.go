@@ -6,14 +6,14 @@ import (
 	"time"
 )
 
-var DefServerPort int32 = 8909
+var DefServerPort = 8909
 
 // ServerConfig
 // @Description: 配置文件存储.
 type ServerConfig struct {
-	ServerPort int32 `json:"serverPort"`
+	ServerPort int `json:"serverPort"`
 
-	TunnelPort int32 `json:"tunnelPort"`
+	TunnelPort int `json:"tunnelPort"`
 
 	Tunnel []TunnelConfig `json:"tunnel"`
 
@@ -33,9 +33,15 @@ type TunnelConfig struct {
 	//  Port
 	//  @Description: port.
 	//
-	Port int32 `json:"port"`
+	Port int `json:"port"`
 
 	Type utils.TunnelType `json:"type"`
+}
+
+type ClientTunnelConfig struct {
+	Type         string `json:"type"`
+	LocalAddress string `json:"localAddress"`
+	RemotePort   int    `json:"remotePort"`
 }
 
 // GetServerConfig
@@ -68,7 +74,8 @@ func GetClientConfig(cfgPath string) (ClientConfig, error) {
 // ClientConfig
 // @Description: 客户端的配置信息.
 type ClientConfig struct {
-	ServerPort int32         `json:"serverPort"`
-	ServerHost string        `json:"serverHost"`
-	PingTime   time.Duration `json:"pingTime"`
+	ServerPort int                   `json:"serverPort"`
+	ServerHost string                `json:"serverHost"`
+	PingTime   time.Duration         `json:"pingTime"`
+	Tunnels    []*ClientTunnelConfig `json:"tunnels"`
 }

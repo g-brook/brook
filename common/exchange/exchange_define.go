@@ -150,7 +150,7 @@ type InBound interface {
 // RegisterReq
 // @Description: Register Info.
 type RegisterReq struct {
-	TunnelPort int32 `json:"tunnel_port"`
+	TunnelPort int `json:"tunnel_port"`
 
 	BindId string `json:"bind_id"`
 }

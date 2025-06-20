@@ -1,9 +1,7 @@
 package remote
 
 import (
-	"bufio"
 	"encoding/json"
-	"fmt"
 	"github.com/brook/common/configs"
 	"github.com/brook/common/exchange"
 	"github.com/brook/common/log"
@@ -30,21 +28,16 @@ func New() *InServer {
 }
 
 func (t *InServer) Reader(ch srv.Channel, traverse srv.TraverseBy) {
-	switch ch.(type) {
-	case *srv.GChannel:
-		//Determining whether a communication channel is connected.
-		req, err := exchange.Decoder(ch.GetReader())
-		if err != nil {
-			return
-		}
-		//Start process.
-		inProcess(req, ch.(*srv.GChannel))
-	case *srv.SChannel:
-		fmt.Println("In Server")
+	//Determining whether a communication channel is connected.
+	req, err := exchange.Decoder(ch.GetReader())
+	if err != nil {
+		return
 	}
-
+	//Start process.
+	inProcess(req, ch)
 	traverse()
 }
+
 func (t *InServer) isTunnelConn(conn *srv.GChannel) bool {
 	attr, b := conn.GetContext().GetAttr(isTunnelConnKey)
 	if b {
@@ -61,7 +54,7 @@ func (t *InServer) getTunnelPort(conn *srv.GChannel) int32 {
 	return 0
 }
 
-func inProcess(p *exchange.Protocol, conn *srv.GChannel) {
+func inProcess(p *exchange.Protocol, conn srv.Channel) {
 	cmd := p.Cmd
 	entry, ok := handlers[cmd]
 	if !ok {
@@ -86,30 +79,13 @@ func inProcess(p *exchange.Protocol, conn *srv.GChannel) {
 		response.RspCode = exchange.RspFail
 	}
 	outBytes := exchange.Encoder(response)
-	newConn := transform(conn, req)
-	writer := bufio.NewWriterSize(newConn, len(outBytes))
-	_, err = writer.Write(outBytes)
+	//newConn := transform(conn, req)
+	//writer := bufio.NewWriterSize(newConn, len(outBytes))
+	_, err = conn.Write(outBytes)
 	if err != nil {
 		log.Warn("Writer %s , marshal json, error %s ", cmd, err.Error())
 		return
 	}
-_:
-	writer.Flush()
-}
-
-func transform(conn *srv.GChannel,
-	req exchange.InBound) *srv.GChannel {
-	if req.Cmd() == exchange.Register {
-		switch req.(type) {
-		case exchange.RegisterReq:
-			bindId := req.(exchange.RegisterReq).BindId
-			newConn, ok := conn.GetServer().GetConnection(bindId)
-			if ok {
-				return newConn
-			}
-		}
-	}
-	return conn
 }
 
 // Start
@@ -161,7 +137,7 @@ func (t *InServer) onStartTunnelServer(cf *configs.ServerConfig) {
 
 type handlerEntry struct {
 	newRequest func(data []byte) (exchange.InBound, error)
-	process    func(request exchange.InBound, conn *srv.GChannel) (any, error)
+	process    func(request exchange.InBound, conn srv.Channel) (any, error)
 }
 
 var handlers = make(map[exchange.Cmd]handlerEntry)
@@ -178,7 +154,7 @@ func Register[T exchange.InBound](cmd exchange.Cmd, process InProcess[T]) {
 			err := json.Unmarshal(data, &req)
 			return req, err
 		},
-		process: func(r exchange.InBound, conn *srv.GChannel) (any, error) {
+		process: func(r exchange.InBound, conn srv.Channel) (any, error) {
 			req := r.(T)
 			return process(req, conn)
 		},

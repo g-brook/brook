@@ -2,23 +2,28 @@ package clients
 
 import (
 	"bufio"
-	"fmt"
+	"github.com/brook/common/configs"
 	"github.com/brook/common/log"
 	"github.com/brook/common/srv"
 	"github.com/xtaci/smux"
 	"io"
 	"net"
 	"net/http"
-	"time"
 )
 
 func init() {
-	srv.RegisterTunnelClient("http", func() srv.TunnelClient {
-		return &HttpTunnelClient{}
+	srv.RegisterTunnelClient("http", func(config *configs.ClientTunnelConfig) srv.TunnelClient {
+		client := HttpTunnelClient{
+			BaseTunnelClient: srv.BaseTunnelClient{
+				Cfg: config,
+			},
+		}
+		return &client
 	})
 }
 
 type HttpTunnelClient struct {
+	srv.BaseTunnelClient
 	rw io.ReadWriteCloser
 }
 
@@ -26,27 +31,16 @@ func (h *HttpTunnelClient) GetName() string {
 	return "HttpTunnelClient"
 }
 
-func (h *HttpTunnelClient) Open(session *smux.Session) {
-	if session == nil {
-		log.Error("Open session is nil")
-		return
-	}
+func (h *HttpTunnelClient) Open(session *smux.Session) error {
 	rw, err := session.OpenStream()
 	if err != nil {
-		log.Error("Open session fail", err)
-		return
+		log.Error("Open session fail %v", err)
+		return err
 	} else {
-		fmt.Println("Open session success", rw.ID())
-		_, err := rw.Write([]byte("PING"))
-		fmt.Println(err)
+		log.Info("Open session success, %v:%v:%v ", h.GetName(), rw.ID(), rw.RemoteAddr())
+		h.Register(rw)
 	}
-	h.rw = rw
-	go h.bindHandler(rw)
-	for {
-		time.Sleep(3 * time.Second)
-		h.rw.Write([]byte("ping"))
-		fmt.Println("发送一个数据.....")
-	}
+	return nil
 }
 
 func (h *HttpTunnelClient) bindHandler(rw io.ReadWriteCloser) {
@@ -54,7 +48,6 @@ func (h *HttpTunnelClient) bindHandler(rw io.ReadWriteCloser) {
 		request, err := http.ReadRequest(bufio.NewReader(rw))
 		if err != nil {
 			log.Error("Read request fail", err.Error())
-			rw.Write([]byte("ping"))
 			return err
 		}
 		dial, err := net.Dial("tcp", "127.0.0.1:8080")

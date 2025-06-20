@@ -2,29 +2,27 @@ package run
 
 import (
 	"context"
-	"github.com/brook/client/clients"
 	"github.com/brook/common/configs"
 	"github.com/brook/common/exchange"
 	"github.com/brook/common/log"
 	"github.com/brook/common/srv"
+	"github.com/brook/common/utils"
+	"sync"
 	"time"
 )
-
-func init() {
-	srv.RegisterTunnelClient("http", func() srv.TunnelClient {
-		return &clients.HttpTunnelClient{}
-	})
-}
 
 type Service struct {
 	srv.BaseClientHandler
 	ctx       context.Context
 	bgCtl     chan struct{}
 	connState chan struct{}
+	connOnce  sync.Once
 }
 
 func (receiver *Service) Connection(_ *srv.ClientControl) {
-	close(receiver.connState)
+	receiver.connOnce.Do(func() {
+		close(receiver.connState)
+	})
 }
 
 func NewService() *Service {
@@ -46,6 +44,10 @@ func (receiver *Service) Run(cfg *configs.ClientConfig) error {
 }
 
 func (receiver *Service) openTunnel(cfg *configs.ClientConfig, transport *srv.Transport) error {
+	if cfg.Tunnels == nil {
+		log.Warn("Tunnels is empty, no tunnels will be opened")
+		return nil
+	}
 	req := exchange.QueryTunnelReq{}
 	p, err := transport.WriteAsync(req, 5*time.Second)
 	if err != nil {
@@ -61,6 +63,9 @@ func (receiver *Service) openTunnel(cfg *configs.ClientConfig, transport *srv.Tr
 		ServerHost: cfg.ServerHost,
 		PingTime:   cfg.PingTime,
 	}
+	newCfg.Tunnels = append(cfg.Tunnels, &configs.ClientTunnelConfig{
+		Type: utils.EchoTest,
+	})
 	//Start tunnel connection.
 	tunnelTransport := srv.NewTransport(&newCfg)
 	tunnelTransport.Connection(

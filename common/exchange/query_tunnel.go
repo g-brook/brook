@@ -15,7 +15,7 @@ func (r QueryTunnelReq) Cmd() Cmd {
 // QueryTunnelResp
 // @Description: Resp.
 type QueryTunnelResp struct {
-	TunnelPort int32 `json:"tunnel_port"`
+	TunnelPort int `json:"tunnel_port"`
 }
 
 func (r QueryTunnelReq) QueryTunnelResp() Cmd {

@@ -1,6 +1,19 @@
 package srv
 
-import "github.com/xtaci/smux"
+import (
+	"github.com/brook/common/configs"
+	"github.com/brook/common/exchange"
+	"github.com/google/uuid"
+	"github.com/xtaci/smux"
+)
+
+type TunnelClientControl struct {
+	readers chan *exchange.Protocol
+
+	writers chan *exchange.Protocol
+
+	die chan struct{}
+}
 
 type TunnelClient interface {
 
@@ -16,14 +29,54 @@ type TunnelClient interface {
 	//  @Description: Open tunnel.
 	//  @param session
 	//
-	Open(session *smux.Session)
+	Open(session *smux.Session) error
+
+	//
+	// Close
+	//  @Description: Close
+	//  @param session
+	//
+	Close()
+}
+
+// BaseTunnelClient is base impl.
+type BaseTunnelClient struct {
+	Stream *smux.Stream
+
+	Cfg *configs.ClientTunnelConfig
+}
+
+func (b *BaseTunnelClient) GetName() string {
+	return "BaseTunnelClient"
+}
+
+func (b *BaseTunnelClient) Open(session *smux.Session) error {
+	return nil
+}
+
+func (b *BaseTunnelClient) Close() {
+
+}
+
+func (b *BaseTunnelClient) GetRegisterReq() exchange.RegisterReq {
+	return exchange.RegisterReq{
+		BindId:     uuid.New().String(),
+		TunnelPort: b.Cfg.RemotePort,
+	}
+}
+
+func (b *BaseTunnelClient) Register(stream *smux.Stream) {
+	b.Stream = stream
+	req := b.GetRegisterReq()
+	request, _ := exchange.NewRequest(req)
+	_, _ = b.Stream.Write(request.Bytes())
 }
 
 // at all tunnel clients by map.
 var tunnels = make(map[string]FactoryFun)
 
 // FactoryFun New tunnel client.
-type FactoryFun func() TunnelClient
+type FactoryFun func(config *configs.ClientTunnelConfig) TunnelClient
 
 // RegisterTunnelClient
 //
@@ -39,10 +92,14 @@ func RegisterTunnelClient(name string, factory FactoryFun) {
 //	@Description: Get tunnel client.
 //	@param name
 //	@return TunnelClient
-func GetTunnelClient(name string) TunnelClient {
+func GetTunnelClient(name string, config *configs.ClientTunnelConfig) TunnelClient {
 	fun := tunnels[name]
 	if fun != nil {
-		return fun()
+		return fun(config)
 	}
 	return nil
+}
+
+func GetTunnelClients() map[string]FactoryFun {
+	return tunnels
 }

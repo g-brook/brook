@@ -5,6 +5,7 @@ import (
 	"github.com/brook/common/log"
 	"github.com/panjf2000/gnet/v2"
 	"github.com/xtaci/smux"
+	"io"
 	"sync"
 )
 
@@ -102,7 +103,7 @@ type Server struct {
 	*gnet.BuiltinEventEngine
 
 	// port.
-	port int32
+	port int
 
 	opts *sOptions
 
@@ -115,7 +116,7 @@ type Server struct {
 	startSmux func(conn *SmuxAdapterConn, option *SmuxServerOption) error
 }
 
-func NewServer(port int32) *Server {
+func NewServer(port int) *Server {
 	return &Server{
 		port:        port,
 		handlers:    make([]ServerHandler, 0),
@@ -188,6 +189,7 @@ func (sever *Server) OnOpen(c gnet.Conn) (out []byte, action gnet.Action) {
 }
 
 func (sever *Server) OnTraffic(c gnet.Conn) gnet.Action {
+
 	conn2 := newConn2(c, sever)
 	//Call lastActive.
 	conn2.GetContext().LastActive()
@@ -222,7 +224,7 @@ func (sever *Server) next(fun func(s ServerHandler) bool) {
 	}
 }
 
-func (sever *Server) GetPort() int32 {
+func (sever *Server) GetPort() int {
 	return sever.port
 }
 
@@ -242,27 +244,30 @@ func (sever *Server) Start(opt ...ServerOption) error {
 	sever.opts = serverOptions(opt...)
 	if sever.opts.withSmux != nil && sever.opts.withSmux.enable {
 		sever.startSmux = func(conn *SmuxAdapterConn, option *SmuxServerOption) error {
+			config := smux.DefaultConfig()
+			session, err := smux.Server(conn, config)
+			if err != nil {
+				log.Error("Start server error. %v", err)
+			}
 			go func() {
-				config := smux.DefaultConfig()
-				session, err := smux.Server(conn, config)
-				if err != nil {
-					log.Error("Start server error.", err)
-					return
-				}
-				stream, err := session.AcceptStream()
-				if err != nil {
-					log.Error("Start server error.", err)
-					return
-				}
-				fmt.Println("Open session success", stream.ID())
-				sever.next(func(s ServerHandler) bool {
-					b := true
-					s.Reader(NewSChannel(stream), func() {
-						b = false
+				for {
+					stream, err := session.AcceptStream()
+					if err != nil {
+						log.Error("Start server error. %v %v", err, session.RemoteAddr())
+						break
+					}
+					log.Info("Start server success stream. %s", stream.RemoteAddr())
+					channel := NewSChannel2(stream)
+					sever.next(func(s ServerHandler) bool {
+						b := true
+						s.Open(channel, func() {
+							b = false
+						})
+						return b
 					})
-					return b
-				})
-				return
+					go sever.smuxReadLoop(channel)
+				}
+
 			}()
 			return nil
 		}
@@ -275,10 +280,35 @@ func (sever *Server) Start(opt ...ServerOption) error {
 		gnet.WithReusePort(true),
 	)
 	if err != nil {
-		log.Error("Error", err)
+		log.Error("Error %v", err)
 		return err
 	}
 	return nil
+}
+
+func (sever *Server) smuxReadLoop(ch *SChannel) {
+	stream := ch.stream
+	for {
+		bs := make([]byte, 4096)
+		n, err := stream.Read(bs)
+		if err != nil {
+			if err == io.EOF {
+				log.Error("stream is closed. %v", err)
+				_ = stream.Close()
+				return
+			}
+			log.Error("smux read error. %v", err)
+			continue
+		}
+		_, _ = ch.Copy(bs[:n])
+		sever.next(func(s ServerHandler) bool {
+			b := true
+			s.Reader(ch, func() {
+				b = false
+			})
+			return b
+		})
+	}
 }
 
 func (sever *Server) Close() {

@@ -30,6 +30,7 @@ var cmd = &cobra.Command{
 				config = newConfig
 			}
 		}
+		LoadTunnel()
 		run(&config)
 		return nil
 	},

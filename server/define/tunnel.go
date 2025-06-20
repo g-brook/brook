@@ -6,10 +6,10 @@ import (
 )
 
 // Save all tunnels channel. port: server.
-var tunnels map[int32]Tunnel
+var tunnels map[int]Tunnel
 
 func init() {
-	tunnels = make(map[int32]Tunnel)
+	tunnels = make(map[int]Tunnel)
 }
 
 // AddTunnel
@@ -25,7 +25,7 @@ func AddTunnel(tunnel Tunnel) {
 //	@Description: Get Tunnel server.
 //	@param port
 //	@return Tunnel
-func GetTunnel(port int32) Tunnel {
+func GetTunnel(port int) Tunnel {
 	tunnel, ok := tunnels[port]
 	if ok {
 		return tunnel
@@ -41,7 +41,7 @@ type Tunnel interface {
 	//  @Description:  Get tunnel port.
 	//  @return int32
 	//
-	Port() int32
+	Port() int
 
 	//
 	// RegisterConn

@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/brook/common/configs"
 	"github.com/brook/common/exchange"
 	"github.com/brook/common/log"
 	"github.com/xtaci/smux"
@@ -27,6 +28,7 @@ const (
 )
 
 type ClientControl struct {
+
 	//Current client state.
 	state chan ClientState
 
@@ -110,7 +112,7 @@ func (b BaseClientHandler) Timeout(cct *ClientControl) {
 type Client struct {
 	host string
 
-	port int32
+	port int
 
 	id int32
 
@@ -129,6 +131,8 @@ type Client struct {
 	state ClientState
 
 	network string
+
+	session *smux.Session
 }
 
 // NewClient
@@ -136,7 +140,7 @@ type Client struct {
 //	@Description: Build a Client.
 //	@param host
 //	@param port
-func NewClient(host string, port int32) *Client {
+func NewClient(host string, port int) *Client {
 	return &Client{
 		host: host,
 		port: port,
@@ -145,10 +149,10 @@ func NewClient(host string, port int32) *Client {
 		cct: &ClientControl{
 			state:   make(chan ClientState, 1),
 			close:   make(chan bool, 1),
-			read:    make(chan *exchange.Protocol, 1000),
+			read:    make(chan *exchange.Protocol, 1024),
 			errors:  make(chan error),
 			timeout: make(chan bool, 1),
-			write:   make(chan []byte, 1000),
+			write:   make(chan []byte, 1024),
 			list:    list.New(),
 		},
 		handlers: make([]ClientHandler, 0),
@@ -159,7 +163,7 @@ func (c *Client) GetHost() string {
 	return c.host
 }
 
-func (c *Client) GetPort() int32 {
+func (c *Client) GetPort() int {
 	return c.port
 }
 
@@ -189,10 +193,13 @@ func (c *Client) Reconnection() error {
 //	@return error
 func (c *Client) Connection(network string, option ...ClientOption) error {
 	c.pre(network, option)
+	err := c.doConnection()
+	if err != nil {
+		return err
+	}
 	go c.handleLoop()
 	go c.readLoop()
-	err := c.doConnection()
-	return err
+	return nil
 }
 
 func (c *Client) pre(network string, option []ClientOption) {
@@ -221,13 +228,31 @@ func (c *Client) doConnection() error {
 		c.conn = dial
 		c.cct.state <- Open
 		c.cct.cli = c
-		if c.isSmux() {
-			log.Info("👍---->Connection %s %s success OK.✅--->", c.getAddress(), "^ tunnel ^")
-		} else {
-			log.Info("👍---->Connection %s success OK.✅--->", c.getAddress())
-		}
 	}
 	c.rw = c.conn
+	if c.isSmux() {
+		log.Info("👍---->Connection %s %s success OK.✅--->", c.getAddress(), "^ tunnel ^")
+	} else {
+		log.Info("👍---->Connection %s success OK.✅--->", c.getAddress())
+		return nil
+	}
+	//open smux
+	openSmux := func() (*smux.Session, error) {
+		config := smux.DefaultConfig()
+		config.KeepAliveDisabled = !c.opts.Smux.KeepAlive
+		if session, err := smux.Client(c.conn, config); err != nil {
+			return nil, c.error("New smux Client error", err)
+		} else {
+			return session, nil
+		}
+	}
+	session, err := openSmux()
+	if err != nil {
+		log.Error("Open smux Client error %v", err)
+		return err
+	}
+	c.session = session
+	go c.sessionLoop()
 	return nil
 }
 
@@ -242,34 +267,17 @@ func (c *Client) setTimeout(dial net.Conn) {
 //	@Description: Open connection to
 //	@receiver c
 //	@param name
-func (c *Client) OpenTunnel(name string) error {
+func (c *Client) OpenTunnel(config *configs.ClientTunnelConfig) error {
 	if !c.isSmux() {
 		return nil
 	}
-	//Notify server this ch is tunnel ch.
-	openSmux := func() (*smux.Session, error) {
-		config := smux.DefaultConfig()
-		config.KeepAliveInterval = c.opts.Smux.Timeout
-		config.KeepAliveTimeout = c.opts.Smux.Timeout
-		config.KeepAliveDisabled = !c.opts.Smux.KeepAlive
-		if session, err := smux.Client(c.conn, config); err != nil {
-			return nil, c.error("New smux Client error", err)
-		} else {
-			return session, nil
-		}
-	}
-	session, err := openSmux()
-	if err != nil {
-		return err
-	}
 	//copy.
-	client := GetTunnelClient(name)
+	client := GetTunnelClient(config.Type, config)
 	if client == nil {
-		log.Error("Not found [%s] tunnel client, Pleas check.", name)
+		log.Error("Not found [%s] tunnel client, Pleas check.", config.Type)
 		return errors.New("not found tunnel client")
 	}
-	go client.Open(session)
-	return nil
+	return client.Open(c.session)
 }
 
 func (c *Client) error(str string, err error) error {
@@ -300,7 +308,6 @@ func (c *Client) readLoop() {
 					c.cct.timeout <- true
 				}
 			}
-
 		} else {
 			c.cct.read <- protocol
 		}
@@ -337,7 +344,7 @@ func (c *Client) handleLoop() {
 	//Close connection.
 	_close := func() error {
 		//closed.
-		if c.state != Closed {
+		if c.state != Closed && c.conn != nil {
 			return c.conn.Close()
 		}
 		return nil
@@ -367,7 +374,7 @@ func (c *Client) handleLoop() {
 				err := t.Read(b, c.cct)
 				if err != nil {
 					_ = c.error("Read error", err)
-					break
+					return
 				}
 			}
 		case bytes := <-c.cct.write:
@@ -375,6 +382,20 @@ func (c *Client) handleLoop() {
 		case <-c.cct.timeout:
 			for _, t := range c.handlers {
 				t.Timeout(c.cct)
+			}
+		}
+	}
+}
+
+func (c *Client) sessionLoop() {
+	if c.session != nil {
+		for {
+			select {
+			case <-c.session.CloseChan():
+				log.Info("Session closed %v", c.session.RemoteAddr())
+				c.cct.state <- Closed
+				c.cct.close <- true
+				return
 			}
 		}
 	}

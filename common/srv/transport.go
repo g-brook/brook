@@ -62,7 +62,7 @@ type Transport struct {
 
 	host string
 
-	port int32
+	port int
 
 	config *configs.ClientConfig
 
@@ -90,23 +90,23 @@ func (t *Transport) Connection(opts ...ClientOption) {
 	t.client = NewClient(t.host, t.port)
 	err := t.client.Connection("tcp", opts...)
 	t.client.AddHandler(&CheckHandler{
-		tracker: t.tracker,
+		tracker:   t.tracker,
+		transport: t,
 	})
 	//The error add to reconnection list.
 	if err != nil {
 		log.Warn("Connection to server error:%s", err)
-		addChecking(t.client)
+		addChecking(t)
 	} else {
-		if t.client.isSmux() {
-			//req := exchange.OpenTunnelReq{
-			//	SessionId: "1",
-			//}
-			//async, _ := t.WriteAsync(req, 10)
-			//if async != nil && async.RspCode == exchange.RspSuccess {
-			//	log.Info("Connection to server success.")
-			//}
-			if err := t.client.OpenTunnel("http"); err != nil {
-				log.Warn("Connection to server error:%s", err)
+		t.openTunnel()
+	}
+}
+
+func (t *Transport) openTunnel() {
+	if t.client.isSmux() && t.config.Tunnels != nil {
+		for _, cfg := range t.config.Tunnels {
+			if err := t.client.OpenTunnel(cfg); err != nil {
+				log.Warn("Connection to server error:%s %v", cfg.Type, err)
 			}
 		}
 	}
@@ -132,16 +132,17 @@ type ClientScheduler struct {
 }
 
 func (t *ClientScheduler) Next(t2 time.Time) time.Time {
-	return t2.Add(3000 * time.Millisecond)
+	return t2.Add(3 * time.Second)
 }
 
 type CheckHandler struct {
 	BaseClientHandler
-	tracker *RequestTracker
+	transport *Transport
+	tracker   *RequestTracker
 }
 
 func (b *CheckHandler) Close(cct *ClientControl) {
-	addChecking(cct.cli)
+	addChecking(b.transport)
 }
 
 func (b *CheckHandler) Read(r *exchange.Protocol, cct *ClientControl) error {
@@ -163,7 +164,8 @@ func (b *CheckHandler) Timeout(cct *ClientControl) {
 	_ = cct.Write(request.Bytes())
 }
 
-func checking(cli *Client) {
+func checking(tp *Transport) {
+	cli := tp.client
 	if !cli.IsConnection() {
 		log.Warn("Connection %s Not Active, start reconnection.", cli.getAddress())
 		err := cli.doConnection()
@@ -171,6 +173,7 @@ func checking(cli *Client) {
 			log.Warn("Reconnection %s Fail, next time still running.", cli.getAddress())
 		} else {
 			log.Info("👍<--Reconnection %s success OK.✅-->", cli.getAddress())
+			tp.openTunnel()
 		}
 	}
 	defer func() {
@@ -184,12 +187,12 @@ func checking(cli *Client) {
 	}()
 }
 
-func addChecking(cli *Client) {
-	if _, ok := timerMap[cli.id]; ok {
+func addChecking(tp *Transport) {
+	if _, ok := timerMap[tp.client.id]; ok {
 		return
 	}
 	t := newWheel.ScheduleFunc(&ClientScheduler{}, func() {
-		checking(cli)
+		checking(tp)
 	})
-	timerMap[cli.id] = t
+	timerMap[tp.client.id] = t
 }

@@ -73,7 +73,7 @@ func (t *TcpTunnel) Receiver(conn *srv.GChannel) {
 	}
 }
 
-func (t *TcpTunnel) Port() int32 {
+func (t *TcpTunnel) Port() int {
 	return t.cfg.Port
 }
 

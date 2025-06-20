@@ -88,12 +88,12 @@ func NewHttpTunnel(config *configs.TunnelConfig, server *server.InServer) *HttpT
 func (h *HttpTunnel) Start() {
 	h.tc.Add(1)
 	go func() {
-		server := srv.NewServer(h.Port())
-		server.AddHandler(h)
+		newServer := srv.NewServer(h.Port())
+		newServer.AddHandler(h)
 		defin.AddTunnel(h)
-		err := server.Start()
+		err := newServer.Start()
 		if err != nil {
-			log.Error("Started Http server error: %s", h.Port())
+			log.Error("Started Http newServer error: %s", h.Port())
 		}
 	}()
 	go func() {
@@ -118,7 +118,7 @@ func (h *HttpTunnel) Start() {
 	}()
 }
 
-func (h *HttpTunnel) Port() int32 {
+func (h *HttpTunnel) Port() int {
 	return h.config.Port
 }
 
