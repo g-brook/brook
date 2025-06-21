@@ -1,64 +1,19 @@
 package clis
 
 import (
-	"fmt"
 	"github.com/RussellLuo/timingwheel"
 	"github.com/brook/common/configs"
 	"github.com/brook/common/exchange"
 	"github.com/brook/common/log"
 	"github.com/brook/common/utils"
-	"sync"
 	"time"
 )
 
 var timerMap = make(map[int32]*timingwheel.Timer)
 
-// RequestTracker is will wait response for remote server and save request id of the map.
-type RequestTracker struct {
-	mu      sync.Mutex
-	pending map[int64]chan *exchange.Protocol
-}
-
-// Register
-//
-//	@Description: Register
-//	@receiver rt
-//	@param reqId
-//	@return chan
-func (rt *RequestTracker) Register(reqId int64) chan *exchange.Protocol {
-	rt.mu.Lock()
-	defer rt.mu.Unlock()
-	ch := make(chan *exchange.Protocol, 1)
-	rt.pending[reqId] = ch
-	return ch
-}
-
-// Complete delivers a response and removes the tracker entry.
-func (rt *RequestTracker) Complete(reqId int64, resp *exchange.Protocol) {
-	rt.mu.Lock()
-	ch, ok := rt.pending[reqId]
-	if ok {
-		delete(rt.pending, reqId)
-	}
-	rt.mu.Unlock()
-
-	if ok {
-		ch <- resp
-	}
-}
-
-// Remove   explicitly removes a request from tracker.
-func (rt *RequestTracker) Remove(reqId int64) {
-	rt.mu.Lock()
-	defer rt.mu.Unlock()
-	delete(rt.pending, reqId)
-}
-
-// Transport
-// @Description:Transport manages client and request tracking.
+// Transport manages client connections and request tracking.
 type Transport struct {
-
-	// client　is net connection.
+	// client is the network connection.
 	client *Client
 
 	host string
@@ -66,24 +21,21 @@ type Transport struct {
 	port int
 
 	config *configs.ClientConfig
-
-	tracker *RequestTracker
 }
 
-// NewTransport
+// NewTransport initializes a new Transport instance with the provided client configuration.
+// It sets up the server host, port, and client configuration.
+// Parameters:
+//   - config: The client configuration to use.
 //
-//	@Description: Init Transport.
-//	@param ct
-//	@return Transport
+// Returns:
+//   - *Transport: A pointer to the newly created Transport instance.
 func NewTransport(config *configs.ClientConfig) *Transport {
-	//start reconnection.
+	// start reconnection.
 	return &Transport{
 		host:   config.ServerHost,
 		port:   config.ServerPort,
 		config: config,
-		tracker: &RequestTracker{
-			pending: make(map[int64]chan *exchange.Protocol),
-		},
 	}
 }
 
@@ -91,7 +43,6 @@ func (t *Transport) Connection(opts ...ClientOption) {
 	t.client = NewClient(t.host, t.port)
 	err := t.client.Connection("tcp", opts...)
 	t.client.AddHandler(&CheckHandler{
-		tracker:   t.tracker,
 		transport: t,
 	})
 	//The error add to reconnection list.
@@ -113,20 +64,10 @@ func (t *Transport) openTunnel() {
 	}
 }
 
-func (t *Transport) WriteAsync(message exchange.InBound, timeout time.Duration) (*exchange.Protocol, error) {
-	request, _ := exchange.NewRequest(message)
-	ch := t.tracker.Register(request.ReqId)
-	defer t.tracker.Remove(request.ReqId)
-	err := t.client.cct.Write(request.Bytes())
-	if err != nil {
-		return nil, err
-	}
-	select {
-	case resp := <-ch:
-		return resp, nil
-	case <-time.After(timeout):
-		return nil, fmt.Errorf("timeout waiting for response")
-	}
+func (t *Transport) SyncWrite(message exchange.InBound, timeout time.Duration) (*exchange.Protocol, error) {
+	return SyncWrite(message, timeout, func(bytes []byte) error {
+		return t.client.cct.Write(bytes)
+	})
 }
 
 type ClientScheduler struct {
@@ -139,7 +80,6 @@ func (t *ClientScheduler) Next(t2 time.Time) time.Time {
 type CheckHandler struct {
 	BaseClientHandler
 	transport *Transport
-	tracker   *RequestTracker
 }
 
 func (b *CheckHandler) Close(cct *ClientControl) {
@@ -152,7 +92,7 @@ func (b *CheckHandler) Read(r *exchange.Protocol, cct *ClientControl) error {
 		log.Debug("Receiver PONG info: %S", cct.cli.getAddress())
 		return nil
 	} else {
-		b.tracker.Complete(r.ReqId, r)
+		Tracker.Complete(r.ReqId, r)
 		return nil
 	}
 }

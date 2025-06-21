@@ -58,14 +58,18 @@ func run() {
 	group := sync.WaitGroup{}
 	group.Add(1)
 	//Start In-Server.
-	server := remote.New().Start(&serverConfig)
+	_ = remote.New().Start(&serverConfig)
 	for _, config := range serverConfig.Tunnel {
+		baseServer := tunnel.NewBaseTunnelServer(&config)
 		switch config.Type {
 		case utils.Http:
-			tunnel.NewHttpTunnel(&config, server).Start()
+			if err := tunnel.NewHttpTunnelServer(baseServer).Start(); err != nil {
+				log.Error("HttpTunnelServer", "err", err)
+				return
+			}
 		case utils.Https:
 		case utils.Tcp:
-			tunnel.NewTcpTunnel(&config, server).Start()
+			//tunnel.NewTcpTunnel(&config, server).Start()
 		case utils.Udp:
 			log.Error("没有实现当前的协议 %s", config.Type)
 		}

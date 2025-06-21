@@ -49,7 +49,7 @@ func (receiver *Service) openTunnel(cfg *configs.ClientConfig, transport *clis.T
 		return nil
 	}
 	req := exchange.QueryTunnelReq{}
-	p, err := transport.WriteAsync(req, 5*time.Second)
+	p, err := transport.SyncWrite(req, 5*time.Second)
 	if err != nil {
 		return err
 	}

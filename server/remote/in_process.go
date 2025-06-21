@@ -6,6 +6,7 @@ import (
 	"github.com/brook/common/log"
 	"github.com/brook/common/transport"
 	defin "github.com/brook/server/define"
+	"github.com/brook/server/srv"
 )
 
 func init() {
@@ -15,17 +16,17 @@ func init() {
 	Register(exchange.OpenTunnel, openTunnelProcess)
 }
 
-type InProcess[T exchange.InBound] func(request T, conn transport.Channel) (any, error)
+type InProcess[T exchange.InBound] func(request T, ch transport.Channel) (any, error)
 
 // pingProcess
 //
 //	@Description:
 //	@param request
-//	@param conn
+//	@param ch
 //	@return any
 //	@return error
-func pingProcess(request exchange.Heartbeat, conn transport.Channel) (any, error) {
-	log.Debug("Receiver Ping message : %s:%v", request.Value, conn.RemoteAddr())
+func pingProcess(request exchange.Heartbeat, ch transport.Channel) (any, error) {
+	log.Debug("Receiver Ping message : %s:%v", request.Value, ch.RemoteAddr())
 	heartbeat := exchange.Heartbeat{Value: "PONG"}
 	return heartbeat, nil
 }
@@ -34,37 +35,33 @@ func pingProcess(request exchange.Heartbeat, conn transport.Channel) (any, error
 //
 //	@Description:
 //	@param request
-//	@param conn
+//	@param ch
 //	@return any
 //	@return error
-func registerProcess(request exchange.RegisterReq, conn transport.Channel) (any, error) {
+func registerProcess(request exchange.RegisterReqAndRsp, ch transport.Channel) (any, error) {
 	port := request.TunnelPort
-	tunnel := defin.GetTunnel(port)
+	tunnel := srv.GetTunnel(port)
 	if tunnel == nil {
 		log.Error("Not found tunnel: %d", port)
 		return nil, fmt.Errorf("not found tunnel:%d", port)
 	}
 	log.Debug("Registering tunnel:%v", tunnel)
-	//tunnel.RegisterConn(conn, request)
-	//Register conn to tunnel success.
-	//conn.GetContext().AddAttr(isTunnelConnKey, true)
-	//conn.GetContext().AddAttr(tunnelPort, port)
-	return nil, nil
+	return request, nil
 }
 
 // queryTunnelConfigProcess
 //
 //	@Description: Query tunnel port config.
 //	@param req
-//	@param conn
-func queryTunnelConfigProcess(req exchange.QueryTunnelReq, conn transport.Channel) (any, error) {
-	tport := defin.Get[int](defin.TunnelPortKey)
+//	@param ch
+func queryTunnelConfigProcess(req exchange.QueryTunnelReq, _ transport.Channel) (any, error) {
+	port := defin.Get[int](defin.TunnelPortKey)
 	return exchange.QueryTunnelResp{
-		TunnelPort: tport,
+		TunnelPort: port,
 	}, nil
 }
 
-func openTunnelProcess(req exchange.OpenTunnelReq, conn transport.Channel) (any, error) {
+func openTunnelProcess(req exchange.OpenTunnelReq, _ transport.Channel) (any, error) {
 	return exchange.OpenTunnelResp{
 		SessionId: req.SessionId,
 	}, nil

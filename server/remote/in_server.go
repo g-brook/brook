@@ -11,9 +11,9 @@ import (
 	"os"
 )
 
-const isTunnelConnKey = "Tunnel-Conn"
+const isTunnelConnKey = "TunnelServer-Conn"
 
-const tunnelPort = "Tunnel-Port"
+const tunnelPort = "TunnelServer-Port"
 
 type InServer struct {
 	srv2.BaseServerHandler

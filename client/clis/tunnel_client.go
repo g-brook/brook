@@ -1,10 +1,15 @@
 package clis
 
 import (
+	"errors"
+	"fmt"
 	"github.com/brook/common/configs"
 	"github.com/brook/common/exchange"
+	"github.com/brook/common/log"
 	"github.com/google/uuid"
 	"github.com/xtaci/smux"
+	"io"
+	"time"
 )
 
 type TunnelClientControl struct {
@@ -13,6 +18,8 @@ type TunnelClientControl struct {
 	Writers chan *exchange.Protocol
 
 	Die chan struct{}
+
+	RevStop chan struct{}
 }
 
 type TunnelClient interface {
@@ -41,39 +48,102 @@ type TunnelClient interface {
 
 // BaseTunnelClient is base impl.
 type BaseTunnelClient struct {
-	Stream *smux.Stream
+	stream *smux.Stream
 
-	Cfg *configs.ClientTunnelConfig
+	cfg *configs.ClientTunnelConfig
+
+	tcc *TunnelClientControl
+
+	DoOpen func(stream *smux.Stream) error
+}
+
+func NewBaseTunnelClient(cfg *configs.ClientTunnelConfig) *BaseTunnelClient {
+	return &BaseTunnelClient{
+		cfg: cfg,
+		tcc: &TunnelClientControl{
+			Readers: make(chan *exchange.Protocol),
+			Writers: make(chan *exchange.Protocol),
+			RevStop: make(chan struct{}),
+			Die:     make(chan struct{}),
+		},
+	}
 }
 
 func (b *BaseTunnelClient) GetName() string {
 	return "BaseTunnelClient"
 }
 
-func (b *BaseTunnelClient) Open(_ *smux.Session) error {
-	return nil
+func (b *BaseTunnelClient) Open(session *smux.Session) error {
+	stream, err := session.OpenStream()
+	if err != nil {
+		log.Error("Open session fail %v", err)
+		return err
+	}
+	b.stream = stream
+	go b.rveLoop()
+	if b.DoOpen != nil {
+		return b.DoOpen(stream)
+	}
+	panic("BaseTunnelClient: doOpen not set")
 }
 
 func (b *BaseTunnelClient) Close() {
-
+	_ = b.stream.Close()
+	b.tcc.RevStop <- struct{}{}
+	b.tcc.Die <- struct{}{}
 }
 
-func (b *BaseTunnelClient) GetRegisterReq() exchange.RegisterReq {
-	return exchange.RegisterReq{
+func (b *BaseTunnelClient) GetRegisterReq() exchange.RegisterReqAndRsp {
+	return exchange.RegisterReqAndRsp{
 		BindId:     uuid.New().String(),
-		TunnelPort: b.Cfg.RemotePort,
+		TunnelPort: b.cfg.RemotePort,
 	}
 }
 
-func (b *BaseTunnelClient) Register(stream *smux.Stream) {
-	b.Stream = stream
+func (b *BaseTunnelClient) Register() error {
+	defer b.StopRev()
 	req := b.GetRegisterReq()
-	request, _ := exchange.NewRequest(req)
-	_, _ = b.Stream.Write(request.Bytes())
+	p, err := SyncWrite(req, 10*time.Second, func(bytes []byte) error {
+		_, err := b.stream.Write(bytes)
+		return err
+	})
+	if err != nil {
+		return err
+	}
+	if p.RspCode != exchange.RspSuccess {
+		return errors.New(fmt.Sprintf("register error: %d", p.RspCode))
+	}
+	return nil
 }
 
-// at all tunnel tunnel by map.
-var tunnels = make(map[string]FactoryFun)
+func (b *BaseTunnelClient) StopRev() {
+	b.tcc.RevStop <- struct{}{}
+}
+
+func (b *BaseTunnelClient) rveLoop() {
+
+	for {
+		select {
+		case <-b.tcc.RevStop:
+			return
+		case <-b.stream.GetDieCh():
+			return
+		default:
+		}
+		pr, err := exchange.Decoder(b.stream)
+		if err != nil {
+			if err == io.EOF {
+				return
+			}
+			log.Error("Decoder %s error: %v", b.GetName(), err)
+		} else {
+			Tracker.Complete(pr.ReqId, pr)
+		}
+	}
+}
+
+// TunnelsClient at all tunnel tunnel by map.
+var TunnelsClient = make(map[string]FactoryFun)
 
 // FactoryFun New tunnel client.
 type FactoryFun func(config *configs.ClientTunnelConfig) TunnelClient
@@ -84,7 +154,7 @@ type FactoryFun func(config *configs.ClientTunnelConfig) TunnelClient
 //	@param name
 //	@param factory
 func RegisterTunnelClient(name string, factory FactoryFun) {
-	tunnels[name] = factory
+	TunnelsClient[name] = factory
 }
 
 // GetTunnelClient
@@ -93,7 +163,7 @@ func RegisterTunnelClient(name string, factory FactoryFun) {
 //	@param name
 //	@return TunnelClient
 func GetTunnelClient(name string, config *configs.ClientTunnelConfig) TunnelClient {
-	fun := tunnels[name]
+	fun := TunnelsClient[name]
 	if fun != nil {
 		return fun(config)
 	}
@@ -101,5 +171,5 @@ func GetTunnelClient(name string, config *configs.ClientTunnelConfig) TunnelClie
 }
 
 func GetTunnelClients() map[string]FactoryFun {
-	return tunnels
+	return TunnelsClient
 }

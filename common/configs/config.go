@@ -15,7 +15,7 @@ type ServerConfig struct {
 
 	TunnelPort int `json:"tunnelPort"`
 
-	Tunnel []TunnelConfig `json:"tunnel"`
+	Tunnel []ServerTunnelConfig `json:"tunnel"`
 
 	Logger LoggerConfig `json:"logger"`
 }
@@ -28,7 +28,7 @@ type LoggerConfig struct {
 	LogPath string `json:"logPath"`
 }
 
-type TunnelConfig struct {
+type ServerTunnelConfig struct {
 	//
 	//  Port
 	//  @Description: port.

@@ -1,29 +1,26 @@
 package tunnel
 
 import (
-	"bufio"
 	"github.com/brook/client/clis"
 	"github.com/brook/common/configs"
 	"github.com/brook/common/log"
 	"github.com/xtaci/smux"
 	"io"
-	"net"
-	"net/http"
 )
 
 func init() {
 	clis.RegisterTunnelClient("http", func(config *configs.ClientTunnelConfig) clis.TunnelClient {
+		tunnelClient := clis.NewBaseTunnelClient(config)
 		client := HttpTunnelClient{
-			BaseTunnelClient: clis.BaseTunnelClient{
-				Cfg: config,
-			},
+			BaseTunnelClient: tunnelClient,
 		}
+		tunnelClient.DoOpen = client.initOpen
 		return &client
 	})
 }
 
 type HttpTunnelClient struct {
-	clis.BaseTunnelClient
+	*clis.BaseTunnelClient
 	rw io.ReadWriteCloser
 }
 
@@ -31,41 +28,14 @@ func (h *HttpTunnelClient) GetName() string {
 	return "HttpTunnelClient"
 }
 
-func (h *HttpTunnelClient) Open(session *smux.Session) error {
-	rw, err := session.OpenStream()
+func (h *HttpTunnelClient) initOpen(_ *smux.Stream) error {
+	err := h.Register()
 	if err != nil {
-		log.Error("Open session fail %v", err)
-		return err
+		log.Error("Register fail %v", err)
 	} else {
-		log.Info("Open session success, %v:%v:%v ", h.GetName(), rw.ID(), rw.RemoteAddr())
-		h.Register(rw)
+		log.Info("Register success")
 	}
 	return nil
-}
-
-func (h *HttpTunnelClient) bindHandler(rw io.ReadWriteCloser) {
-	loopRead := func() error {
-		request, err := http.ReadRequest(bufio.NewReader(rw))
-		if err != nil {
-			log.Error("Read request fail", err.Error())
-			return err
-		}
-		dial, err := net.Dial("tcp", "127.0.0.1:8080")
-		if err != nil {
-			return nil
-		}
-		defer dial.Close()
-		request.Write(dial)
-		response, _ := http.ReadResponse(bufio.NewReader(dial), request)
-		response.Write(rw)
-		return nil
-	}
-	for {
-		err := loopRead()
-		if err != nil {
-			break
-		}
-	}
 }
 
 type HttpWriter struct {

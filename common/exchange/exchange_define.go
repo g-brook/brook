@@ -138,35 +138,10 @@ func Parse[T any](data []byte) (*T, error) {
 // InBound
 // @Description:  request.
 type InBound interface {
-
 	//
 	// Cmd
 	//  @Description: get cmd.
 	//  @return Cmd
 	//
 	Cmd() Cmd
-}
-
-// RegisterReq
-// @Description: Register Info.
-type RegisterReq struct {
-	TunnelPort int `json:"tunnel_port"`
-
-	BindId string `json:"bind_id"`
-}
-
-func (r RegisterReq) Cmd() Cmd {
-
-	return Register
-}
-
-// CommunicationInfo
-// @Description: This connection use for to server communication.
-type CommunicationInfo struct {
-	//this bindId eq RegisterReq bindId.
-	BindId string `json:"bind_id"`
-}
-
-func (c CommunicationInfo) Cmd() Cmd {
-	return Communication
 }

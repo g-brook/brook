@@ -107,8 +107,8 @@ func (b BaseClientHandler) Timeout(cct *ClientControl) {
 
 }
 
-// Client
-// @Description: Define Client.
+// Client defines a client connection to a server.
+// It holds the connection details and provides methods to manage the connection.
 type Client struct {
 	host string
 
@@ -135,11 +135,15 @@ type Client struct {
 	session *smux.Session
 }
 
-// NewClient
+// NewClient creates a new Client instance with the provided host and port.
+// It initializes the client's context, ID, and control channels.
+// Parameters:
+//   - host: The server host address.
+//   - port: The server port number.
 //
-//	@Description: Build a Client.
-//	@param host
-//	@param port
+// Retur
+// Returns:
+//   - *Client: A pointer to the newly created Client instance.
 func NewClient(host string, port int) *Client {
 	return &Client{
 		host: host,
