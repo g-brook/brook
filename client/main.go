@@ -7,7 +7,8 @@ import (
 )
 
 func init() {
-	log.InitFunc(configs.LoggerConfig{LogPath: "./", LoggLevel: "debug"})
+	config := configs.LoggerConfig{LogPath: "./", LoggLevel: "debug"}
+	log.InitFunc(config.LoggLevel)
 }
 func main() {
 	run.Start()

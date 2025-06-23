@@ -39,13 +39,10 @@ func (rt *RequestTracker) Register(reqId int64) chan *exchange.Protocol {
 // Complete delivers a response and removes the tracker entry.
 func (rt *RequestTracker) Complete(reqId int64, resp *exchange.Protocol) {
 	rt.mu.Lock()
+	defer rt.mu.Unlock()
 	ch, ok := rt.pending[reqId]
 	if ok {
 		delete(rt.pending, reqId)
-	}
-	rt.mu.Unlock()
-
-	if ok {
 		ch <- resp
 	}
 }

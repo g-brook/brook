@@ -7,7 +7,10 @@ import (
 
 type Channel interface {
 	io.Reader
+
 	io.Writer
+
+	net.Conn
 
 	GetReader() io.Reader
 
@@ -16,4 +19,6 @@ type Channel interface {
 	RemoteAddr() net.Addr
 
 	LocalAddr() net.Addr
+
+	GetConn() net.Conn
 }

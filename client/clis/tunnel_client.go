@@ -9,6 +9,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/xtaci/smux"
 	"io"
+	"sync/atomic"
 	"time"
 )
 
@@ -22,37 +23,33 @@ type TunnelClientControl struct {
 	RevStop chan struct{}
 }
 
+// TunnelClient defines the interface for a tunnel client.
 type TunnelClient interface {
-
-	//
-	// GetName
-	//  @Description: Get name.
-	//  @return string
-	//
+	// GetName returns the name of the tunnel client.
+	// Returns:
+	//   - string: The name of the tunnel client.
 	GetName() string
 
-	//
-	// Open
-	//  @Description: Open tunnel.
-	//  @param session
-	//
+	// Open opens a tunnel using the provided session.
+	// Parameters:
+	//   - session: The smux session to use.
+	// Returns:
+	//   - error: An error if the tunnel could not be opened.
 	Open(session *smux.Session) error
 
-	//
-	// Close
-	//  @Description: Close
-	//  @param session
-	//
+	// Close closes the tunnel.
 	Close()
 }
 
-// BaseTunnelClient is base impl.
+// BaseTunnelClient provides a base implementation of the TunnelClient interface.
 type BaseTunnelClient struct {
 	stream *smux.Stream
 
 	cfg *configs.ClientTunnelConfig
 
 	tcc *TunnelClientControl
+
+	once atomic.Bool
 
 	DoOpen func(stream *smux.Stream) error
 }
@@ -61,10 +58,8 @@ func NewBaseTunnelClient(cfg *configs.ClientTunnelConfig) *BaseTunnelClient {
 	return &BaseTunnelClient{
 		cfg: cfg,
 		tcc: &TunnelClientControl{
-			Readers: make(chan *exchange.Protocol),
-			Writers: make(chan *exchange.Protocol),
-			RevStop: make(chan struct{}),
-			Die:     make(chan struct{}),
+			Die:     make(chan struct{}, 10),
+			RevStop: make(chan struct{}, 1),
 		},
 	}
 }
@@ -74,6 +69,7 @@ func (b *BaseTunnelClient) GetName() string {
 }
 
 func (b *BaseTunnelClient) Open(session *smux.Session) error {
+	b.once.Store(false)
 	stream, err := session.OpenStream()
 	if err != nil {
 		log.Error("Open session fail %v", err)
@@ -87,9 +83,13 @@ func (b *BaseTunnelClient) Open(session *smux.Session) error {
 	panic("BaseTunnelClient: doOpen not set")
 }
 
+func (b *BaseTunnelClient) GetReaderWriter() io.ReadWriteCloser {
+	return b.stream
+}
+
 func (b *BaseTunnelClient) Close() {
 	_ = b.stream.Close()
-	b.tcc.RevStop <- struct{}{}
+	b.stream = nil
 	b.tcc.Die <- struct{}{}
 }
 
@@ -97,6 +97,7 @@ func (b *BaseTunnelClient) GetRegisterReq() exchange.RegisterReqAndRsp {
 	return exchange.RegisterReqAndRsp{
 		BindId:     uuid.New().String(),
 		TunnelPort: b.cfg.RemotePort,
+		ProxyId:    "proxy1",
 	}
 }
 
@@ -111,8 +112,10 @@ func (b *BaseTunnelClient) Register() error {
 		return err
 	}
 	if p.RspCode != exchange.RspSuccess {
+		b.once.Store(true)
 		return errors.New(fmt.Sprintf("register error: %d", p.RspCode))
 	}
+	b.StopRev()
 	return nil
 }
 
@@ -121,23 +124,35 @@ func (b *BaseTunnelClient) StopRev() {
 }
 
 func (b *BaseTunnelClient) rveLoop() {
-
+	read := func() error {
+		pr, err := exchange.Decoder(b.stream)
+		if err != nil {
+			if err == io.EOF {
+				return err
+			}
+			log.Error("Decoder %s error: %v", b.GetName(), err)
+		} else {
+			Tracker.Complete(pr.ReqId, pr)
+		}
+		return nil
+	}
 	for {
 		select {
 		case <-b.tcc.RevStop:
 			return
 		case <-b.stream.GetDieCh():
 			return
+		case <-b.tcc.Die:
+
+			return
 		default:
-		}
-		pr, err := exchange.Decoder(b.stream)
-		if err != nil {
-			if err == io.EOF {
-				return
+			if !b.once.Load() {
+				if err := read(); err != nil {
+					log.Error("Read %s error: %v", b.GetName(), err)
+					return
+				}
+				b.once.Store(true)
 			}
-			log.Error("Decoder %s error: %v", b.GetName(), err)
-		} else {
-			Tracker.Complete(pr.ReqId, pr)
 		}
 	}
 }

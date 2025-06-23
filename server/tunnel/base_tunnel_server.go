@@ -3,29 +3,61 @@ package tunnel
 import (
 	"github.com/brook/common/configs"
 	"github.com/brook/common/exchange"
+	"github.com/brook/common/log"
 	"github.com/brook/common/transport"
 	"github.com/brook/server/srv"
+	"sync"
 )
 
 type BaseTunnelServer struct {
-	port    int
-	Cfg     *configs.ServerTunnelConfig
-	Server  *srv.Server
-	DoStart func() error
+	srv.BaseServerHandler
+	port       int
+	Cfg        *configs.ServerTunnelConfig
+	Server     *srv.Server
+	DoStart    func() error
+	Managers   map[string]transport.Channel
+	openCh     chan error
+	openChOnce sync.Once
 }
 
-// NewBaseTunnelServer 创建一个新的基础隧道服务器实例
-func NewBaseTunnelServer(cfg *configs.ServerTunnelConfig) *BaseTunnelServer {
-	return &BaseTunnelServer{
-		port: cfg.Port,
-		Cfg:  cfg,
+// Shutdown  the tunnel server
+func (b *BaseTunnelServer) Shutdown() {
+	if b.Server != nil {
+		b.Server.Shutdown()
+	}
+	if b.Managers != nil {
+		clear(b.Managers)
+		b.Managers = nil
 	}
 }
 
+// NewBaseTunnelServer Create a new instance of the underlying tunnel server
+func NewBaseTunnelServer(cfg *configs.ServerTunnelConfig) *BaseTunnelServer {
+	return &BaseTunnelServer{
+		port:     cfg.Port,
+		Cfg:      cfg,
+		Managers: make(map[string]transport.Channel),
+		openCh:   make(chan error),
+	}
+}
+func (b *BaseTunnelServer) Boot(_ *srv.Server, _ srv.TraverseBy) {
+	b.openChOnce.Do(func() {
+		close(b.openCh)
+	})
+}
+
+// Start  the tunnel server
 func (b *BaseTunnelServer) Start() error {
-	b.Server = srv.NewServer(b.port)
-	err := b.Server.Start()
-	if err != nil {
+	go func() {
+		b.Server = srv.NewServer(b.port)
+		b.Server.AddHandler(b)
+		err := b.Server.Start()
+		if err != nil {
+			log.Error("Start tunnel server port: error,", b.Port())
+			b.openCh <- err
+		}
+	}()
+	if err := <-b.openCh; err != nil {
 		return err
 	}
 	if b.DoStart != nil {
@@ -34,14 +66,12 @@ func (b *BaseTunnelServer) Start() error {
 	panic("BaseTunnelServer not overite")
 }
 
+// Port  the tunnel server port
 func (b *BaseTunnelServer) Port() int {
 	return b.port
 }
 
-func (b *BaseTunnelServer) RegisterConn(v2 *transport.SChannel, request exchange.RegisterReqAndRsp) {
-
-}
-
-func (b *BaseTunnelServer) Receiver(v2 *transport.SChannel) {
-
+// RegisterConn  register the tunnel server connection
+func (b *BaseTunnelServer) RegisterConn(ch transport.Channel, request exchange.RegisterReqAndRsp) {
+	b.Managers[request.BindId] = ch
 }

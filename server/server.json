@@ -2,7 +2,16 @@
   "tunnel": [
     {
       "port": 8818,
-      "type": "http"
+      "type": "http",
+      "proxy": [
+        {
+          "id": "proxy1",
+          "paths": [
+            "/proxy1",
+            "/proxy2"
+          ]
+        }
+      ]
     }
   ]
 }

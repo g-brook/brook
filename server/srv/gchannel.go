@@ -26,6 +26,22 @@ type GChannel struct {
 	PipeConn *transport.SmuxAdapterConn
 }
 
+func (receiver *GChannel) SetDeadline(t time.Time) error {
+	return receiver.Conn.SetDeadline(t)
+}
+
+func (receiver *GChannel) SetReadDeadline(t time.Time) error {
+	return receiver.Conn.SetReadDeadline(t)
+}
+
+func (receiver *GChannel) SetWriteDeadline(t time.Time) error {
+	return receiver.Conn.SetWriteDeadline(t)
+}
+
+func (receiver *GChannel) GetConn() net.Conn {
+	return receiver.Conn
+}
+
 // GChannelHandler
 // @Description:
 type GChannelHandler interface {
@@ -78,6 +94,10 @@ func (receiver *GChannel) GetContext() *ConnContext {
 //	@return int
 //	@return error
 func (receiver *GChannel) Read(out []byte) (int, error) {
+	return receiver.Conn.Read(out)
+}
+
+func (receiver *GChannel) ReadFull(out []byte) (int, error) {
 	return io.ReadFull(receiver.GetReader(), out)
 }
 

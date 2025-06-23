@@ -36,6 +36,13 @@ type ServerTunnelConfig struct {
 	Port int `json:"port"`
 
 	Type utils.TunnelType `json:"type"`
+
+	Proxy []HttpRunnelProxy `json:"proxy"`
+}
+
+type HttpRunnelProxy struct {
+	Id    string   `json:"id"`
+	Paths []string `json:"paths"`
 }
 
 type ClientTunnelConfig struct {

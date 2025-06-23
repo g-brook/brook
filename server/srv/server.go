@@ -1,9 +1,11 @@
 package srv
 
 import (
+	"context"
 	"fmt"
 	"github.com/brook/common/log"
 	trp "github.com/brook/common/transport"
+	"github.com/brook/common/utils"
 	"github.com/panjf2000/gnet/v2"
 	"github.com/xtaci/smux"
 	"io"
@@ -19,7 +21,7 @@ type InitConnHandler func(conn *GChannel)
 type ServerHandler interface {
 	//
 	// Close
-	//  @Description: Close conn notify.
+	//  @Description: Shutdown conn notify.
 	//  @param conn
 	//
 	Close(ch trp.Channel, traverse TraverseBy)
@@ -77,10 +79,10 @@ func (b BaseServerHandler) Boot(s *Server, traverse TraverseBy) {
 	traverse()
 }
 
-func newConn2(conn gnet.Conn, t *Server) *GChannel {
+func NewChannel(conn gnet.Conn, t *Server) *GChannel {
 	ctx := conn.Context()
-	context := ctx.(*ConnContext)
-	value, ok := t.connections[context.Id]
+	connContext := ctx.(*ConnContext)
+	value, ok := t.connections[connContext.Id]
 	if ok {
 		return value
 	}
@@ -88,11 +90,11 @@ func newConn2(conn gnet.Conn, t *Server) *GChannel {
 	defer connLock.Unlock()
 	v2 := &GChannel{
 		Conn:    conn,
-		Id:      context.Id,
-		Context: context,
+		Id:      connContext.Id,
+		Context: connContext,
 		Server:  t,
 	}
-	t.connections[context.Id] = v2
+	t.connections[connContext.Id] = v2
 	if t.InitConnHandler != nil {
 		t.InitConnHandler(v2)
 	}
@@ -102,6 +104,8 @@ func newConn2(conn gnet.Conn, t *Server) *GChannel {
 // Server /*
 type Server struct {
 	*gnet.BuiltinEventEngine
+
+	engine gnet.Engine
 
 	// port.
 	port int
@@ -141,8 +145,8 @@ func (sever *Server) GetConnection(id string) (*GChannel, bool) {
 	v2, ok := sever.connections[id]
 	return v2, ok
 }
-
-func (sever *Server) OnBoot(_ gnet.Engine) (action gnet.Action) {
+func (sever *Server) OnBoot(engine gnet.Engine) (action gnet.Action) {
+	sever.engine = engine
 	log.Info("Server started %d", sever.port)
 	sever.next(func(s ServerHandler) bool {
 		b := true
@@ -155,8 +159,8 @@ func (sever *Server) OnBoot(_ gnet.Engine) (action gnet.Action) {
 }
 
 func (sever *Server) OnClose(c gnet.Conn, _ error) gnet.Action {
-	log.Info("Close an Connection: %s", c.RemoteAddr().String())
-	conn2 := newConn2(c, sever)
+	log.Debug("Close an Connection: %s", c.RemoteAddr().String())
+	conn2 := NewChannel(c, sever)
 	defer sever.removeIfConnection(conn2)
 	sever.next(func(s ServerHandler) bool {
 		b := true
@@ -169,9 +173,9 @@ func (sever *Server) OnClose(c gnet.Conn, _ error) gnet.Action {
 }
 
 func (sever *Server) OnOpen(c gnet.Conn) (out []byte, action gnet.Action) {
-	log.Info("Open an Connection: %s", c.RemoteAddr().String())
+	log.Debug("Open an Connection: %s", c.RemoteAddr().String())
 	c.SetContext(NewConnContext())
-	conn2 := newConn2(c, sever)
+	conn2 := NewChannel(c, sever)
 	defer sever.removeIfConnection(conn2)
 	if sever.startSmux != nil {
 		conn2.Context.isSmux = true
@@ -191,7 +195,7 @@ func (sever *Server) OnOpen(c gnet.Conn) (out []byte, action gnet.Action) {
 
 func (sever *Server) OnTraffic(c gnet.Conn) gnet.Action {
 
-	conn2 := newConn2(c, sever)
+	conn2 := NewChannel(c, sever)
 	//Call lastActive.
 	conn2.GetContext().LastActive()
 	defer sever.removeIfConnection(conn2)
@@ -279,6 +283,7 @@ func (sever *Server) Start(opt ...ServerOption) error {
 		gnet.WithReadBufferCap(65535),
 		gnet.WithWriteBufferCap(65535),
 		gnet.WithReusePort(true),
+		gnet.WithReuseAddr(true),
 	)
 	if err != nil {
 		log.Error("Error %v", err)
@@ -288,30 +293,33 @@ func (sever *Server) Start(opt ...ServerOption) error {
 }
 
 func (sever *Server) smuxReadLoop(ch *trp.SChannel) {
-	stream := ch.Stream
 	for {
-		bs := make([]byte, 4096)
-		n, err := stream.Read(bs)
+		//to,this is chan.
+		bs := utils.GetBuffPool32k().Get()
+		n, err := ch.Stream.Read(bs)
 		if err != nil {
 			if err == io.EOF {
 				log.Error("stream is closed. %v", err)
-				_ = stream.Close()
 				return
 			}
 			log.Error("smux read error. %v", err)
 			continue
 		}
 		_, _ = ch.Copy(bs[:n])
-		sever.next(func(s ServerHandler) bool {
-			b := true
-			s.Reader(ch, func() {
-				b = false
+		if !ch.IsBindTunnel() {
+			// If already this channel is bind tunnel,
+			sever.next(func(s ServerHandler) bool {
+				b := true
+				s.Reader(ch, func() {
+					b = false
+				})
+				return b
 			})
-			return b
-		})
+		}
 	}
 }
 
-func (sever *Server) Close() {
-	log.Info("Server close.")
+func (sever *Server) Shutdown() {
+	log.Info("Server shutdown: %d.", sever.GetPort())
+	_ = sever.engine.Stop(context.Background())
 }

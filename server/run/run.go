@@ -1,16 +1,20 @@
 package run
 
 import (
+	"context"
 	"fmt"
 	"github.com/brook/common/command"
 	"github.com/brook/common/configs"
 	"github.com/brook/common/log"
 	"github.com/brook/common/utils"
 	"github.com/brook/server/remote"
+	"github.com/brook/server/srv"
 	"github.com/brook/server/tunnel"
+	"github.com/brook/server/tunnel/http"
 	"github.com/spf13/cobra"
 	"os"
-	"sync"
+	"os/signal"
+	"syscall"
 )
 
 var (
@@ -44,7 +48,8 @@ var cmd = &cobra.Command{
 }
 
 func initLogger() {
-	log.InitFunc(serverConfig.Logger)
+	//serverConfig.Logger.LoggLevel
+	log.InitFunc("debug")
 }
 
 func Start() {
@@ -55,15 +60,18 @@ func Start() {
 }
 
 func run() {
-	group := sync.WaitGroup{}
-	group.Add(1)
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer stop()
 	//Start In-Server.
-	_ = remote.New().Start(&serverConfig)
+	inServer := remote.New().Start(&serverConfig)
+	tunnelServers := make([]srv.TunnelServer, len(serverConfig.Tunnel))
 	for _, config := range serverConfig.Tunnel {
 		baseServer := tunnel.NewBaseTunnelServer(&config)
+		var ts srv.TunnelServer
 		switch config.Type {
 		case utils.Http:
-			if err := tunnel.NewHttpTunnelServer(baseServer).Start(); err != nil {
+			ts = http.NewHttpTunnelServer(baseServer)
+			if err := ts.Start(); err != nil {
 				log.Error("HttpTunnelServer", "err", err)
 				return
 			}
@@ -73,6 +81,19 @@ func run() {
 		case utils.Udp:
 			log.Error("没有实现当前的协议 %s", config.Type)
 		}
+		if ts != nil {
+			tunnelServers = append(tunnelServers, ts)
+		}
 	}
-	group.Wait()
+	<-ctx.Done()
+	shutdown(inServer, tunnelServers)
+}
+
+func shutdown(inServer *remote.InServer, tunnelServers []srv.TunnelServer) {
+	inServer.Shutdown()
+	for _, t := range tunnelServers {
+		if t != nil {
+			t.Shutdown()
+		}
+	}
 }

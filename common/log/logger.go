@@ -1,7 +1,6 @@
 package log
 
 import (
-	"github.com/brook/common/configs"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"gopkg.in/natefinch/lumberjack.v2"
@@ -10,7 +9,7 @@ import (
 
 var sugar *zap.SugaredLogger
 
-func InitFunc(config configs.LoggerConfig) {
+func InitFunc(logLevel string) {
 	encoder := zapcore.NewConsoleEncoder(zapcore.EncoderConfig{
 		TimeKey:        "time",
 		LevelKey:       "level",
@@ -33,7 +32,7 @@ func InitFunc(config configs.LoggerConfig) {
 		MaxBackups: 10,
 		Compress:   true,
 	})
-	level := parseLevel(config.LoggLevel)
+	level := parseLevel(logLevel)
 	// 多输出：控制台 + 文件
 	core := zapcore.NewTee(
 		zapcore.NewCore(encoder, zapcore.AddSync(os.Stdout), level),

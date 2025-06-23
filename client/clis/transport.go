@@ -11,9 +11,11 @@ import (
 
 var timerMap = make(map[int32]*timingwheel.Timer)
 
-// Transport manages client connections and request tracking.
+// Transport
+// @Description:Transport manages client and request tracking.
 type Transport struct {
-	// client is the network connection.
+
+	// client　is net connection.
 	client *Client
 
 	host string
@@ -23,15 +25,13 @@ type Transport struct {
 	config *configs.ClientConfig
 }
 
-// NewTransport initializes a new Transport instance with the provided client configuration.
-// It sets up the server host, port, and client configuration.
-// Parameters:
-//   - config: The client configuration to use.
+// NewTransport
 //
-// Returns:
-//   - *Transport: A pointer to the newly created Transport instance.
+//	@Description: Init Transport.
+//	@param ct
+//	@return Transport
 func NewTransport(config *configs.ClientConfig) *Transport {
-	// start reconnection.
+	//start reconnection.
 	return &Transport{
 		host:   config.ServerHost,
 		port:   config.ServerPort,
@@ -89,7 +89,7 @@ func (b *CheckHandler) Close(cct *ClientControl) {
 func (b *CheckHandler) Read(r *exchange.Protocol, cct *ClientControl) error {
 	//Heart info.
 	if r.Cmd == exchange.Heart {
-		log.Debug("Receiver PONG info: %S", cct.cli.getAddress())
+		log.Debug("Receiver PONG info: %v", cct.cli.getAddress())
 		return nil
 	} else {
 		Tracker.Complete(r.ReqId, r)

@@ -20,6 +20,9 @@ type InServer struct {
 
 	//Current server.
 	server *srv2.Server
+
+	//tunnelServer
+	tunnelServer *srv2.Server
 }
 
 func New() *InServer {
@@ -53,6 +56,15 @@ func (t *InServer) getTunnelPort(conn *srv2.GChannel) int32 {
 		return attr.(int32)
 	}
 	return 0
+}
+
+func (t *InServer) Shutdown() {
+	if t.server != nil {
+		t.server.Shutdown()
+	}
+	if t.tunnelServer != nil {
+		t.tunnelServer.Shutdown()
+	}
 }
 
 func inProcess(p *exchange.Protocol, conn transport.Channel) {
@@ -126,10 +138,10 @@ func (t *InServer) onStartTunnelServer(cf *configs.ServerConfig) {
 		port = cf.ServerPort + 10
 		cf.TunnelPort = port
 	}
-	t.server = srv2.NewServer(port)
-	t.server.AddHandler(t)
+	t.tunnelServer = srv2.NewServer(port)
+	t.tunnelServer.AddHandler(t)
 	defin.Set(defin.TunnelPortKey, port)
-	err := t.server.Start(srv2.WithServerSmux(srv2.DefaultServerSmux()))
+	err := t.tunnelServer.Start(srv2.WithServerSmux(srv2.DefaultServerSmux()))
 	if err != nil {
 		log.Error(err.Error())
 		os.Exit(1)

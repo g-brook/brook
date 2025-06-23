@@ -50,7 +50,7 @@ type ClientControl struct {
 type ClientHandler interface {
 	//
 	// Close
-	//  @Description: Close.
+	//  @Description: Shutdown.
 	//
 	Close(cct *ClientControl)
 
@@ -107,8 +107,8 @@ func (b BaseClientHandler) Timeout(cct *ClientControl) {
 
 }
 
-// Client defines a client connection to a server.
-// It holds the connection details and provides methods to manage the connection.
+// Client
+// @Description: Define Client.
 type Client struct {
 	host string
 

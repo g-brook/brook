@@ -1,7 +1,6 @@
 package srv
 
 import (
-	"github.com/brook/common/configs"
 	"github.com/brook/common/exchange"
 	"github.com/brook/common/transport"
 )
@@ -39,7 +38,7 @@ func GetTunnel(port int) TunnelServer {
 type TunnelServer interface {
 
 	// Start is start tunnel server.
-	Start(cfg *configs.ServerTunnelConfig) error
+	Start() error
 
 	//
 	// Port
@@ -54,12 +53,8 @@ type TunnelServer interface {
 	//  @param v2 connection.
 	//  @param request request.
 	//
-	RegisterConn(v2 *transport.SChannel, request exchange.RegisterReqAndRsp)
+	RegisterConn(ch transport.Channel, request exchange.RegisterReqAndRsp)
 
-	//
-	// Receiver
-	//  @Description: copy data to tunnel.
-	//  @param v2
-	//
-	Receiver(v2 *transport.SChannel)
+	// Shutdown shutdown.
+	Shutdown()
 }

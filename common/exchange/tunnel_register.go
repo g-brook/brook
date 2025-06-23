@@ -9,9 +9,11 @@ type RegisterReqAndRsp struct {
 
 	//request id.
 	BindId string `json:"bind_id"`
+
+	//proxy id. only http or http.
+	ProxyId string `json:"proxy_id"`
 }
 
 func (r RegisterReqAndRsp) Cmd() Cmd {
-
 	return Register
 }
