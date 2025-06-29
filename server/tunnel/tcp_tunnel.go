@@ -8,7 +8,7 @@ package tunnel
 //	"github.com/brook/common/transport"
 //	server "github.com/brook/server/remote"
 //	srv2 "github.com/brook/server/srv"
-//	"io"
+//	"aio"
 //)
 //
 //// TcpTunnel
@@ -66,7 +66,7 @@ package tunnel
 //	id := conn.GetContext().Id
 //	toConn, ok := t.fromChannels[id]
 //	if ok {
-//		_, err := io.Copy(toConn.GetWriter(), conn.GetReader())
+//		_, err := aio.Copy(toConn.GetWriter(), conn.GetReader())
 //		if err != nil {
 //			log.Error("Copy to transport fail %v", err)
 //		}
@@ -89,7 +89,7 @@ package tunnel
 //		firstKey := keys[0]
 //		target := t.refChannels[firstKey]
 //		t.fromChannels[firstKey] = conn
-//		_, err := io.Copy(target.GetWriter(), conn.GetReader())
+//		_, err := aio.Copy(target.GetWriter(), conn.GetReader())
 //		if err != nil {
 //			log.Warn("Error....")
 //		}

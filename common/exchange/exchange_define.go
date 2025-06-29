@@ -40,10 +40,13 @@ const (
 	Communication Cmd = 3
 
 	//QueryTunnel Query tunnel config.
-	QueryTunnel = 4
+	QueryTunnel Cmd = 4
 
 	// OpenTunnel Open Tunnel
-	OpenTunnel = 5
+	OpenTunnel Cmd = 5
+
+	// ConnWork
+	WorkerConnReq Cmd = 6
 )
 
 // RspSuccess RspCode.

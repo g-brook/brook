@@ -5,17 +5,17 @@ import (
 	"testing"
 )
 
-func TestNewPathMatcher(t *testing) {
+func TestNewPathMatcher(t *testing.T) {
 	matcher := utils.NewPathMatcher()
 	if matcher == nil {
 		t.Errorf("Expected non-nil PathMatcher")
 	}
-	if matcher.root == nil {
+	if matcher.Root == nil {
 		t.Errorf("Expected non-nil root node")
 	}
 }
 
-func TestAddAndGetPathMatcher(t *testing) {
+func TestAddAndGetPathMatcher(t *testing.T) {
 	matcher := utils.NewPathMatcher()
 	testCases := []struct {
 		path    string

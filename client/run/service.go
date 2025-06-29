@@ -6,7 +6,6 @@ import (
 	"github.com/brook/common/configs"
 	"github.com/brook/common/exchange"
 	"github.com/brook/common/log"
-	"github.com/brook/common/utils"
 	"sync"
 	"time"
 )
@@ -62,10 +61,11 @@ func (receiver *Service) openTunnel(cfg *configs.ClientConfig, transport *clis.T
 		ServerPort: rsp.TunnelPort,
 		ServerHost: cfg.ServerHost,
 		PingTime:   cfg.PingTime,
+		Tunnels:    cfg.Tunnels,
 	}
-	newCfg.Tunnels = append(cfg.Tunnels, &configs.ClientTunnelConfig{
-		Type: utils.EchoTest,
-	})
+	//newCfg.Tunnels = append(cfg.Tunnels, &configs.ClientTunnelConfig{
+	//	Type: common.EchoTest,
+	//})
 	//Start tunnel connection.
 	tunnelTransport := clis.NewTransport(&newCfg)
 	tunnelTransport.Connection(

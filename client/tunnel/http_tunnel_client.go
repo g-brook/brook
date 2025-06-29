@@ -1,10 +1,12 @@
 package tunnel
 
 import (
-	"bufio"
 	"github.com/brook/client/clis"
+	"github.com/brook/common/aio"
 	"github.com/brook/common/configs"
+	"github.com/brook/common/exchange"
 	"github.com/brook/common/log"
+	"github.com/brook/common/utils"
 	"github.com/xtaci/smux"
 	"io"
 	"net"
@@ -25,7 +27,6 @@ func init() {
 // HttpTunnelClient is a tunnel client that handles HTTP connections.
 type HttpTunnelClient struct {
 	*clis.BaseTunnelClient
-	rw io.ReadWriteCloser
 }
 
 // GetName returns the name of the tunnel client.
@@ -40,43 +41,30 @@ func (h *HttpTunnelClient) GetName() string {
 // Returns:
 //   - error: An error if the registration fails.
 func (h *HttpTunnelClient) initOpen(_ *smux.Stream) error {
+	h.BaseTunnelClient.AddRead(exchange.WorkerConnReq, h.bindHandler)
 	err := h.Register()
 	if err != nil {
 		log.Error("Register fail %v", err)
 	} else {
 		log.Info("Register success")
-		go h.bindHandler(h.GetReaderWriter())
 	}
 	return nil
 }
 
-func (h *HttpTunnelClient) bindHandler(rw io.ReadWriteCloser) {
-	loopRead := func() error {
-		request, err := http.ReadRequest(bufio.NewReader(rw))
-		if err != nil {
-			log.Error("Read request fail", err.Error())
-			return err
-		}
-		dial, err := net.Dial("tcp", "127.0.0.1:8080")
-		if err != nil {
-			return nil
-		}
-		defer dial.Close()
-		_ = request.Write(dial)
-		response, _ := http.ReadResponse(bufio.NewReader(dial), request)
-		_ = response.Write(rw)
-		return nil
+func (h *HttpTunnelClient) bindHandler(_ *exchange.Protocol, rw io.ReadWriteCloser) {
+	localConn, err := net.Dial("tcp", h.GetCfg().LocalAddress)
+	if err != nil {
+		log.Error("Connect %v", err)
+		rw.Close()
+		return
 	}
-	for {
-		err := loopRead()
-		if err != nil {
-			break
-		}
+	errors := aio.Pipe(rw, localConn)
+	if len(errors) > 0 {
+		log.Error("Pipe error")
 	}
 }
 
-type HttpWriter struct {
-	writer io.Writer
-
-	reader io.Reader
+func writeError(rw io.ReadWriter) {
+	response := utils.GetResponse(http.StatusBadGateway)
+	_ = response.Write(rw)
 }

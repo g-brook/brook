@@ -20,7 +20,8 @@ func init() {
 }
 
 var cmd = &cobra.Command{
-	Use: "brook",
+	Use:   "Brook",
+	Short: "Brook is a cross-platform(Linux/Mac/Windows) proxy software",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		if cfgPath != "" {
 			if newConfig, err := configs.GetClientConfig(cfgPath); err != nil {
@@ -41,6 +42,13 @@ func Start() {
 	if err != nil {
 		os.Exit(1)
 	}
+	//program := tea.NewProgram(initModel(), tea.WithInput(os.Stdin),
+	//	tea.WithOutput(os.Stdout))
+	//_, err := program.Run()
+	//if err != nil {
+	//	fmt.Println(err)
+	//	return
+	//}
 }
 
 func run(config *configs.ClientConfig) {

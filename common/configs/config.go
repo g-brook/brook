@@ -79,7 +79,7 @@ func GetClientConfig(cfgPath string) (ClientConfig, error) {
 }
 
 // ClientConfig
-// @Description: 客户端的配置信息.
+// @Description: Description.
 type ClientConfig struct {
 	ServerPort int                   `json:"serverPort"`
 	ServerHost string                `json:"serverHost"`

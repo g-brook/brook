@@ -6,20 +6,27 @@ import (
 	"github.com/brook/common/exchange"
 	"github.com/brook/common/log"
 	trp "github.com/brook/common/transport"
+	defin "github.com/brook/server/define"
 	"github.com/brook/server/srv"
 	"github.com/brook/server/tunnel"
 	"net"
 	"net/http"
 	"strconv"
+	"sync"
 	"time"
 )
+
+var ANY any
 
 type HttpTunnelServer struct {
 	*tunnel.BaseTunnelServer
 
 	listener *TcpListener
 
-	proxyToConn map[string]string
+	// proxyId->bindId(chId)
+	proxyToConn map[string]map[string]any
+
+	registerLock sync.Mutex
 }
 
 // NewHttpTunnelServer is a constructor function for HttpTunnelServer. It takes a pointer to BaseTunnelServer as input
@@ -33,18 +40,20 @@ func NewHttpTunnelServer(server *tunnel.BaseTunnelServer) *HttpTunnelServer {
 	if err := verifyCfg(server.Cfg); err != nil {
 		panic("http tunnel server cfg verify is false")
 	}
-	tunnelServer := HttpTunnelServer{
+	tunnelServer := &HttpTunnelServer{
 		BaseTunnelServer: server,
-		proxyToConn:      make(map[string]string),
+		proxyToConn:      make(map[string]map[string]any),
 	}
 	server.DoStart = tunnelServer.startAfter
-	addRoute(server.Cfg)
-	return &tunnelServer
+	server.AddHandler(tunnel.Unregister, tunnelServer.unRegisterConn)
+	addRoute(server.Cfg, tunnelServer)
+	return tunnelServer
 }
 
-func addRoute(cfg *configs.ServerTunnelConfig) {
+func addRoute(cfg *configs.ServerTunnelConfig, this *HttpTunnelServer) {
 	for _, proxy := range cfg.Proxy {
-		AddRouteInfo(proxy.Id, proxy.Paths)
+		AddRouteInfo(proxy.Id, proxy.Paths, this.getProxyConnection)
+		this.proxyToConn[proxy.Id] = make(map[string]any, 100)
 	}
 }
 
@@ -72,41 +81,50 @@ func verifyCfg(cfg *configs.ServerTunnelConfig) error {
 	return nil
 }
 
-//	func (b *BaseTunnelServer) Reader(ch transport.Channel, _ srv.TraverseBy) {
-//		buffer := defin.NewDuplexBuffer()
-//		i := len(b.Managers)
-//		if i > 0 {
-//			for key := range b.Managers {
-//				channel := b.Managers[key]
-//				buffer.Copy(ch, channel)
-//				break
-//			}
-//		} else {
-//			log.Warn("Not found register tunnel channel.")
-//		}
-//	}
+func (htl *HttpTunnelServer) getProxyConnection(proxyId string) (workConn net.Conn, err error) {
+	channelIds, ok := htl.proxyToConn[proxyId]
+	if !ok {
+		return nil, errors.New("proxy Id not found in proxy connection:" + proxyId)
+	}
+	for s := range channelIds {
+		channel := htl.BaseTunnelServer.Managers[s]
+		bytes := make([]byte, 0)
+		_, err := channel.Write(bytes)
+		if err != nil {
+			_ = channel.Close()
+			log.Error("Read error:", err)
+			continue
+		}
+		workConn = channel
+		break
+	}
+	if workConn == nil {
+		return nil, errors.New("proxy Id not found in proxy connection:" + proxyId)
+	}
+	return
+}
 
-func (t *HttpTunnelServer) Open(ch trp.Channel, _ srv.TraverseBy) {
-	t.listener.conn <- ch
+func (htl *HttpTunnelServer) Open(ch trp.Channel, _ srv.TraverseBy) {
+	htl.listener.conn <- ch
 }
 
 // After is a method of HttpTunnelServer, which is used to perform cleanup or subsequent processing operations startAfter
 // the server processes the request.This method currently does not perform any operation, and returns nil directly.
 // This may be a reserved hook point for future additions.Parameters:
 // None Return value: error, indicating the result of the execution of the operation, and always returns nil.
-func (t *HttpTunnelServer) startAfter() error {
-	srv.AddTunnel(t)
-	t.Server.AddHandler(t)
-	addr := net.JoinHostPort("", strconv.Itoa(t.Cfg.Port))
+func (htl *HttpTunnelServer) startAfter() error {
+	srv.AddTunnel(htl)
+	htl.Server.AddHandler(htl)
+	addr := net.JoinHostPort("", strconv.Itoa(htl.Cfg.Port))
 	server := &http.Server{
 		Addr:              addr,
-		Handler:           NewHttpProxy(t.getRequestRoute),
+		Handler:           NewHttpProxy(htl.getRoute),
 		ReadHeaderTimeout: 60 * time.Second,
 	}
-	log.Info("Start http server:%v", t.Cfg.Port)
-	t.listener = NewTcpListener()
+	log.Info("Start http server:%v", htl.Cfg.Port)
+	htl.listener = NewTcpListener()
 	go func() {
-		err := server.Serve(t.listener)
+		err := server.Serve(htl.listener)
 		if err != nil {
 			log.Error("HttpTunnel server stop")
 			return
@@ -115,30 +133,50 @@ func (t *HttpTunnelServer) startAfter() error {
 	return nil
 }
 
-func (t *HttpTunnelServer) getRequestRoute(req *http.Request) (net.Conn, error) {
+func (htl *HttpTunnelServer) getRoute(req *http.Request) (*RouteInfo, error) {
 	info := GetRouteInfo(req.URL.Path)
 	if info == nil {
 		return nil, errors.New("route info not found")
 	}
-	bindId := t.proxyToConn[info.proxyId]
-	if bindId == "" {
-		return nil, errors.New("proxy ID not found in proxyToConn")
-	}
-	ch := t.BaseTunnelServer.Managers[bindId]
-	if ch == nil {
-		return nil, errors.New("connection handler not found")
-	}
-	return ch, nil
+	return info, nil
 }
 
-func (t *HttpTunnelServer) RegisterConn(ch trp.Channel, request exchange.RegisterReqAndRsp) {
+func (htl *HttpTunnelServer) RegisterConn(ch trp.Channel, request exchange.RegisterReqAndRsp) {
 	if request.ProxyId == "" {
 		log.Warn("Register http tunnel, but It' proxyId is nil")
 		return
 	}
-	t.BaseTunnelServer.RegisterConn(ch, request)
+	htl.registerLock.Lock()
+	htl.BaseTunnelServer.RegisterConn(NewProxyConnection(ch), request)
 	log.Info("Register http tunnel, proxyId: %s", request.ProxyId)
-	t.proxyToConn[request.ProxyId] = request.BindId
+	proxies, ok := htl.proxyToConn[request.ProxyId]
+	if ok {
+		proxies[ch.GetId()] = ANY
+	} else {
+		log.Warn("Register %V not exists by http tunnelServer.", request.ProxyId)
+	}
+	htl.registerLock.Unlock()
+	go func() {
+		newRequest, _ := exchange.NewRequest(&exchange.ReqWorkConn{})
+		_, _ = ch.Write(newRequest.Bytes())
+		select {
+		case <-ch.Done():
+			log.Info("Close http tunnel, proxyId: %s", request.ProxyId)
+			return
+		}
+	}()
+}
+
+func (htl *HttpTunnelServer) unRegisterConn(ch trp.Channel) {
+	proxyId, ok := ch.GetAttr(defin.TunnelProxyId)
+	if ok {
+		key := proxyId.(string)
+		channels := htl.proxyToConn[key]
+		if channels != nil {
+			delete(channels, ch.GetId())
+		}
+	}
+
 }
 
 func NewTcpListener() *TcpListener {

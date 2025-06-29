@@ -1,7 +1,10 @@
 package srv
 
 import (
+	"context"
+	"errors"
 	"github.com/RussellLuo/timingwheel"
+	"github.com/brook/common"
 	"github.com/brook/common/transport"
 	"github.com/google/uuid"
 	"github.com/panjf2000/gnet/v2"
@@ -24,6 +27,10 @@ type GChannel struct {
 	Handlers []GChannelHandler
 
 	PipeConn *transport.SmuxAdapterConn
+
+	bgCtx context.Context
+
+	cancel context.CancelFunc
 }
 
 func (receiver *GChannel) SetDeadline(t time.Time) error {
@@ -54,7 +61,7 @@ type GChannelHandler interface {
 //
 //	@Description: Get from gnet.conn.
 //	@receiver receiver
-//	@return io.Reader
+//	@return aio.Reader
 func (receiver *GChannel) GetReader() io.Reader {
 	return receiver.Conn
 }
@@ -63,7 +70,7 @@ func (receiver *GChannel) GetReader() io.Reader {
 //
 //	@Description:
 //	@receiver receiver
-//	@return io.Writer
+//	@return aio.Writer
 func (receiver *GChannel) GetWriter() io.Writer {
 	return receiver.Conn
 }
@@ -94,7 +101,12 @@ func (receiver *GChannel) GetContext() *ConnContext {
 //	@return int
 //	@return error
 func (receiver *GChannel) Read(out []byte) (int, error) {
-	return receiver.Conn.Read(out)
+	//ErrShortBuffer
+	n, err := receiver.Conn.Read(out)
+	if errors.Is(err, io.ErrShortBuffer) {
+		return 0, nil
+	}
+	return n, err
 }
 
 func (receiver *GChannel) ReadFull(out []byte) (int, error) {
@@ -146,7 +158,17 @@ func (receiver *GChannel) Close() error {
 	for _, handler := range receiver.Handlers {
 		handler.DoClose(receiver)
 	}
+	receiver.cancel()
 	return nil
+}
+
+func (s *GChannel) IsClose() bool {
+	select {
+	case <-s.Done():
+		return true
+	default:
+		return false
+	}
 }
 
 // RemoteAddr
@@ -189,6 +211,18 @@ func (receiver *GChannel) isConnection() bool {
 	return !receiver.Context.IsClosed
 }
 
+// GetAttr
+//
+//	@Description: Get conn attr value.
+//	@receiver receiver
+//	@param key
+//	@return interface{}
+//	@return bool
+func (receiver *GChannel) GetAttr(key common.KeyType) (interface{}, bool) {
+	i, ok := receiver.Context.attr[key]
+	return i, ok
+}
+
 // ConnContext
 // @Description: connContext info.
 type ConnContext struct {
@@ -197,7 +231,7 @@ type ConnContext struct {
 	lastActive time.Time
 	IsTimeOut  bool
 	Timer      *timingwheel.Timer
-	attr       map[string]interface{}
+	attr       map[common.KeyType]interface{}
 	isSmux     bool
 }
 
@@ -207,7 +241,7 @@ func NewConnContext() *ConnContext {
 		Id:         uuid.New().String(),
 		lastActive: time.Now(),
 		IsTimeOut:  false,
-		attr:       make(map[string]interface{}),
+		attr:       make(map[common.KeyType]interface{}),
 		isSmux:     false,
 	}
 }
@@ -216,7 +250,7 @@ func NewConnContext() *ConnContext {
 //
 //	@Description: Add a attr info on Conn.
 //	@receiver receiver
-func (receiver *ConnContext) AddAttr(key string, value interface{}) {
+func (receiver *ConnContext) AddAttr(key common.KeyType, value interface{}) {
 	receiver.attr[key] = value
 }
 
@@ -227,7 +261,7 @@ func (receiver *ConnContext) AddAttr(key string, value interface{}) {
 //	@param key
 //	@return interface{}
 //	@return bool
-func (receiver *ConnContext) GetAttr(key string) (interface{}, bool) {
+func (receiver *ConnContext) GetAttr(key common.KeyType) (interface{}, bool) {
 	i, ok := receiver.attr[key]
 	return i, ok
 }
@@ -248,4 +282,12 @@ func (receiver *ConnContext) LastActive() {
 //	@return time.Time
 func (receiver *ConnContext) GetLastActive() time.Time {
 	return receiver.lastActive
+}
+
+func (receiver *GChannel) GetId() string {
+	return receiver.Id
+}
+
+func (receiver *GChannel) Done() <-chan struct{} {
+	return receiver.bgCtx.Done()
 }

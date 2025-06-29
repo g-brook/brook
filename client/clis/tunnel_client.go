@@ -1,6 +1,7 @@
 package clis
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"github.com/brook/common/configs"
@@ -9,18 +10,52 @@ import (
 	"github.com/google/uuid"
 	"github.com/xtaci/smux"
 	"io"
-	"sync/atomic"
 	"time"
 )
 
 type TunnelClientControl struct {
-	Readers chan *exchange.Protocol
+	cancelCtx context.Context
+	cancel    context.CancelFunc
+	Bucket    *exchange.MessageBucket
+}
 
-	Writers chan *exchange.Protocol
+func NewTunnelClientControl(ctx context.Context) *TunnelClientControl {
+	cancelCtx, cancel := context.WithCancel(ctx)
+	return &TunnelClientControl{
+		cancelCtx: cancelCtx,
+		cancel:    cancel,
+	}
+}
 
-	Die chan struct{}
+func (receiver *TunnelClientControl) Context() context.Context {
+	return receiver.cancelCtx
+}
 
-	RevStop chan struct{}
+func (receiver *TunnelClientControl) Cancel() {
+	receiver.cancel()
+}
+
+func (receiver *TunnelClientControl) retry(f func() error) {
+	go func() {
+		ticker := time.NewTicker(time.Second * 5)
+		defer ticker.Stop()
+		for {
+			select {
+			case <-receiver.Context().Done():
+				return
+			default:
+			}
+			if err := f(); err != nil {
+				log.Warn("Open tunnel error...")
+			}
+			ticker.Reset(time.Second * 5)
+			select {
+			case <-receiver.Context().Done():
+				return
+			case <-ticker.C:
+			}
+		}
+	}()
 }
 
 // TunnelClient defines the interface for a tunnel client.
@@ -39,58 +74,71 @@ type TunnelClient interface {
 
 	// Close closes the tunnel.
 	Close()
+
+	// Done is done.
 }
 
 // BaseTunnelClient provides a base implementation of the TunnelClient interface.
 type BaseTunnelClient struct {
-	stream *smux.Stream
-
 	cfg *configs.ClientTunnelConfig
 
 	tcc *TunnelClientControl
-
-	once atomic.Bool
 
 	DoOpen func(stream *smux.Stream) error
 }
 
 func NewBaseTunnelClient(cfg *configs.ClientTunnelConfig) *BaseTunnelClient {
+	cancelCtx, cancelFunc := context.WithCancel(context.Background())
 	return &BaseTunnelClient{
 		cfg: cfg,
 		tcc: &TunnelClientControl{
-			Die:     make(chan struct{}, 10),
-			RevStop: make(chan struct{}, 1),
+			cancelCtx: cancelCtx,
+			cancel:    cancelFunc,
 		},
 	}
 }
 
+// GetCfg is get cfg
+func (b *BaseTunnelClient) GetCfg() *configs.ClientTunnelConfig {
+	return b.cfg
+}
+
+// GetName is get name
 func (b *BaseTunnelClient) GetName() string {
 	return "BaseTunnelClient"
 }
 
+// Open is open
 func (b *BaseTunnelClient) Open(session *smux.Session) error {
-	b.once.Store(false)
-	stream, err := session.OpenStream()
-	if err != nil {
-		log.Error("Open session fail %v", err)
-		return err
+	openFunction := func() error {
+		stream, err := session.OpenStream()
+		if err != nil {
+			log.Error("Open session fail %v", err)
+			return err
+		}
+		bucket := exchange.NewMessageBucket(stream, b.tcc.cancelCtx)
+		b.tcc.Bucket = bucket
+		b.tcc.Bucket.Run()
+		if b.DoOpen == nil {
+			panic("DoOpen is nil")
+		}
+		err = b.DoOpen(stream)
+		if err != nil {
+			return err
+		}
+		<-bucket.Done()
+		return nil
 	}
-	b.stream = stream
-	go b.rveLoop()
-	if b.DoOpen != nil {
-		return b.DoOpen(stream)
-	}
-	panic("BaseTunnelClient: doOpen not set")
+	b.tcc.retry(openFunction)
+	return nil
 }
 
-func (b *BaseTunnelClient) GetReaderWriter() io.ReadWriteCloser {
-	return b.stream
+func (b *BaseTunnelClient) AddRead(cmd exchange.Cmd, read exchange.BucketRead) {
+	b.tcc.Bucket.AddHandler(cmd, read)
 }
 
 func (b *BaseTunnelClient) Close() {
-	_ = b.stream.Close()
-	b.stream = nil
-	b.tcc.Die <- struct{}{}
+	b.tcc.cancel()
 }
 
 func (b *BaseTunnelClient) GetRegisterReq() exchange.RegisterReqAndRsp {
@@ -102,59 +150,21 @@ func (b *BaseTunnelClient) GetRegisterReq() exchange.RegisterReqAndRsp {
 }
 
 func (b *BaseTunnelClient) Register() error {
-	defer b.StopRev()
+	b.tcc.Bucket.AddHandler(exchange.Register, func(p *exchange.Protocol, _ io.ReadWriteCloser) {
+		Tracker.Complete(p)
+	},
+	)
 	req := b.GetRegisterReq()
-	p, err := SyncWrite(req, 10*time.Second, func(bytes []byte) error {
-		_, err := b.stream.Write(bytes)
-		return err
+	p, err := SyncWrite(req, 10*time.Second, func(p *exchange.Protocol) error {
+		return b.tcc.Bucket.Push(p)
 	})
 	if err != nil {
 		return err
 	}
 	if p.RspCode != exchange.RspSuccess {
-		b.once.Store(true)
 		return errors.New(fmt.Sprintf("register error: %d", p.RspCode))
 	}
-	b.StopRev()
 	return nil
-}
-
-func (b *BaseTunnelClient) StopRev() {
-	b.tcc.RevStop <- struct{}{}
-}
-
-func (b *BaseTunnelClient) rveLoop() {
-	read := func() error {
-		pr, err := exchange.Decoder(b.stream)
-		if err != nil {
-			if err == io.EOF {
-				return err
-			}
-			log.Error("Decoder %s error: %v", b.GetName(), err)
-		} else {
-			Tracker.Complete(pr.ReqId, pr)
-		}
-		return nil
-	}
-	for {
-		select {
-		case <-b.tcc.RevStop:
-			return
-		case <-b.stream.GetDieCh():
-			return
-		case <-b.tcc.Die:
-
-			return
-		default:
-			if !b.once.Load() {
-				if err := read(); err != nil {
-					log.Error("Read %s error: %v", b.GetName(), err)
-					return
-				}
-				b.once.Store(true)
-			}
-		}
-	}
 }
 
 // TunnelsClient at all tunnel tunnel by map.

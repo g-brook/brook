@@ -3,7 +3,7 @@ package utils
 import "strings"
 
 type PathMatcher struct {
-	root *node
+	Root *node
 }
 
 type node struct {
@@ -16,13 +16,13 @@ type node struct {
 
 func NewPathMatcher() *PathMatcher {
 	return &PathMatcher{
-		root: &node{},
+		Root: &node{},
 	}
 }
 
 func (r *PathMatcher) AddPathMatcher(path string, handler interface{}) {
 	parts := splitPath(path)
-	cur := r.root
+	cur := r.Root
 	for _, part := range parts {
 		var child *node
 		for _, c := range cur.children {
@@ -48,7 +48,7 @@ func (r *PathMatcher) AddPathMatcher(path string, handler interface{}) {
 func (r *PathMatcher) Match(path string) MatchResult {
 	parts := splitPath(path)
 	params := make(map[string]string)
-	node, ok := matchNode(r.root, parts, params)
+	node, ok := matchNode(r.Root, parts, params)
 	if ok && node.handler != nil {
 		return MatchResult{
 			Matched: true,

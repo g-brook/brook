@@ -46,11 +46,17 @@ func registerProcess(request exchange.RegisterReqAndRsp, ch transport.Channel) (
 		return nil, fmt.Errorf("not found tunnel:%d", port)
 	}
 	log.Debug("Registering tunnel:%v", tunnel)
-	tunnel.RegisterConn(ch, request)
-	switch ch.(type) {
+	switch sch := ch.(type) {
 	case *transport.SChannel:
-		ch.(*transport.SChannel).SetIsBindTunnel(true)
+		sch.IsBindTunnel = true
+		sch.Id = request.BindId
+		sch.AddAttr(defin.TunnelProxyId, request.ProxyId)
+		sch.AddAttr(defin.ChannelId, request.BindId)
+	default:
+		log.Error("Not support channel type: %T", ch)
+		return nil, fmt.Errorf("not support channel type:%T", ch)
 	}
+	tunnel.RegisterConn(ch, request)
 	return request, nil
 }
 

@@ -2,13 +2,15 @@ package http
 
 import (
 	"context"
-	"errors"
+	io2 "github.com/brook/common/aio"
 	"github.com/brook/common/log"
+	"github.com/brook/common/transport"
 	"github.com/brook/common/utils"
 	"net"
 	"net/http"
 	"net/http/httputil"
 	"net/url"
+	"time"
 )
 
 var (
@@ -16,7 +18,21 @@ var (
 	ProxyKey     = "proxy"
 )
 
-type RouteFunction func(request *http.Request) (net.Conn, error)
+type ProxyConnection struct {
+	transport.Channel
+}
+
+func NewProxyConnection(conn transport.Channel) *ProxyConnection {
+	return &ProxyConnection{
+		Channel: conn,
+	}
+}
+
+func (proxy *ProxyConnection) Close() error {
+	//  close
+	return nil
+}
+
 type Proxy struct {
 	proxy    http.Handler
 	routeFun RouteFunction
@@ -36,7 +52,7 @@ func (h *Proxy) ServeHTTP(writer http.ResponseWriter, request *http.Request) {
 
 func NewHttpProxy(fun RouteFunction) *Proxy {
 	reverseProxy := &httputil.ReverseProxy{
-		BufferPool: utils.GetBuffPool32k(),
+		BufferPool: io2.GetBuffPool32k(),
 		Rewrite: func(request *httputil.ProxyRequest) {
 			out := request.Out
 			in := request.In
@@ -44,25 +60,34 @@ func NewHttpProxy(fun RouteFunction) *Proxy {
 			out.URL.Scheme = "http"
 			out.URL.Host = out.Host
 		},
+		ModifyResponse: func(response *http.Response) error {
+			return nil
+		},
 		Transport: &http.Transport{
+			ResponseHeaderTimeout: 20 * time.Second,
+			IdleConnTimeout:       60 * time.Second,
+			MaxIdleConnsPerHost:   5,
 			DialContext: func(ctx context.Context, network, addr string) (net.Conn, error) {
 				value := ctx.Value(RouteInfoKey)
-				switch value.(type) {
+				switch v := value.(type) {
 				case error:
-					return nil, value.(error)
-				case net.Conn:
-					return value.(net.Conn), nil
+					return nil, v
+				case *RouteInfo:
+					return v.getProxyConnection(v.proxyId)
 				}
-				return nil, errors.New("not found path")
+				return nil, nil
 			},
 			Proxy: func(req *http.Request) (*url.URL, error) {
 				return req.URL, nil
 			},
 		},
 		ErrorHandler: func(writer http.ResponseWriter, request *http.Request, err error) {
-			log.Warn("Not found path %v", err)
+			//if errors.Is(err, io.EOF) {
+			//	fmt.Println("发送了错误...")
+			//}
+			log.Error("Not found path %v", err)
 			writer.WriteHeader(http.StatusNotFound)
-			_, _ = writer.Write(Get404Info())
+			_, _ = writer.Write(utils.GetPageNotFound())
 		},
 	}
 	return &Proxy{

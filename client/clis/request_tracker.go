@@ -37,21 +37,21 @@ func (rt *RequestTracker) Register(reqId int64) chan *exchange.Protocol {
 }
 
 // Complete delivers a response and removes the tracker entry.
-func (rt *RequestTracker) Complete(reqId int64, resp *exchange.Protocol) {
+func (rt *RequestTracker) Complete(resp *exchange.Protocol) {
 	rt.mu.Lock()
 	defer rt.mu.Unlock()
-	ch, ok := rt.pending[reqId]
+	ch, ok := rt.pending[resp.ReqId]
 	if ok {
-		delete(rt.pending, reqId)
+		delete(rt.pending, resp.ReqId)
 		ch <- resp
 	}
 }
 
-func SyncWrite(message exchange.InBound, timeout time.Duration, writer func([]byte) error) (*exchange.Protocol, error) {
+func SyncWrite(message exchange.InBound, timeout time.Duration, writer func(protocol *exchange.Protocol) error) (*exchange.Protocol, error) {
 	request, _ := exchange.NewRequest(message)
 	ch := Tracker.Register(request.ReqId)
 	defer Tracker.Remove(request.ReqId)
-	err := writer(request.Bytes())
+	err := writer(request)
 	if err != nil {
 		return nil, err
 	}

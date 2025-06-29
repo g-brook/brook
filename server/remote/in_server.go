@@ -92,8 +92,6 @@ func inProcess(p *exchange.Protocol, conn transport.Channel) {
 		response.RspCode = exchange.RspFail
 	}
 	outBytes := exchange.Encoder(response)
-	//newConn := transform(conn, req)
-	//writer := bufio.NewWriterSize(newConn, len(outBytes))
 	_, err = conn.Write(outBytes)
 	if err != nil {
 		log.Warn("Writer %s , marshal json, error %s ", cmd, err.Error())

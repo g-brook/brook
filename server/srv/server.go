@@ -3,9 +3,9 @@ package srv
 import (
 	"context"
 	"fmt"
+	"github.com/brook/common/aio"
 	"github.com/brook/common/log"
 	trp "github.com/brook/common/transport"
-	"github.com/brook/common/utils"
 	"github.com/panjf2000/gnet/v2"
 	"github.com/xtaci/smux"
 	"io"
@@ -88,11 +88,14 @@ func NewChannel(conn gnet.Conn, t *Server) *GChannel {
 	}
 	connLock.Lock()
 	defer connLock.Unlock()
+	bgCtx, cancelFunc := context.WithCancel(context.Background())
 	v2 := &GChannel{
 		Conn:    conn,
 		Id:      connContext.Id,
 		Context: connContext,
 		Server:  t,
+		bgCtx:   bgCtx,
+		cancel:  cancelFunc,
 	}
 	t.connections[connContext.Id] = v2
 	if t.InitConnHandler != nil {
@@ -118,7 +121,7 @@ type Server struct {
 
 	InitConnHandler InitConnHandler
 
-	startSmux func(conn *trp.SmuxAdapterConn, option *SmuxServerOption) error
+	startSmux func(conn *trp.SmuxAdapterConn, ctx context.Context, option *SmuxServerOption) error
 }
 
 func NewServer(port int) *Server {
@@ -161,6 +164,7 @@ func (sever *Server) OnBoot(engine gnet.Engine) (action gnet.Action) {
 func (sever *Server) OnClose(c gnet.Conn, _ error) gnet.Action {
 	log.Debug("Close an Connection: %s", c.RemoteAddr().String())
 	conn2 := NewChannel(c, sever)
+	conn2.GetContext().IsClosed = true
 	defer sever.removeIfConnection(conn2)
 	sever.next(func(s ServerHandler) bool {
 		b := true
@@ -180,7 +184,11 @@ func (sever *Server) OnOpen(c gnet.Conn) (out []byte, action gnet.Action) {
 	if sever.startSmux != nil {
 		conn2.Context.isSmux = true
 		conn2.PipeConn = trp.NewSmuxAdapterConn(c)
-		_ = sever.startSmux(conn2.PipeConn, nil)
+		_ = sever.startSmux(
+			conn2.PipeConn,
+			conn2.bgCtx,
+			nil,
+		)
 	} else {
 		sever.next(func(s ServerHandler) bool {
 			b := true
@@ -238,8 +246,11 @@ func (sever *Server) removeIfConnection(v2 *GChannel) {
 		//This use v2.id removing map element.
 		// v2.id eq context.id, so yet use v2.id.
 		//Because v2.context possible is nil.
-		delete(sever.connections, v2.Id)
-		_ = v2.Close()
+		channel, ok := sever.connections[v2.Id]
+		if ok {
+			delete(sever.connections, v2.Id)
+		}
+		_ = channel.Close()
 	}
 }
 
@@ -248,7 +259,7 @@ func (sever *Server) Start(opt ...ServerOption) error {
 	//load sOptions config.
 	sever.opts = serverOptions(opt...)
 	if sever.opts.withSmux != nil && sever.opts.withSmux.enable {
-		sever.startSmux = func(conn *trp.SmuxAdapterConn, option *SmuxServerOption) error {
+		sever.startSmux = func(conn *trp.SmuxAdapterConn, ctx context.Context, option *SmuxServerOption) error {
 			config := smux.DefaultConfig()
 			session, err := smux.Server(conn, config)
 			if err != nil {
@@ -258,11 +269,10 @@ func (sever *Server) Start(opt ...ServerOption) error {
 				for {
 					stream, err := session.AcceptStream()
 					if err != nil {
-						log.Error("Start server error. %v %v", err, session.RemoteAddr())
-						break
+						continue
 					}
 					log.Info("Start server success stream. %s", stream.RemoteAddr())
-					channel := trp.NewSChannel2(stream)
+					channel := trp.NewSChannel(stream, ctx)
 					sever.next(func(s ServerHandler) bool {
 						b := true
 						s.Open(channel, func() {
@@ -294,27 +304,34 @@ func (sever *Server) Start(opt ...ServerOption) error {
 
 func (sever *Server) smuxReadLoop(ch *trp.SChannel) {
 	for {
-		//to,this is chan.
-		bs := utils.GetBuffPool32k().Get()
-		n, err := ch.Stream.Read(bs)
-		if err != nil {
-			if err == io.EOF {
-				log.Error("stream is closed. %v", err)
-				return
-			}
-			log.Error("smux read error. %v", err)
-			continue
+		if ch.IsBindTunnel {
+			return
 		}
-		_, _ = ch.Copy(bs[:n])
-		if !ch.IsBindTunnel() {
-			// If already this channel is bind tunnel,
-			sever.next(func(s ServerHandler) bool {
-				b := true
-				s.Reader(ch, func() {
-					b = false
+		err := aio.WithBuffer(func(buf []byte) error {
+			n, err := ch.Stream.Read(buf)
+			if err != nil {
+				if err == io.EOF {
+					log.Error("stream is closed. %v", err)
+					return err
+				}
+				log.Error("smux read error. %v", err)
+				return nil
+			}
+			_, _ = ch.Copy(buf[:n])
+			if !ch.IsBindTunnel {
+				// If already this channel is bind tunnel,
+				sever.next(func(s ServerHandler) bool {
+					b := true
+					s.Reader(ch, func() {
+						b = false
+					})
+					return b
 				})
-				return b
-			})
+			}
+			return nil
+		}, aio.GetBuffPool4k())
+		if err != nil {
+			return
 		}
 	}
 }

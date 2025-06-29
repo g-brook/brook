@@ -9,6 +9,14 @@ import (
 	"sync"
 )
 
+type HandlerType int
+
+var (
+	Unregister HandlerType = 1
+)
+
+type Handler func(ch transport.Channel)
+
 type BaseTunnelServer struct {
 	srv.BaseServerHandler
 	port       int
@@ -18,6 +26,14 @@ type BaseTunnelServer struct {
 	Managers   map[string]transport.Channel
 	openCh     chan error
 	openChOnce sync.Once
+	handlers   map[HandlerType]Handler
+	bucket     *exchange.MessageBucket
+	//
+	lock sync.Mutex
+}
+
+func (b *BaseTunnelServer) AddHandler(htype HandlerType, handler Handler) {
+	b.handlers[htype] = handler
 }
 
 // Shutdown  the tunnel server
@@ -38,6 +54,7 @@ func NewBaseTunnelServer(cfg *configs.ServerTunnelConfig) *BaseTunnelServer {
 		Cfg:      cfg,
 		Managers: make(map[string]transport.Channel),
 		openCh:   make(chan error),
+		handlers: make(map[HandlerType]Handler, 16),
 	}
 }
 func (b *BaseTunnelServer) Boot(_ *srv.Server, _ srv.TraverseBy) {
@@ -72,6 +89,28 @@ func (b *BaseTunnelServer) Port() int {
 }
 
 // RegisterConn  register the tunnel server connection
-func (b *BaseTunnelServer) RegisterConn(ch transport.Channel, request exchange.RegisterReqAndRsp) {
-	b.Managers[request.BindId] = ch
+func (b *BaseTunnelServer) RegisterConn(ch transport.Channel,
+	_ exchange.RegisterReqAndRsp) {
+	oldCh, ok := b.Managers[ch.GetId()]
+	if !ok || oldCh != ch {
+		b.Managers[ch.GetId()] = ch
+		go b.background(ch)
+	}
+}
+
+func (b *BaseTunnelServer) unRegister(ch transport.Channel) {
+	b.lock.Lock()
+	defer b.lock.Unlock()
+	delete(b.Managers, ch.GetId())
+	handler := b.handlers[Unregister]
+	if handler != nil {
+		handler(ch)
+	}
+}
+
+func (b *BaseTunnelServer) background(ch transport.Channel) {
+	select {
+	case <-ch.Done():
+		b.unRegister(ch)
+	}
 }

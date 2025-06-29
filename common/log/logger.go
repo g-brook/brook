@@ -9,6 +9,8 @@ import (
 
 var sugar *zap.SugaredLogger
 
+// InitFunc initializes the logging system with the specified log level
+// It sets up both console and file logging with proper formatting and rotation
 func InitFunc(logLevel string) {
 	encoder := zapcore.NewConsoleEncoder(zapcore.EncoderConfig{
 		TimeKey:        "time",
@@ -24,7 +26,7 @@ func InitFunc(logLevel string) {
 		EncodeCaller:   zapcore.ShortCallerEncoder,
 	})
 
-	// 文件输出，带滚动
+	// File output with rotation
 	fileWriter := zapcore.AddSync(&lumberjack.Logger{
 		Filename:   "./logs/current_brook.log",
 		MaxSize:    100, // MB
@@ -33,7 +35,7 @@ func InitFunc(logLevel string) {
 		Compress:   true,
 	})
 	level := parseLevel(logLevel)
-	// 多输出：控制台 + 文件
+	// Multiple outputs: console + file
 	core := zapcore.NewTee(
 		zapcore.NewCore(encoder, zapcore.AddSync(os.Stdout), level),
 		zapcore.NewCore(encoder, fileWriter, level),
@@ -43,6 +45,10 @@ func InitFunc(logLevel string) {
 	zap.ReplaceGlobals(logger)
 	sugar = logger.Sugar()
 }
+
+// parseLevel converts a string level to zapcore.Level
+// It maps common log level names to their corresponding zapcore values
+// If the input is not recognized, it returns InfoLevel as default
 func parseLevel(levelStr string) zapcore.Level {
 	switch levelStr {
 	case "debug":
@@ -66,63 +72,76 @@ func parseLevel(levelStr string) zapcore.Level {
 
 // Info
 //
-//	@Description: info日志.
-//	@param msg 打印的日志信息.
+// @Description: info log.
+// @param msg The log message to print.
 func Info(msg string, args ...any) {
 	sugar.Infof(msg, args...)
 }
 
 // Debug
 //
-//	@Description: debug
-//	@param msg 打印的日志信息
+// @Description: debug log
+// @param msg The log message
 func Debug(msg string, args ...any) {
 	sugar.Debugf(msg, args...)
 }
 
 // Warn
 //
-//	@Description:
-//	@param msg 打印的日志信息
+// @Description: warning log
+// @param msg The log message
 func Warn(msg string, args ...any) {
 	sugar.Warnf(msg, args...)
 }
 
 // Error
 //
-//	@Description:
-//	@param msg 打印的日志信息
+// @Description: error log
+// @param msg The log message
 func Error(msg string, args ...any) {
 	sugar.Errorf(msg, args...)
 }
 
 // Fatal
 //
-//	@Description:
-//	@param msg 打印的日志信息
+// @Description: fatal error log
+// @param msg The log message
 func Fatal(msg string, args ...any) {
 	sugar.Fatalf(msg, args...)
 }
 
+// GnetLogger is a logger implementation for gnet library
+// It forwards logs to our internal logging system
+// This allows us to maintain consistent logging across different components
 type GnetLogger struct {
 }
 
+// Debugf logs debug level messages.
+// It forwards the log message to the internal debug logger.
 func (g GnetLogger) Debugf(format string, args ...any) {
 	Debug(format, args...)
 }
 
+// Infof logs info level messages.
+// It forwards the log message to the internal info logger.
 func (g GnetLogger) Infof(format string, args ...any) {
 	Info(format, args...)
 }
 
+// Warnf logs warning level messages.
+// It forwards the log message to the internal warn logger.
 func (g GnetLogger) Warnf(format string, args ...any) {
 	Warn(format, args...)
 }
 
+// Errorf logs error level messages.
+// It forwards the log message to the internal error logger.
 func (g GnetLogger) Errorf(format string, args ...any) {
 	Error(format, args...)
 }
 
+// Fatalf logs fatal level messages and then calls os.Exit(1).
+// It forwards the log message to the internal fatal logger.
 func (g GnetLogger) Fatalf(format string, args ...any) {
 	Fatal(format, args...)
 }
