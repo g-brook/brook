@@ -12,7 +12,6 @@ import (
 //	@param out 输出的对象.
 //	@return error error.
 func ReaderJson(file string, out interface{}) error {
-
 	readFile, err := os.ReadFile(file)
 	if err != nil {
 		return err

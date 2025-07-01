@@ -104,7 +104,7 @@ func (htl *HttpTunnelServer) getProxyConnection(proxyId string) (workConn net.Co
 	return
 }
 
-func (htl *HttpTunnelServer) Open(ch trp.Channel, _ srv.TraverseBy) {
+func (htl *HttpTunnelServer) Reader(ch trp.Channel, _ srv.TraverseBy) {
 	htl.listener.conn <- ch
 }
 
@@ -115,7 +115,7 @@ func (htl *HttpTunnelServer) Open(ch trp.Channel, _ srv.TraverseBy) {
 func (htl *HttpTunnelServer) startAfter() error {
 	srv.AddTunnel(htl)
 	htl.Server.AddHandler(htl)
-	addr := net.JoinHostPort("", strconv.Itoa(htl.Cfg.Port))
+	addr := net.JoinHostPort("0.0.0.0", strconv.Itoa(htl.Cfg.Port))
 	server := &http.Server{
 		Addr:              addr,
 		Handler:           NewHttpProxy(htl.getRoute),
@@ -159,11 +159,6 @@ func (htl *HttpTunnelServer) RegisterConn(ch trp.Channel, request exchange.Regis
 	go func() {
 		newRequest, _ := exchange.NewRequest(&exchange.ReqWorkConn{})
 		_, _ = ch.Write(newRequest.Bytes())
-		select {
-		case <-ch.Done():
-			log.Info("Close http tunnel, proxyId: %s", request.ProxyId)
-			return
-		}
 	}()
 }
 

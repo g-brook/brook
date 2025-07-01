@@ -33,20 +33,20 @@ type GChannel struct {
 	cancel context.CancelFunc
 }
 
-func (receiver *GChannel) SetDeadline(t time.Time) error {
-	return receiver.Conn.SetDeadline(t)
+func (c *GChannel) SetDeadline(t time.Time) error {
+	return c.Conn.SetDeadline(t)
 }
 
-func (receiver *GChannel) SetReadDeadline(t time.Time) error {
-	return receiver.Conn.SetReadDeadline(t)
+func (c *GChannel) SetReadDeadline(t time.Time) error {
+	return c.Conn.SetReadDeadline(t)
 }
 
-func (receiver *GChannel) SetWriteDeadline(t time.Time) error {
-	return receiver.Conn.SetWriteDeadline(t)
+func (c *GChannel) SetWriteDeadline(t time.Time) error {
+	return c.Conn.SetWriteDeadline(t)
 }
 
-func (receiver *GChannel) GetConn() net.Conn {
-	return receiver.Conn
+func (c *GChannel) GetConn() net.Conn {
+	return c.Conn
 }
 
 // GChannelHandler
@@ -62,8 +62,8 @@ type GChannelHandler interface {
 //	@Description: Get from gnet.conn.
 //	@receiver receiver
 //	@return aio.Reader
-func (receiver *GChannel) GetReader() io.Reader {
-	return receiver.Conn
+func (c *GChannel) GetReader() io.Reader {
+	return c.Conn
 }
 
 // GetWriter
@@ -71,8 +71,8 @@ func (receiver *GChannel) GetReader() io.Reader {
 //	@Description:
 //	@receiver receiver
 //	@return aio.Writer
-func (receiver *GChannel) GetWriter() io.Writer {
-	return receiver.Conn
+func (c *GChannel) GetWriter() io.Writer {
+	return c.Conn
 }
 
 // AddHandler
@@ -80,8 +80,8 @@ func (receiver *GChannel) GetWriter() io.Writer {
 //	@Description:
 //	@receiver receiver
 //	@param handler
-func (receiver *GChannel) AddHandler(handler ...GChannelHandler) {
-	receiver.Handlers = append(receiver.Handlers, handler...)
+func (c *GChannel) AddHandler(handler ...GChannelHandler) {
+	c.Handlers = append(c.Handlers, handler...)
 }
 
 // GetContext
@@ -89,8 +89,8 @@ func (receiver *GChannel) AddHandler(handler ...GChannelHandler) {
 //	@Description:
 //	@receiver receiver
 //	@return *ConnContext
-func (receiver *GChannel) GetContext() *ConnContext {
-	return receiver.Context
+func (c *GChannel) GetContext() *ConnContext {
+	return c.Context
 }
 
 // Reader
@@ -100,17 +100,24 @@ func (receiver *GChannel) GetContext() *ConnContext {
 //	@param out
 //	@return int
 //	@return error
-func (receiver *GChannel) Read(out []byte) (int, error) {
+func (c *GChannel) Read(out []byte) (int, error) {
+	if c.IsClose() {
+		return 0, io.EOF
+	}
 	//ErrShortBuffer
-	n, err := receiver.Conn.Read(out)
+	n, err := c.Conn.Read(out)
 	if errors.Is(err, io.ErrShortBuffer) {
-		return 0, nil
+		//try read.
+		if len(out) <= 4 {
+			return 0, nil
+		}
+		return 0, err
 	}
 	return n, err
 }
 
-func (receiver *GChannel) ReadFull(out []byte) (int, error) {
-	return io.ReadFull(receiver.GetReader(), out)
+func (c *GChannel) ReadFull(out []byte) (int, error) {
+	return io.ReadFull(c.GetReader(), out)
 }
 
 // Writer
@@ -119,8 +126,11 @@ func (receiver *GChannel) ReadFull(out []byte) (int, error) {
 //	@receiver receiver
 //	@param out
 //	@return error
-func (receiver *GChannel) Write(out []byte) (int, error) {
-	return receiver.Conn.Write(out)
+func (c *GChannel) Write(out []byte) (int, error) {
+	if c.IsClose() {
+		return 0, io.EOF
+	}
+	return c.Conn.Write(out)
 }
 
 // Next
@@ -129,8 +139,8 @@ func (receiver *GChannel) Write(out []byte) (int, error) {
 //	@receiver reveiver
 //	@param pos
 //	@return net.Conn
-func (receiver *GChannel) Next(pos int) ([]byte, error) {
-	return receiver.Conn.Next(pos)
+func (c *GChannel) Next(pos int) ([]byte, error) {
+	return c.Conn.Next(pos)
 }
 
 // GetServer
@@ -138,8 +148,8 @@ func (receiver *GChannel) Next(pos int) ([]byte, error) {
 //	@Description:
 //	@receiver receiver
 //	@return *Server
-func (receiver *GChannel) GetServer() *Server {
-	return receiver.Server
+func (c *GChannel) GetServer() *Server {
+	return c.Server
 }
 
 // Close
@@ -147,24 +157,27 @@ func (receiver *GChannel) GetServer() *Server {
 //	@Description:
 //	@receiver receiver
 //	@return error
-func (receiver *GChannel) Close() error {
-	if receiver.Context.Timer != nil {
-		receiver.Context.Timer.Stop()
+func (c *GChannel) Close() error {
+	if c.Context.Timer != nil {
+		c.Context.Timer.Stop()
 	}
-	if receiver.Conn != nil {
-		_ = receiver.Conn.Close()
+	if c.Conn != nil {
+		_ = c.Conn.Close()
 	}
-	receiver.Context.IsClosed = true
-	for _, handler := range receiver.Handlers {
-		handler.DoClose(receiver)
+	c.Context.IsClosed = true
+	for _, handler := range c.Handlers {
+		handler.DoClose(c)
 	}
-	receiver.cancel()
+	c.cancel()
 	return nil
 }
 
-func (s *GChannel) IsClose() bool {
+func (c *GChannel) IsClose() bool {
+	if c.Context.IsClosed {
+		return true
+	}
 	select {
-	case <-s.Done():
+	case <-c.Done():
 		return true
 	default:
 		return false
@@ -176,8 +189,8 @@ func (s *GChannel) IsClose() bool {
 //	@Description:
 //	@receiver receiver
 //	@return net.Addr
-func (receiver *GChannel) RemoteAddr() net.Addr {
-	return receiver.Conn.RemoteAddr()
+func (c *GChannel) RemoteAddr() net.Addr {
+	return c.Conn.RemoteAddr()
 }
 
 //
@@ -187,8 +200,8 @@ func (receiver *GChannel) RemoteAddr() net.Addr {
 //  @return net.Addr
 //
 
-func (receiver *GChannel) LocalAddr() net.Addr {
-	return receiver.Conn.LocalAddr()
+func (c *GChannel) LocalAddr() net.Addr {
+	return c.Conn.LocalAddr()
 }
 
 // GetNetConn
@@ -196,8 +209,8 @@ func (receiver *GChannel) LocalAddr() net.Addr {
 //	@Description:
 //	@receiver receiver
 //	@return net.Conn
-func (receiver *GChannel) GetNetConn() net.Conn {
-	return receiver.Conn
+func (c *GChannel) GetNetConn() net.Conn {
+	return c.Conn
 }
 
 //
@@ -207,8 +220,8 @@ func (receiver *GChannel) GetNetConn() net.Conn {
 //  @return bool
 //
 
-func (receiver *GChannel) isConnection() bool {
-	return !receiver.Context.IsClosed
+func (c *GChannel) isConnection() bool {
+	return !c.Context.IsClosed
 }
 
 // GetAttr
@@ -218,8 +231,8 @@ func (receiver *GChannel) isConnection() bool {
 //	@param key
 //	@return interface{}
 //	@return bool
-func (receiver *GChannel) GetAttr(key common.KeyType) (interface{}, bool) {
-	i, ok := receiver.Context.attr[key]
+func (c *GChannel) GetAttr(key common.KeyType) (interface{}, bool) {
+	i, ok := c.Context.attr[key]
 	return i, ok
 }
 
@@ -284,10 +297,10 @@ func (receiver *ConnContext) GetLastActive() time.Time {
 	return receiver.lastActive
 }
 
-func (receiver *GChannel) GetId() string {
-	return receiver.Id
+func (c *GChannel) GetId() string {
+	return c.Id
 }
 
-func (receiver *GChannel) Done() <-chan struct{} {
-	return receiver.bgCtx.Done()
+func (c *GChannel) Done() <-chan struct{} {
+	return c.bgCtx.Done()
 }

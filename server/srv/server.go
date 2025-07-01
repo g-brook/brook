@@ -267,9 +267,10 @@ func (sever *Server) Start(opt ...ServerOption) error {
 			}
 			go func() {
 				for {
-					stream, err := session.AcceptStream()
-					if err != nil {
-						continue
+					stream, _ := session.AcceptStream()
+					if session.IsClosed() {
+						log.Error("session is close.")
+						return
 					}
 					log.Info("Start server success stream. %s", stream.RemoteAddr())
 					channel := trp.NewSChannel(stream, ctx)
