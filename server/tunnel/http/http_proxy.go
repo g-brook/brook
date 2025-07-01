@@ -4,8 +4,9 @@ import (
 	"context"
 	io2 "github.com/brook/common/aio"
 	"github.com/brook/common/log"
-	"github.com/brook/common/transport"
 	"github.com/brook/common/utils"
+	"github.com/google/uuid"
+	"io"
 	"net"
 	"net/http"
 	"net/http/httputil"
@@ -15,21 +16,60 @@ import (
 
 var (
 	RouteInfoKey = "routeInfo"
-	ProxyKey     = "proxy"
+
+	RequestInfoKey = "httpRequestId"
+
+	ProxyKey = "proxy"
+
+	ForwardedKey = "X-Forwarded-For"
 )
 
+type timeoutError struct{}
+
+func (timeoutError) Error() string   { return "read timeout" }
+func (timeoutError) Timeout() bool   { return true }
+func (timeoutError) Temporary() bool { return true } // optional
+
 type ProxyConnection struct {
-	transport.Channel
+	net.Conn
+	tracker *HttpTracker
+	reqId   string
+	readBuf []byte
+	readCh  chan []byte
 }
 
-func NewProxyConnection(conn transport.Channel) *ProxyConnection {
+func NewProxyConnection(conn net.Conn, reqId string, tracker *HttpTracker) *ProxyConnection {
 	return &ProxyConnection{
-		Channel: conn,
+		Conn:    conn,
+		reqId:   reqId,
+		tracker: tracker,
+		readCh:  tracker.trackers[reqId],
+	}
+}
+
+func (proxy *ProxyConnection) Read(p []byte) (n int, err error) {
+	if len(proxy.readBuf) > 0 {
+		n := copy(p, proxy.readBuf)
+		proxy.readBuf = proxy.readBuf[n:]
+		return n, nil
+	}
+	select {
+	case data, ok := <-proxy.readCh:
+		if !ok {
+			return 0, io.EOF
+		}
+		n = copy(p, data)
+		if n < len(data) {
+			proxy.readBuf = append(proxy.readBuf, data[n:]...)
+		}
+		return n, nil
+	case <-time.After(time.Second * 5):
+		return 0, timeoutError{}
 	}
 }
 
 func (proxy *ProxyConnection) Close() error {
-	//  close
+	proxy.tracker.Close(proxy.reqId)
 	return nil
 }
 
@@ -44,6 +84,9 @@ func (h *Proxy) ServeHTTP(writer http.ResponseWriter, request *http.Request) {
 	if info, err := h.routeFun(request); err != nil {
 		newCtx = context.WithValue(newCtx, RouteInfoKey, err)
 	} else {
+		reqId := uuid.NewString()
+		request.Header.Set(RequestInfoKey, reqId)
+		newCtx = context.WithValue(newCtx, RequestInfoKey, reqId)
 		newCtx = context.WithValue(newCtx, RouteInfoKey, info)
 	}
 	newReq := request.Clone(newCtx)
@@ -56,7 +99,8 @@ func NewHttpProxy(fun RouteFunction) *Proxy {
 		Rewrite: func(request *httputil.ProxyRequest) {
 			out := request.Out
 			in := request.In
-			out.Header["X-Forwarded-For"] = in.Header["X-Forwarded-For"]
+			out.Header[ForwardedKey] = in.Header[ForwardedKey]
+			out.Header[RequestInfoKey] = in.Header[RequestInfoKey]
 			out.URL.Scheme = "http"
 			out.URL.Host = out.Host
 		},
@@ -64,16 +108,17 @@ func NewHttpProxy(fun RouteFunction) *Proxy {
 			return nil
 		},
 		Transport: &http.Transport{
-			ResponseHeaderTimeout: 20 * time.Second,
-			IdleConnTimeout:       60 * time.Second,
-			MaxIdleConnsPerHost:   5,
+			ResponseHeaderTimeout: 5 * time.Second,
+			DisableKeepAlives:     true,
+			MaxIdleConnsPerHost:   0,
 			DialContext: func(ctx context.Context, network, addr string) (net.Conn, error) {
 				value := ctx.Value(RouteInfoKey)
+				id := ctx.Value(RequestInfoKey)
 				switch v := value.(type) {
 				case error:
 					return nil, v
 				case *RouteInfo:
-					return v.getProxyConnection(v.proxyId)
+					return v.getProxyConnection(v.proxyId, id.(string))
 				}
 				return nil, nil
 			},
@@ -82,12 +127,15 @@ func NewHttpProxy(fun RouteFunction) *Proxy {
 			},
 		},
 		ErrorHandler: func(writer http.ResponseWriter, request *http.Request, err error) {
-			//if errors.Is(err, io.EOF) {
-			//	fmt.Println("发送了错误...")
-			//}
+			state := http.StatusOK
+			if err, ok := err.(interface{ Timeout() bool }); ok && err.Timeout() {
+				state = http.StatusGatewayTimeout
+			} else {
+				state = http.StatusNotFound
+			}
 			log.Error("Not found path %v", err)
-			writer.WriteHeader(http.StatusNotFound)
-			_, _ = writer.Write(utils.GetPageNotFound())
+			writer.WriteHeader(state)
+			_, _ = writer.Write(utils.GetPageNotFound(state))
 		},
 	}
 	return &Proxy{

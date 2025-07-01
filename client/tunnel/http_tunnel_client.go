@@ -1,16 +1,21 @@
 package tunnel
 
 import (
+	"bufio"
+	"io"
+	"net"
+	"net/http"
+
 	"github.com/brook/client/clis"
-	"github.com/brook/common/aio"
 	"github.com/brook/common/configs"
 	"github.com/brook/common/exchange"
 	"github.com/brook/common/log"
 	"github.com/brook/common/utils"
 	"github.com/xtaci/smux"
-	"io"
-	"net"
-	"net/http"
+)
+
+var (
+	RequestInfoKey = "httpRequestId"
 )
 
 func init() {
@@ -52,16 +57,45 @@ func (h *HttpTunnelClient) initOpen(_ *smux.Stream) error {
 }
 
 func (h *HttpTunnelClient) bindHandler(_ *exchange.Protocol, rw io.ReadWriteCloser) {
-	localConn, err := net.Dial("tcp", h.GetCfg().LocalAddress)
-	if err != nil {
-		log.Error("Connect %v", err)
-		rw.Close()
-		return
+	loopRead := func() error {
+		request, err := http.ReadRequest(bufio.NewReader(rw))
+		if err != nil {
+			writeError(rw)
+			return err
+		}
+		dial, err := net.Dial("tcp", h.GetCfg().LocalAddress)
+
+		//close.
+		defer func(dial net.Conn) {
+			_ = dial.Close()
+		}(dial)
+
+		if err != nil {
+			writeError(rw)
+			return err
+		}
+		requestId := request.Header.Get(RequestInfoKey)
+		err = request.Write(dial)
+		if err != nil {
+			writeError(rw)
+			return err
+		}
+		response, err := http.ReadResponse(bufio.NewReader(dial), request)
+		if err != nil {
+			writeError(rw)
+			return err
+		}
+		response.Header.Set(RequestInfoKey, requestId)
+		err = response.Write(rw)
+		if err != nil {
+			return err
+		}
+		return nil
 	}
-	errors := aio.Pipe(rw, localConn)
-	if len(errors) > 0 {
-		log.Error("Pipe error")
+	for {
+		_ = loopRead()
 	}
+
 }
 
 func writeError(rw io.ReadWriter) {

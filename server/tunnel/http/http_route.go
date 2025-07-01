@@ -2,16 +2,18 @@ package http
 
 import (
 	"github.com/brook/common/utils"
-	"net"
 	"net/http"
 )
 
 var Routes []*RouteInfo
 
-type ProxyConnectionFunction func(proxyId string) (net.Conn, error)
+// ProxyConnectionFunction is a function that returns a net.Conn
+type ProxyConnectionFunction func(proxyId string, reqId string) (workConn *ProxyConnection, err error)
 
+// RouteFunction is a function that returns a RouteInfo
 type RouteFunction func(request *http.Request) (*RouteInfo, error)
 
+// RouteInfo is a struct that holds information about a route
 type RouteInfo struct {
 	proxyId string
 
@@ -20,6 +22,7 @@ type RouteInfo struct {
 	getProxyConnection ProxyConnectionFunction
 }
 
+// AddRouteInfo adds a route to the Routes slice
 func AddRouteInfo(proxyId string, paths []string, fun ProxyConnectionFunction) {
 	info := &RouteInfo{
 		proxyId:            proxyId,
@@ -32,6 +35,7 @@ func AddRouteInfo(proxyId string, paths []string, fun ProxyConnectionFunction) {
 	Routes = append(Routes, info)
 }
 
+// GetRouteInfo returns the RouteInfo for a given path
 func GetRouteInfo(path string) *RouteInfo {
 	for _, info := range Routes {
 		if info.matcher.Match(path).Matched {

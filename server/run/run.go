@@ -3,6 +3,10 @@ package run
 import (
 	"context"
 	"fmt"
+	"os"
+	"os/signal"
+	"syscall"
+
 	"github.com/brook/common/command"
 	"github.com/brook/common/configs"
 	"github.com/brook/common/log"
@@ -12,9 +16,6 @@ import (
 	"github.com/brook/server/tunnel"
 	"github.com/brook/server/tunnel/http"
 	"github.com/spf13/cobra"
-	"os"
-	"os/signal"
-	"syscall"
 )
 
 var (
@@ -48,7 +49,7 @@ var cmd = &cobra.Command{
 }
 
 func initLogger() {
-	//serverConfig.Logger.LoggLevel
+	//serverConfig.Logger.LogLevel
 	log.InitFunc("debug")
 }
 

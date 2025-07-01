@@ -18,13 +18,14 @@ import (
 
 var ANY any
 
+// HttpTunnelServer is a struct that represents a HTTP tunnel server.
 type HttpTunnelServer struct {
 	*tunnel.BaseTunnelServer
 
 	listener *TcpListener
 
 	// proxyId->bindId(chId)
-	proxyToConn map[string]map[string]any
+	proxyToConn map[string]map[string]*HttpTracker
 
 	registerLock sync.Mutex
 }
@@ -42,7 +43,7 @@ func NewHttpTunnelServer(server *tunnel.BaseTunnelServer) *HttpTunnelServer {
 	}
 	tunnelServer := &HttpTunnelServer{
 		BaseTunnelServer: server,
-		proxyToConn:      make(map[string]map[string]any),
+		proxyToConn:      make(map[string]map[string]*HttpTracker),
 	}
 	server.DoStart = tunnelServer.startAfter
 	server.AddHandler(tunnel.Unregister, tunnelServer.unRegisterConn)
@@ -50,13 +51,16 @@ func NewHttpTunnelServer(server *tunnel.BaseTunnelServer) *HttpTunnelServer {
 	return tunnelServer
 }
 
+// addRoute is a function that adds route information to the HttpTunnelServer. It
 func addRoute(cfg *configs.ServerTunnelConfig, this *HttpTunnelServer) {
 	for _, proxy := range cfg.Proxy {
 		AddRouteInfo(proxy.Id, proxy.Paths, this.getProxyConnection)
-		this.proxyToConn[proxy.Id] = make(map[string]any, 100)
+		this.proxyToConn[proxy.Id] = make(map[string]*HttpTracker, 100)
 	}
 }
 
+// verifyCfg is a function that verifies the configuration of the HttpTunnelServer. It
+// It returns an error if the configuration is invalid.
 func verifyCfg(cfg *configs.ServerTunnelConfig) error {
 	if cfg.Proxy == nil {
 		log.Fatal("proxy is nil")
@@ -81,7 +85,9 @@ func verifyCfg(cfg *configs.ServerTunnelConfig) error {
 	return nil
 }
 
-func (htl *HttpTunnelServer) getProxyConnection(proxyId string) (workConn net.Conn, err error) {
+// getProxyConnection is a function that returns a net.Conn object based on the proxyId. It
+// It returns an error if the proxyId is not found.
+func (htl *HttpTunnelServer) getProxyConnection(proxyId string, reqId string) (workConn *ProxyConnection, err error) {
 	channelIds, ok := htl.proxyToConn[proxyId]
 	if !ok {
 		return nil, errors.New("proxy Id not found in proxy connection:" + proxyId)
@@ -95,7 +101,9 @@ func (htl *HttpTunnelServer) getProxyConnection(proxyId string) (workConn net.Co
 			log.Error("Read error:", err)
 			continue
 		}
-		workConn = channel
+		tracker := channelIds[s]
+		_ = tracker.AddRequest(reqId)
+		workConn = NewProxyConnection(channel, reqId, tracker)
 		break
 	}
 	if workConn == nil {
@@ -104,6 +112,7 @@ func (htl *HttpTunnelServer) getProxyConnection(proxyId string) (workConn net.Co
 	return
 }
 
+// Reader is a method of HttpTunnelServer, which is used to process incoming requests. It
 func (htl *HttpTunnelServer) Reader(ch trp.Channel, _ srv.TraverseBy) {
 	htl.listener.conn <- ch
 }
@@ -133,6 +142,7 @@ func (htl *HttpTunnelServer) startAfter() error {
 	return nil
 }
 
+// getRoute is a method of HttpTunnelServer, which is used to get the route information based on the request path.
 func (htl *HttpTunnelServer) getRoute(req *http.Request) (*RouteInfo, error) {
 	info := GetRouteInfo(req.URL.Path)
 	if info == nil {
@@ -141,17 +151,20 @@ func (htl *HttpTunnelServer) getRoute(req *http.Request) (*RouteInfo, error) {
 	return info, nil
 }
 
+// RegisterConn is a method of HttpTunnelServer, which is used to register a connection.
 func (htl *HttpTunnelServer) RegisterConn(ch trp.Channel, request exchange.RegisterReqAndRsp) {
 	if request.ProxyId == "" {
 		log.Warn("Register http tunnel, but It' proxyId is nil")
 		return
 	}
 	htl.registerLock.Lock()
-	htl.BaseTunnelServer.RegisterConn(NewProxyConnection(ch), request)
+	htl.BaseTunnelServer.RegisterConn(ch, request)
 	log.Info("Register http tunnel, proxyId: %s", request.ProxyId)
 	proxies, ok := htl.proxyToConn[request.ProxyId]
 	if ok {
-		proxies[ch.GetId()] = ANY
+		tracker := NewHttpTracker(ch)
+		proxies[ch.GetId()] = tracker
+		tracker.Run()
 	} else {
 		log.Warn("Register %V not exists by http tunnelServer.", request.ProxyId)
 	}
@@ -162,6 +175,7 @@ func (htl *HttpTunnelServer) RegisterConn(ch trp.Channel, request exchange.Regis
 	}()
 }
 
+// unRegisterConn is a method of HttpTunnelServer, which is used to unregister a connection.
 func (htl *HttpTunnelServer) unRegisterConn(ch trp.Channel) {
 	proxyId, ok := ch.GetAttr(defin.TunnelProxyId)
 	if ok {
@@ -174,12 +188,14 @@ func (htl *HttpTunnelServer) unRegisterConn(ch trp.Channel) {
 
 }
 
+// NewTcpListener is a function that returns a pointer to TcpListener.
 func NewTcpListener() *TcpListener {
 	return &TcpListener{
 		conn: make(chan trp.Channel, 1),
 	}
 }
 
+// TcpListener is a struct that implements the net.Listener interface.
 type TcpListener struct {
 	conn chan trp.Channel
 }
