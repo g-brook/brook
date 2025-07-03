@@ -21,9 +21,11 @@ var cid int32
 type ClientState int
 
 const (
+	NotAction ClientState = 0
+
 	Closed ClientState = 1
 
-	Open ClientState = 2
+	Active ClientState = 2
 )
 
 type ClientControl struct {
@@ -89,7 +91,6 @@ type BaseClientHandler struct {
 }
 
 func (b BaseClientHandler) Close(cct *ClientControl) {
-
 }
 
 func (b BaseClientHandler) Connection(cct *ClientControl) {}
@@ -143,9 +144,10 @@ type Client struct {
 //   - *Client: A pointer to the newly created Client instance.
 func NewClient(host string, port int) *Client {
 	return &Client{
-		host: host,
-		port: port,
-		id:   atomic.AddInt32(&cid, 1),
+		host:  host,
+		port:  port,
+		id:    atomic.AddInt32(&cid, 1),
+		state: NotAction,
 		cct: &ClientControl{
 			state:   make(chan ClientState),
 			read:    make(chan *exchange.Protocol, 1024),
@@ -229,16 +231,15 @@ func (c *Client) doConnection() error {
 	} else {
 		c.setTimeout(dial)
 		c.conn = dial
-		c.cct.state <- Open
+		c.cct.state <- Active
 		c.cct.cli = c
 	}
 	c.rw = c.conn
-	if c.isSmux() {
-		log.Info("👍---->Connection %s %s success OK.✅--->", c.getAddress(), "^ tunnel ^")
-	} else {
+	if !c.isSmux() {
 		log.Info("👍---->Connection %s success OK.✅--->", c.getAddress())
 		return nil
 	}
+	log.Info("👍---->Connection %s %s success OK.✅--->", c.getAddress(), "^ Tunnel ^")
 	//open smux
 	openSmux := func() (*smux.Session, error) {
 		config := smux.DefaultConfig()
@@ -251,7 +252,7 @@ func (c *Client) doConnection() error {
 	}
 	session, err := openSmux()
 	if err != nil {
-		log.Error("Open smux Client error %v", err)
+		log.Error("Active smux Client error %v", err)
 		return err
 	}
 	c.session = session
@@ -267,7 +268,7 @@ func (c *Client) setTimeout(dial net.Conn) {
 
 // OpenTunnel
 //
-//	@Description: Open connection to
+//	@Description: Active connection to
 //	@receiver c
 //	@param name
 func (c *Client) OpenTunnel(config *configs.ClientTunnelConfig) error {
@@ -296,18 +297,14 @@ func (c *Client) readLoop() {
 		return
 	}
 	<-c.cct.revRead
-	// 读取数据的主要函数
 	clientFunction := func() error {
-		// 解码数据
 		protocol, err := exchange.Decoder(c.rw)
 		if err != nil {
 			if err == io.EOF {
-				// 连接关闭
 				_ = c.error("Close connection:"+c.getAddress(), err)
 				c.cct.state <- Closed
 				return err
 			} else {
-				// 检查是否为超时错误
 				var opErr *net.OpError
 				if errors.As(err, &opErr) && opErr.Timeout() {
 					c.setTimeout(c.conn)
@@ -316,20 +313,13 @@ func (c *Client) readLoop() {
 			}
 			return nil
 		}
-		// 将解码后的数据发送到读取通道
 		c.cct.read <- protocol
 		return nil
 	}
-	// 主循环
 	for {
-		// 第二阶段: 读取数据
 		err := clientFunction()
 		if err == io.EOF {
-			// 第三阶段: 再次检查读取信号
-			select {
-			case <-c.cct.revRead:
-				// 处理可能的额外读取信号
-			}
+			<-c.cct.revRead
 		}
 	}
 
@@ -345,10 +335,9 @@ func (c *Client) isSmux() bool {
 
 // IsConnection
 //
-//	@Description: 是否存在连接.
 //	@receiver c
 func (c *Client) IsConnection() bool {
-	return c.conn != nil && c.state == Open
+	return c.conn != nil && c.state == Active
 }
 
 func (c *Client) handleLoop() {
@@ -364,7 +353,7 @@ func (c *Client) handleLoop() {
 		select {
 		case c.state = <-c.cct.state:
 			log.Debug("Client state change:%d", c.state)
-			if c.state == Open {
+			if c.state == Active {
 				c.revReadNext()
 				for _, t := range c.handlers {
 					t.Connection(c.cct)
@@ -410,7 +399,7 @@ func (c *Client) sessionLoop() {
 		for {
 			select {
 			case <-c.session.CloseChan():
-				log.Info("Session closed %v", c.session.RemoteAddr())
+				log.Warn("Tunnel Session closed %v", c.session.RemoteAddr())
 				c.cct.state <- Closed
 				return
 			}

@@ -45,7 +45,7 @@ func (receiver *TunnelClientControl) retry(f func() error) {
 			default:
 			}
 			if err := f(); err != nil {
-				log.Warn("Open tunnel error...")
+				log.Warn("Active tunnel error...")
 			}
 			ticker.Reset(time.Second * 5)
 			select {
@@ -64,7 +64,7 @@ type TunnelClient interface {
 	//   - string: The name of the tunnel client.
 	GetName() string
 
-	// Open opens a tunnel using the provided session.
+	// Active opens a tunnel using the provided session.
 	// Parameters:
 	//   - session: The smux session to use.
 	// Returns:
@@ -107,12 +107,12 @@ func (b *BaseTunnelClient) GetName() string {
 	return "BaseTunnelClient"
 }
 
-// Open is open
+// Active is open
 func (b *BaseTunnelClient) Open(session *smux.Session) error {
 	openFunction := func() error {
 		stream, err := session.OpenStream()
 		if err != nil {
-			log.Error("Open session fail %v", err)
+			log.Error("Active session fail %v", err)
 			return err
 		}
 		bucket := exchange.NewMessageBucket(stream, b.Tcc.cancelCtx)

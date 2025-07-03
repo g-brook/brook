@@ -33,6 +33,7 @@ type GChannel struct {
 	cancel context.CancelFunc
 }
 
+// SetDeadline is a wrapper for gnet.Conn.SetDeadline.
 func (c *GChannel) SetDeadline(t time.Time) error {
 	return c.Conn.SetDeadline(t)
 }
