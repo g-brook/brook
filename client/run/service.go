@@ -13,36 +13,39 @@ import (
 type Service struct {
 	clis.BaseClientHandler
 	ctx       context.Context
-	bgCtl     chan struct{}
 	connState chan struct{}
 	connOnce  sync.Once
 }
 
 func (receiver *Service) Connection(_ *clis.ClientControl) {
 	receiver.connOnce.Do(func() {
+		UpdateStatus("online")
 		close(receiver.connState)
 	})
 }
 
 func NewService() *Service {
-	return &Service{ctx: context.Background(),
-		bgCtl:     make(chan struct{}),
+	return &Service{
+		ctx:       context.Background(),
 		connState: make(chan struct{}),
 	}
 }
 
-func (receiver *Service) Run(cfg *configs.ClientConfig) error {
+func (receiver *Service) Run(cfg *configs.ClientConfig) context.Context {
 	//Connection to server.
 	transport := clis.NewTransport(cfg)
 	transport.Connection(
+		clis.WithTimeout(3*time.Second),
+		clis.WithKeepAlive(10*time.Second),
 		clis.WithClientHandler(receiver),
 		clis.WithPingTime(cfg.PingTime*time.Millisecond))
 	<-receiver.connState
-	_ = receiver.openTunnel(cfg, transport)
+	//Update cli status.
+	_ = receiver.connectionTunnel(cfg, transport)
 	return receiver.background()
 }
 
-func (receiver *Service) openTunnel(cfg *configs.ClientConfig, transport *clis.Transport) error {
+func (receiver *Service) connectionTunnel(cfg *configs.ClientConfig, transport *clis.Transport) error {
 	if cfg.Tunnels == nil {
 		log.Warn("Tunnels is empty, no tunnels will be opened")
 		return nil
@@ -57,15 +60,13 @@ func (receiver *Service) openTunnel(cfg *configs.ClientConfig, transport *clis.T
 		log.Error(err.Error())
 		return err
 	}
+
 	newCfg := configs.ClientConfig{
 		ServerPort: rsp.TunnelPort,
 		ServerHost: cfg.ServerHost,
 		PingTime:   cfg.PingTime,
 		Tunnels:    cfg.Tunnels,
 	}
-	//newCfg.Tunnels = append(cfg.Tunnels, &configs.ClientTunnelConfig{
-	//	Type: common.EchoTest,
-	//})
 	//Start tunnel connection.
 	tunnelTransport := clis.NewTransport(&newCfg)
 	tunnelTransport.Connection(
@@ -74,9 +75,8 @@ func (receiver *Service) openTunnel(cfg *configs.ClientConfig, transport *clis.T
 	return nil
 }
 
-func (receiver *Service) background() error {
-	<-receiver.bgCtl
-	return nil
+func (receiver *Service) background() context.Context {
+	return receiver.ctx
 }
 
 type BrookClientHandler struct {

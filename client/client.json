@@ -6,7 +6,8 @@
     {
       "type": "http",
       "localAddress": "127.0.0.1:8080",
-      "remotePort": 8818
+      "remotePort": 8818,
+      "ProxyId": "proxy1"
     }
   ]
 }

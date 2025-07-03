@@ -19,15 +19,18 @@ type RouteInfo struct {
 
 	matcher *utils.PathMatcher
 
+	domain string
+
 	getProxyConnection ProxyConnectionFunction
 }
 
 // AddRouteInfo adds a route to the Routes slice
-func AddRouteInfo(proxyId string, paths []string, fun ProxyConnectionFunction) {
+func AddRouteInfo(proxyId string, domain string, paths []string, fun ProxyConnectionFunction) {
 	info := &RouteInfo{
 		proxyId:            proxyId,
 		matcher:            utils.NewPathMatcher(),
 		getProxyConnection: fun,
+		domain:             domain,
 	}
 	for _, path := range paths {
 		info.matcher.AddPathMatcher(path, info)
@@ -36,11 +39,18 @@ func AddRouteInfo(proxyId string, paths []string, fun ProxyConnectionFunction) {
 }
 
 // GetRouteInfo returns the RouteInfo for a given path
-func GetRouteInfo(path string) *RouteInfo {
+func GetRouteInfo(domain string, path string) *RouteInfo {
+	var infos []*RouteInfo
 	for _, info := range Routes {
-		if info.matcher.Match(path).Matched {
-			return info
+		if !utils.MatchDomain(info.domain, domain) {
+			continue
 		}
+		if info.matcher.Match(path).Matched {
+			infos = append(infos, info)
+		}
+	}
+	if infos != nil {
+		return infos[0]
 	}
 	return nil
 }

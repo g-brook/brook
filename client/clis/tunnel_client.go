@@ -7,7 +7,6 @@ import (
 	"github.com/brook/common/configs"
 	"github.com/brook/common/exchange"
 	"github.com/brook/common/log"
-	"github.com/google/uuid"
 	"github.com/xtaci/smux"
 	"io"
 	"time"
@@ -82,7 +81,7 @@ type TunnelClient interface {
 type BaseTunnelClient struct {
 	cfg *configs.ClientTunnelConfig
 
-	tcc *TunnelClientControl
+	Tcc *TunnelClientControl
 
 	DoOpen func(stream *smux.Stream) error
 }
@@ -91,7 +90,7 @@ func NewBaseTunnelClient(cfg *configs.ClientTunnelConfig) *BaseTunnelClient {
 	cancelCtx, cancelFunc := context.WithCancel(context.Background())
 	return &BaseTunnelClient{
 		cfg: cfg,
-		tcc: &TunnelClientControl{
+		Tcc: &TunnelClientControl{
 			cancelCtx: cancelCtx,
 			cancel:    cancelFunc,
 		},
@@ -116,9 +115,9 @@ func (b *BaseTunnelClient) Open(session *smux.Session) error {
 			log.Error("Open session fail %v", err)
 			return err
 		}
-		bucket := exchange.NewMessageBucket(stream, b.tcc.cancelCtx)
-		b.tcc.Bucket = bucket
-		b.tcc.Bucket.Run()
+		bucket := exchange.NewMessageBucket(stream, b.Tcc.cancelCtx)
+		b.Tcc.Bucket = bucket
+		b.Tcc.Bucket.Run()
 		if b.DoOpen == nil {
 			panic("DoOpen is nil")
 		}
@@ -129,34 +128,33 @@ func (b *BaseTunnelClient) Open(session *smux.Session) error {
 		<-bucket.Done()
 		return nil
 	}
-	b.tcc.retry(openFunction)
+	b.Tcc.retry(openFunction)
 	return nil
 }
 
 func (b *BaseTunnelClient) AddRead(cmd exchange.Cmd, read exchange.BucketRead) {
-	b.tcc.Bucket.AddHandler(cmd, read)
+	b.Tcc.Bucket.AddHandler(cmd, read)
 }
 
 func (b *BaseTunnelClient) Close() {
-	b.tcc.cancel()
+	b.Tcc.cancel()
 }
 
 func (b *BaseTunnelClient) GetRegisterReq() exchange.RegisterReqAndRsp {
 	return exchange.RegisterReqAndRsp{
-		BindId:     uuid.New().String(),
-		TunnelPort: b.cfg.RemotePort,
-		ProxyId:    "proxy1",
+		TunnelPort: b.GetCfg().RemotePort,
+		ProxyId:    b.GetCfg().ProxyId,
 	}
 }
 
 func (b *BaseTunnelClient) Register() error {
-	b.tcc.Bucket.AddHandler(exchange.Register, func(p *exchange.Protocol, _ io.ReadWriteCloser) {
+	b.Tcc.Bucket.AddHandler(exchange.Register, func(p *exchange.Protocol, _ io.ReadWriteCloser) {
 		Tracker.Complete(p)
 	},
 	)
 	req := b.GetRegisterReq()
 	p, err := SyncWrite(req, 10*time.Second, func(p *exchange.Protocol) error {
-		return b.tcc.Bucket.Push(p)
+		return b.Tcc.Bucket.Push(p)
 	})
 	if err != nil {
 		return err

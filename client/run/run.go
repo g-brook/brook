@@ -5,6 +5,7 @@ import (
 	"github.com/brook/common/command"
 	"github.com/brook/common/configs"
 	"github.com/brook/common/log"
+	tea "github.com/charmbracelet/bubbletea"
 	"github.com/spf13/cobra"
 	"os"
 )
@@ -32,9 +33,20 @@ var cmd = &cobra.Command{
 			}
 		}
 		LoadTunnel()
+		verilyBaseConfig(&config)
 		run(&config)
 		return nil
 	},
+}
+
+func verilyBaseConfig(c *configs.ClientConfig) {
+	if c.ServerHost == "" {
+		panic("ServerHost is null, system exit")
+	}
+	if c.ServerPort <= 0 {
+		panic("ServerPort is 0, system exit")
+	}
+	CliMainPage.RemoteAddress = fmt.Sprintf("%s:%d", c.ServerHost, c.ServerPort)
 }
 
 func Start() {
@@ -42,20 +54,24 @@ func Start() {
 	if err != nil {
 		os.Exit(1)
 	}
-	//program := tea.NewProgram(initModel(), tea.WithInput(os.Stdin),
-	//	tea.WithOutput(os.Stdout))
-	//_, err := program.Run()
-	//if err != nil {
-	//	fmt.Println(err)
-	//	return
-	//}
+
 }
 
 func run(config *configs.ClientConfig) {
+	//go OpenCli()
 	service := NewService()
-	err := service.Run(config)
+	ctx := service.Run(config)
+	<-ctx.Done()
+	log.Info("Brook client exit...")
+}
+
+func OpenCli() {
+	UpdateStatus("offline")
+	program := tea.NewProgram(initModel(), tea.WithInput(os.Stdin), tea.WithoutSignals(),
+		tea.WithOutput(os.Stdout))
+	_, err := program.Run()
 	if err != nil {
-		log.Error("Start client brook error", err)
+		fmt.Println(err)
 		return
 	}
 }

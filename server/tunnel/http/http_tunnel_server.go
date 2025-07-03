@@ -12,6 +12,7 @@ import (
 	"net"
 	"net/http"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 )
@@ -54,7 +55,7 @@ func NewHttpTunnelServer(server *tunnel.BaseTunnelServer) *HttpTunnelServer {
 // addRoute is a function that adds route information to the HttpTunnelServer. It
 func addRoute(cfg *configs.ServerTunnelConfig, this *HttpTunnelServer) {
 	for _, proxy := range cfg.Proxy {
-		AddRouteInfo(proxy.Id, proxy.Paths, this.getProxyConnection)
+		AddRouteInfo(proxy.Id, proxy.Domain, proxy.Paths, this.getProxyConnection)
 		this.proxyToConn[proxy.Id] = make(map[string]*HttpTracker, 100)
 	}
 }
@@ -144,7 +145,9 @@ func (htl *HttpTunnelServer) startAfter() error {
 
 // getRoute is a method of HttpTunnelServer, which is used to get the route information based on the request path.
 func (htl *HttpTunnelServer) getRoute(req *http.Request) (*RouteInfo, error) {
-	info := GetRouteInfo(req.URL.Path)
+	host := req.Host
+	hosts := strings.Split(host, ":")
+	info := GetRouteInfo(hosts[0], req.URL.Path)
 	if info == nil {
 		return nil, errors.New("route info not found")
 	}

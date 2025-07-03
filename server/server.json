@@ -7,8 +7,7 @@
         {
           "id": "proxy1",
           "paths": [
-            "/proxy1",
-            "/proxy2"
+            "/*"
           ]
         }
       ]

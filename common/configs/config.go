@@ -41,14 +41,16 @@ type ServerTunnelConfig struct {
 }
 
 type HttpRunnelProxy struct {
-	Id    string   `json:"id"`
-	Paths []string `json:"paths"`
+	Id     string   `json:"id"`
+	Domain string   `json:"domain"`
+	Paths  []string `json:"paths"`
 }
 
 type ClientTunnelConfig struct {
 	Type         string `json:"type"`
 	LocalAddress string `json:"localAddress"`
 	RemotePort   int    `json:"remotePort"`
+	ProxyId      string `json:"ProxyId"`
 }
 
 // GetServerConfig

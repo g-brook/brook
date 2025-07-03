@@ -5,14 +5,15 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/brook/common/configs"
-	"github.com/brook/common/exchange"
-	"github.com/brook/common/log"
-	"github.com/xtaci/smux"
 	"io"
 	"net"
 	"sync/atomic"
 	"time"
+
+	"github.com/brook/common/configs"
+	"github.com/brook/common/exchange"
+	"github.com/brook/common/log"
+	"github.com/xtaci/smux"
 )
 
 var cid int32
@@ -23,8 +24,6 @@ const (
 	Closed ClientState = 1
 
 	Open ClientState = 2
-
-	Error ClientState = 3
 )
 
 type ClientControl struct {
@@ -36,7 +35,7 @@ type ClientControl struct {
 
 	errors chan error
 
-	close chan bool
+	revRead chan struct{}
 
 	timeout chan bool
 
@@ -118,8 +117,6 @@ type Client struct {
 
 	conn net.Conn
 
-	ctx context.Context
-
 	opts *cOptions
 
 	handlers []ClientHandler
@@ -148,14 +145,13 @@ func NewClient(host string, port int) *Client {
 	return &Client{
 		host: host,
 		port: port,
-		ctx:  context.Background(),
 		id:   atomic.AddInt32(&cid, 1),
 		cct: &ClientControl{
-			state:   make(chan ClientState, 1),
-			close:   make(chan bool, 1),
+			state:   make(chan ClientState),
 			read:    make(chan *exchange.Protocol, 1024),
 			errors:  make(chan error),
-			timeout: make(chan bool, 1),
+			timeout: make(chan bool),
+			revRead: make(chan struct{}),
 			write:   make(chan []byte, 1024),
 			list:    list.New(),
 		},
@@ -223,7 +219,9 @@ func (c *Client) doConnection() error {
 		KeepAlive: c.opts.KeepAlive,
 		Timeout:   c.opts.Timeout,
 	}
-	if dial, err := dialer.DialContext(c.ctx, c.network, c.host+":"+fmt.Sprintf("%d", c.port)); err != nil {
+	timeout, cancelFunc := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancelFunc()
+	if dial, err := dialer.DialContext(timeout, c.network, c.host+":"+fmt.Sprintf("%d", c.port)); err != nil {
 		return c.error(
 			fmt.Sprintf("Connection to %s:%d,error", c.host, c.port),
 			err,
@@ -290,7 +288,6 @@ func (c *Client) error(str string, err error) error {
 		err = errors.New(str)
 	}
 	log.Error("%s %s", str, err.Error())
-	c.cct.state <- Error
 	return err
 }
 
@@ -298,31 +295,44 @@ func (c *Client) readLoop() {
 	if c.isSmux() {
 		return
 	}
-	// Is not Tunnel connection.
-	clientFunction := func() {
+	<-c.cct.revRead
+	// 读取数据的主要函数
+	clientFunction := func() error {
+		// 解码数据
 		protocol, err := exchange.Decoder(c.rw)
 		if err != nil {
 			if err == io.EOF {
+				// 连接关闭
 				_ = c.error("Close connection:"+c.getAddress(), err)
 				c.cct.state <- Closed
-				c.cct.close <- true
+				return err
 			} else {
+				// 检查是否为超时错误
 				var opErr *net.OpError
 				if errors.As(err, &opErr) && opErr.Timeout() {
 					c.setTimeout(c.conn)
 					c.cct.timeout <- true
 				}
 			}
-		} else {
-			c.cct.read <- protocol
+			return nil
 		}
+		// 将解码后的数据发送到读取通道
+		c.cct.read <- protocol
+		return nil
 	}
+	// 主循环
 	for {
-		if c.rw == nil || c.conn == nil {
-			continue
+		// 第二阶段: 读取数据
+		err := clientFunction()
+		if err == io.EOF {
+			// 第三阶段: 再次检查读取信号
+			select {
+			case <-c.cct.revRead:
+				// 处理可能的额外读取信号
+			}
 		}
-		clientFunction()
 	}
+
 }
 
 func (c *Client) getAddress() string {
@@ -341,10 +351,6 @@ func (c *Client) IsConnection() bool {
 	return c.conn != nil && c.state == Open
 }
 
-func (c *Client) chState() {
-	c.state = <-c.cct.state
-}
-
 func (c *Client) handleLoop() {
 	//Close connection.
 	_close := func() error {
@@ -357,29 +363,29 @@ func (c *Client) handleLoop() {
 	for {
 		select {
 		case c.state = <-c.cct.state:
-			log.Info("Client state change:%d", c.state)
+			log.Debug("Client state change:%d", c.state)
 			if c.state == Open {
+				c.revReadNext()
 				for _, t := range c.handlers {
 					t.Connection(c.cct)
 				}
 			}
-		case <-c.cct.close:
-			for _, t := range c.handlers {
-				t.Close(c.cct)
+			if c.state == Closed {
+				_ = _close()
+				for _, t := range c.handlers {
+					t.Close(c.cct)
+				}
 			}
-			_ = _close()
 		case err := <-c.cct.errors:
+			//sendError.
 			for _, t := range c.handlers {
 				t.Error(err, c.cct)
 			}
-			//sendError.
-			c.cct.state <- Error
 		case b := <-c.cct.read:
 			for _, t := range c.handlers {
 				err := t.Read(b, c.cct)
 				if err != nil {
 					_ = c.error("Read error", err)
-					return
 				}
 			}
 		case bytes := <-c.cct.write:
@@ -392,6 +398,13 @@ func (c *Client) handleLoop() {
 	}
 }
 
+func (c *Client) revReadNext() {
+	select {
+	case c.cct.revRead <- struct{}{}:
+	default:
+	}
+}
+
 func (c *Client) sessionLoop() {
 	if c.session != nil {
 		for {
@@ -399,7 +412,6 @@ func (c *Client) sessionLoop() {
 			case <-c.session.CloseChan():
 				log.Info("Session closed %v", c.session.RemoteAddr())
 				c.cct.state <- Closed
-				c.cct.close <- true
 				return
 			}
 		}
@@ -425,7 +437,7 @@ func (c *ClientControl) Write(bytes []byte) error {
 //	@Description: Close Client.
 //	@receiver c
 func (c *ClientControl) Close() {
-	c.close <- true
+	c.state <- Closed
 }
 
 // Error

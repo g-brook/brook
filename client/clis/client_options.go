@@ -33,7 +33,7 @@ func NewSmuxClientOption() *SmuxClientOption {
 	return &SmuxClientOption{
 		Enable:    true,
 		KeepAlive: true,
-		Timeout:   time.Second * 10000,
+		Timeout:   time.Second * 5,
 	}
 }
 
@@ -54,6 +54,18 @@ func WithClientSmux(opt *SmuxClientOption) ClientOption {
 func WithPingTime(t time.Duration) ClientOption {
 	return func(c *cOptions) {
 		c.PingTime = t
+	}
+}
+
+func WithTimeout(t time.Duration) ClientOption {
+	return func(c *cOptions) {
+		c.Timeout = t
+	}
+}
+
+func WithKeepAlive(t time.Duration) ClientOption {
+	return func(c *cOptions) {
+		c.KeepAlive = t
 	}
 }
 

@@ -1,15 +1,11 @@
 package clis
 
 import (
-	"github.com/RussellLuo/timingwheel"
 	"github.com/brook/common/configs"
 	"github.com/brook/common/exchange"
 	"github.com/brook/common/log"
-	"github.com/brook/common/utils"
 	"time"
 )
-
-var timerMap = make(map[int32]*timingwheel.Timer)
 
 // Transport
 // @Description:Transport manages client and request tracking.
@@ -23,6 +19,8 @@ type Transport struct {
 	port int
 
 	config *configs.ClientConfig
+
+	reconnect *ReconnectManager
 }
 
 // NewTransport
@@ -33,9 +31,10 @@ type Transport struct {
 func NewTransport(config *configs.ClientConfig) *Transport {
 	//start reconnection.
 	return &Transport{
-		host:   config.ServerHost,
-		port:   config.ServerPort,
-		config: config,
+		host:      config.ServerHost,
+		port:      config.ServerPort,
+		config:    config,
+		reconnect: NewReconnectionManager(time.Second * 5),
 	}
 }
 
@@ -105,35 +104,20 @@ func (b *CheckHandler) Timeout(cct *ClientControl) {
 	_ = cct.Write(request.Bytes())
 }
 
-func checking(tp *Transport) {
-	cli := tp.client
-	if !cli.IsConnection() {
-		log.Warn("Connection %s Not Active, start reconnection.", cli.getAddress())
-		err := cli.doConnection()
-		if err != nil {
-			log.Warn("Reconnection %s Fail, next time still running.", cli.getAddress())
-		} else {
-			log.Info("👍<--Reconnection %s success OK.✅-->", cli.getAddress())
-			tp.openTunnel()
-		}
-	}
-	defer func() {
-		if cli.IsConnection() {
-			timer, ok := timerMap[cli.id]
-			if ok {
-				timer.Stop()
-				delete(timerMap, cli.id)
+func addChecking(tp *Transport) {
+	reconnect := func() bool {
+		cli := tp.client
+		if !cli.IsConnection() {
+			log.Warn("Connection %s Not Active, start reconnection.", cli.getAddress())
+			err := cli.doConnection()
+			if err != nil {
+				log.Warn("Reconnection %s Fail, next time still running.", cli.getAddress())
+			} else {
+				log.Info("👍<--Reconnection %s success OK.✅-->", cli.getAddress())
+				tp.openTunnel()
 			}
 		}
-	}()
-}
-
-func addChecking(tp *Transport) {
-	if _, ok := timerMap[tp.client.id]; ok {
-		return
+		return cli.IsConnection()
 	}
-	t := utils.NewWheel.ScheduleFunc(&ClientScheduler{}, func() {
-		checking(tp)
-	})
-	timerMap[tp.client.id] = t
+	tp.reconnect.tryReconnect(reconnect)
 }

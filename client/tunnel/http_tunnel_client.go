@@ -57,48 +57,63 @@ func (h *HttpTunnelClient) initOpen(_ *smux.Stream) error {
 }
 
 func (h *HttpTunnelClient) bindHandler(_ *exchange.Protocol, rw io.ReadWriteCloser) {
-	loopRead := func() error {
-		request, err := http.ReadRequest(bufio.NewReader(rw))
-		if err != nil {
-			writeError(rw)
-			return err
-		}
-		dial, err := net.Dial("tcp", h.GetCfg().LocalAddress)
 
-		//close.
-		defer func(dial net.Conn) {
-			_ = dial.Close()
-		}(dial)
-
-		if err != nil {
-			writeError(rw)
-			return err
+	closeConn := func(conn net.Conn) {
+		if conn != nil {
+			_ = conn.Close()
 		}
-		requestId := request.Header.Get(RequestInfoKey)
+	}
+	call := func(request *http.Request, err error) (rsp *http.Response, dial net.Conn) {
+		if err != nil {
+			return
+		}
+		dial, err = net.Dial("tcp", h.GetCfg().LocalAddress)
+		if err != nil {
+			rsp = getErrorResponse()
+			return
+		}
 		err = request.Write(dial)
 		if err != nil {
-			writeError(rw)
-			return err
+			rsp = getErrorResponse()
+			return
 		}
-		response, err := http.ReadResponse(bufio.NewReader(dial), request)
+		rsp, err = http.ReadResponse(bufio.NewReader(dial), request)
 		if err != nil {
-			writeError(rw)
+			rsp = getErrorResponse()
+			return
+		}
+		return
+	}
+	loopRead := func() error {
+		request, err := http.ReadRequest(bufio.NewReader(rw))
+		response, dial := call(request, err)
+		defer closeConn(dial)
+		if response != nil && request != nil {
+			requestId := request.Header.Get(RequestInfoKey)
+			response.Header.Set(RequestInfoKey, requestId)
+			_ = response.Write(rw)
+			return nil
+		} else {
+			log.Warn("Read request fail", err)
 			return err
 		}
-		response.Header.Set(RequestInfoKey, requestId)
-		err = response.Write(rw)
-		if err != nil {
-			return err
-		}
-		return nil
 	}
 	for {
-		_ = loopRead()
+		select {
+		case <-h.Tcc.Context().Done():
+			return
+		default:
+
+		}
+		err := loopRead()
+		if err == io.EOF {
+			h.Close()
+		}
 	}
 
 }
 
-func writeError(rw io.ReadWriter) {
-	response := utils.GetResponse(http.StatusBadGateway)
-	_ = response.Write(rw)
+func getErrorResponse() *http.Response {
+	return utils.GetResponse(http.StatusBadGateway)
+
 }

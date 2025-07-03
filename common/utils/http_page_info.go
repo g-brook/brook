@@ -94,11 +94,11 @@ func GetServerUnreachable() []byte {
 }
 
 // GetResponse returns the server unreachable error page response
-func GetResponse(status int) http.Response {
+func GetResponse(status int) *http.Response {
 	body := GetServerUnreachable()
 	header := make(http.Header)
 	header.Set("Content-Type", "text/html; charset=utf-8")
-	return http.Response{
+	return &http.Response{
 		StatusCode:    status,
 		Body:          io.NopCloser(bytes.NewReader(body)),
 		Proto:         "HTTP/1.1",
