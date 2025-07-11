@@ -16,7 +16,7 @@ func handler(w http.ResponseWriter, r *http.Request) {
 	}
 	bodyString := string(bodyBytes)
 	fmt.Println(bodyString)
-	_, err = fmt.Fprintf(w, "Hello, World! You accessed: %s", now)
+	_, err = fmt.Fprintf(w, "OK:%v", now)
 	if err != nil {
 		return
 	}

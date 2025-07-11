@@ -19,7 +19,7 @@ var (
 )
 
 func init() {
-	clis.RegisterTunnelClient("http", func(config *configs.ClientTunnelConfig) clis.TunnelClient {
+	clis.RegisterTunnelClient(utils.Http, func(config *configs.ClientTunnelConfig) clis.TunnelClient {
 		tunnelClient := clis.NewBaseTunnelClient(config)
 		client := HttpTunnelClient{
 			BaseTunnelClient: tunnelClient,
@@ -46,12 +46,12 @@ func (h *HttpTunnelClient) GetName() string {
 // Returns:
 //   - error: An error if the registration fails.
 func (h *HttpTunnelClient) initOpen(_ *smux.Stream) error {
-	h.BaseTunnelClient.AddRead(exchange.WorkerConnReq, h.bindHandler)
-	err := h.Register()
+	h.BaseTunnelClient.AddReadHandler(exchange.WorkerConnReq, h.bindHandler)
+	rsp, err := h.Register()
 	if err != nil {
 		log.Error("Register fail %v", err)
 	} else {
-		log.Info("Register success")
+		log.Info("Register success:PORT-%v", rsp.TunnelPort)
 	}
 	return nil
 }
@@ -103,7 +103,6 @@ func (h *HttpTunnelClient) bindHandler(_ *exchange.Protocol, rw io.ReadWriteClos
 		case <-h.Tcc.Context().Done():
 			return
 		default:
-
 		}
 		err := loopRead()
 		if err == io.EOF {
@@ -114,6 +113,6 @@ func (h *HttpTunnelClient) bindHandler(_ *exchange.Protocol, rw io.ReadWriteClos
 }
 
 func getErrorResponse() *http.Response {
-	return utils.GetResponse(http.StatusBadGateway)
+	return utils.GetResponse(http.StatusInternalServerError)
 
 }

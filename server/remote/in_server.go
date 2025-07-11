@@ -1,6 +1,7 @@
 package remote
 
 import (
+	"context"
 	"encoding/json"
 	"github.com/brook/common/configs"
 	"github.com/brook/common/exchange"
@@ -60,10 +61,10 @@ func (t *InServer) getTunnelPort(conn *srv2.GChannel) int32 {
 
 func (t *InServer) Shutdown() {
 	if t.server != nil {
-		t.server.Shutdown()
+		t.server.Shutdown(context.Background())
 	}
 	if t.tunnelServer != nil {
-		t.tunnelServer.Shutdown()
+		t.tunnelServer.Shutdown(context.Background())
 	}
 }
 

@@ -1,9 +1,8 @@
 package aio
 
 import (
-	"bytes"
+	"fmt"
 	"io"
-	"net/http"
 )
 
 // Pipe establishes a bidirectional data stream between two ReadWriteClosers, enabling data transfer in both directions.
@@ -29,28 +28,55 @@ func Pipe(src io.ReadWriteCloser, dst io.ReadWriteCloser) (errors []error) {
 	errors[0] = <-errCh
 	errors[1] = <-errCh
 	return errors
-
 }
 
-func responseToBytes(resp *http.Response) ([]byte, error) {
-	// 🛡️ 为防止 resp.Body 被提前消费，我们先读出来再重置
-	var bodyCopy []byte
-	var err error
+func SignPipe(src io.ReadWriteCloser, dst io.ReadWriteCloser) error {
+	errCh := make(chan error, 1)
+	// copyData transfers data from src to dst in a goroutine.
+	copyData := func(src io.ReadWriteCloser, dst io.ReadWriteCloser) {
+		defer func() {
+			src.Close()
+			dst.Close()
+		}()
+		err := WithBuffer(func(buf []byte) error {
+			_, err := io.CopyBuffer(dst, src, buf)
+			return err
+		}, GetBuffPool16k())
+		errCh <- err
+	}
+	// Start bidirectional data transfer
+	go copyData(src, dst)
+	return <-errCh
+}
 
-	if resp.Body != nil {
-		bodyCopy, err = io.ReadAll(resp.Body)
-		if err != nil {
-			return nil, err
+func Copy(src io.ReadWriteCloser, dst io.ReadWriteCloser) error {
+	written := int64(0)
+	err := WithBuffer(func(buf []byte) (err error) {
+		for {
+			nr, er := src.Read(buf)
+			if nr > 0 {
+				nw, ew := dst.Write(buf[0:nr])
+				if nw < 0 || nr < nw {
+					nw = 0
+				}
+				written += int64(nw)
+				if ew != nil {
+					err = ew
+					break
+				}
+				if nr != nw {
+					break
+				}
+			}
+			if er != nil {
+				if er == io.EOF {
+					err = er
+				}
+				break
+			}
 		}
-		// 重置 Body，让后续 Write 能读取它
-		resp.Body = io.NopCloser(bytes.NewReader(bodyCopy))
-	}
-
-	// 📦 将整个 Response 写入 bytes.Buffer 中
-	var buf bytes.Buffer
-	err = resp.Write(&buf)
-	if err != nil {
-		return nil, err
-	}
-	return buf.Bytes(), nil
+		return err
+	}, GetBuffPool4k())
+	fmt.Println("读取完成了.....")
+	return err
 }

@@ -9,6 +9,7 @@ func TestNewPathMatcher(t *testing.T) {
 	matcher := utils.NewPathMatcher()
 	if matcher == nil {
 		t.Errorf("Expected non-nil PathMatcher")
+		return
 	}
 	if matcher.Root == nil {
 		t.Errorf("Expected non-nil root node")

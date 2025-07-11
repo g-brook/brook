@@ -22,7 +22,7 @@ func NewReconnectionManager(t time.Duration) *ReconnectManager {
 	}
 }
 
-func (r *ReconnectManager) tryReconnect(rf ReconnectFunction) {
+func (r *ReconnectManager) TryReconnect(rf ReconnectFunction) {
 	r.lock.Lock()
 	defer r.lock.Unlock()
 	if r.isStart {

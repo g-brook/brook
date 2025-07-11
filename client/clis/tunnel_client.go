@@ -7,6 +7,7 @@ import (
 	"github.com/brook/common/configs"
 	"github.com/brook/common/exchange"
 	"github.com/brook/common/log"
+	"github.com/brook/common/utils"
 	"github.com/xtaci/smux"
 	"io"
 	"time"
@@ -16,14 +17,6 @@ type TunnelClientControl struct {
 	cancelCtx context.Context
 	cancel    context.CancelFunc
 	Bucket    *exchange.MessageBucket
-}
-
-func NewTunnelClientControl(ctx context.Context) *TunnelClientControl {
-	cancelCtx, cancel := context.WithCancel(ctx)
-	return &TunnelClientControl{
-		cancelCtx: cancelCtx,
-		cancel:    cancel,
-	}
 }
 
 func (receiver *TunnelClientControl) Context() context.Context {
@@ -64,7 +57,7 @@ type TunnelClient interface {
 	//   - string: The name of the tunnel client.
 	GetName() string
 
-	// Active opens a tunnel using the provided session.
+	// Open Active opens a tunnel using the provided session.
 	// Parameters:
 	//   - session: The smux session to use.
 	// Returns:
@@ -107,13 +100,17 @@ func (b *BaseTunnelClient) GetName() string {
 	return "BaseTunnelClient"
 }
 
-// Active is open
+// Open Active is open
 func (b *BaseTunnelClient) Open(session *smux.Session) error {
 	openFunction := func() error {
 		stream, err := session.OpenStream()
 		if err != nil {
 			log.Error("Active session fail %v", err)
 			return err
+		}
+		if b.Tcc.Bucket != nil {
+			b.Tcc.Bucket.Close()
+			b.Tcc.Bucket = nil
 		}
 		bucket := exchange.NewMessageBucket(stream, b.Tcc.cancelCtx)
 		b.Tcc.Bucket = bucket
@@ -132,7 +129,7 @@ func (b *BaseTunnelClient) Open(session *smux.Session) error {
 	return nil
 }
 
-func (b *BaseTunnelClient) AddRead(cmd exchange.Cmd, read exchange.BucketRead) {
+func (b *BaseTunnelClient) AddReadHandler(cmd exchange.Cmd, read exchange.BucketRead) {
 	b.Tcc.Bucket.AddHandler(cmd, read)
 }
 
@@ -144,10 +141,11 @@ func (b *BaseTunnelClient) GetRegisterReq() exchange.RegisterReqAndRsp {
 	return exchange.RegisterReqAndRsp{
 		TunnelPort: b.GetCfg().RemotePort,
 		ProxyId:    b.GetCfg().ProxyId,
+		TunnelType: b.GetCfg().Type,
 	}
 }
 
-func (b *BaseTunnelClient) Register() error {
+func (b *BaseTunnelClient) Register() (*exchange.RegisterReqAndRsp, error) {
 	b.Tcc.Bucket.AddHandler(exchange.Register, func(p *exchange.Protocol, _ io.ReadWriteCloser) {
 		Tracker.Complete(p)
 	},
@@ -157,16 +155,20 @@ func (b *BaseTunnelClient) Register() error {
 		return b.Tcc.Bucket.Push(p)
 	})
 	if err != nil {
-		return err
+		return nil, err
 	}
 	if p.RspCode != exchange.RspSuccess {
-		return errors.New(fmt.Sprintf("register error: %d", p.RspCode))
+		return nil, errors.New(fmt.Sprintf("register error: %d", p.RspCode))
 	}
-	return nil
+	result, err := exchange.Parse[exchange.RegisterReqAndRsp](p.Data)
+	if err != nil {
+		return nil, err
+	}
+	return result, nil
 }
 
 // TunnelsClient at all tunnel tunnel by map.
-var TunnelsClient = make(map[string]FactoryFun)
+var TunnelsClient = make(map[utils.TunnelType]FactoryFun)
 
 // FactoryFun New tunnel client.
 type FactoryFun func(config *configs.ClientTunnelConfig) TunnelClient
@@ -176,7 +178,7 @@ type FactoryFun func(config *configs.ClientTunnelConfig) TunnelClient
 //	@Description: Register tunnel client.
 //	@param name
 //	@param factory
-func RegisterTunnelClient(name string, factory FactoryFun) {
+func RegisterTunnelClient(name utils.TunnelType, factory FactoryFun) {
 	TunnelsClient[name] = factory
 }
 
@@ -185,7 +187,7 @@ func RegisterTunnelClient(name string, factory FactoryFun) {
 //	@Description: Get tunnel client.
 //	@param name
 //	@return TunnelClient
-func GetTunnelClient(name string, config *configs.ClientTunnelConfig) TunnelClient {
+func GetTunnelClient(name utils.TunnelType, config *configs.ClientTunnelConfig) TunnelClient {
 	fun := TunnelsClient[name]
 	if fun != nil {
 		return fun(config)
@@ -193,6 +195,6 @@ func GetTunnelClient(name string, config *configs.ClientTunnelConfig) TunnelClie
 	return nil
 }
 
-func GetTunnelClients() map[string]FactoryFun {
+func GetTunnelClients() map[utils.TunnelType]FactoryFun {
 	return TunnelsClient
 }

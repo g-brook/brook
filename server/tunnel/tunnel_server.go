@@ -1,4 +1,4 @@
-package srv
+package tunnel
 
 import (
 	"github.com/brook/common/exchange"

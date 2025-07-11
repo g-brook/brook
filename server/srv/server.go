@@ -60,22 +60,22 @@ type ServerHandler interface {
 type BaseServerHandler struct {
 }
 
-func (b BaseServerHandler) Writer(_ trp.Channel, traverse TraverseBy) {
+func (b *BaseServerHandler) Writer(_ trp.Channel, traverse TraverseBy) {
 	traverse()
 }
 
-func (b BaseServerHandler) Close(_ trp.Channel, traverse TraverseBy) {
+func (b *BaseServerHandler) Close(_ trp.Channel, traverse TraverseBy) {
 	traverse()
 }
 
-func (b BaseServerHandler) Open(_ trp.Channel, traverse TraverseBy) {
+func (b *BaseServerHandler) Open(_ trp.Channel, traverse TraverseBy) {
 	traverse()
 }
 
-func (b BaseServerHandler) Reader(_ trp.Channel, traverse TraverseBy) {
+func (b *BaseServerHandler) Reader(_ trp.Channel, traverse TraverseBy) {
 	traverse()
 }
-func (b BaseServerHandler) Boot(s *Server, traverse TraverseBy) {
+func (b *BaseServerHandler) Boot(s *Server, traverse TraverseBy) {
 	traverse()
 }
 
@@ -337,7 +337,7 @@ func (sever *Server) smuxReadLoop(ch *trp.SChannel) {
 	}
 }
 
-func (sever *Server) Shutdown() {
+func (sever *Server) Shutdown(ctx context.Context) {
 	log.Info("Server shutdown: %d.", sever.GetPort())
-	_ = sever.engine.Stop(context.Background())
+	_ = sever.engine.Stop(ctx)
 }

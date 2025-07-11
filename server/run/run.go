@@ -12,7 +12,6 @@ import (
 	"github.com/brook/common/log"
 	"github.com/brook/common/utils"
 	"github.com/brook/server/remote"
-	"github.com/brook/server/srv"
 	"github.com/brook/server/tunnel"
 	"github.com/brook/server/tunnel/http"
 	"github.com/spf13/cobra"
@@ -43,13 +42,17 @@ var cmd = &cobra.Command{
 			serverConfig = config
 		}
 		initLogger()
+		configCheck(serverConfig)
 		run()
 		return nil
 	},
 }
 
+func configCheck(config configs.ServerConfig) {
+
+}
+
 func initLogger() {
-	//serverConfig.Logger.LogLevel
 	log.InitFunc("debug")
 }
 
@@ -65,10 +68,10 @@ func run() {
 	defer stop()
 	//Start In-Server.
 	inServer := remote.New().Start(&serverConfig)
-	tunnelServers := make([]srv.TunnelServer, len(serverConfig.Tunnel))
+	tunnelServers := make([]tunnel.TunnelServer, len(serverConfig.Tunnel))
 	for _, config := range serverConfig.Tunnel {
 		baseServer := tunnel.NewBaseTunnelServer(&config)
-		var ts srv.TunnelServer
+		var ts tunnel.TunnelServer
 		switch config.Type {
 		case utils.Http:
 			ts = http.NewHttpTunnelServer(baseServer)
@@ -76,11 +79,6 @@ func run() {
 				log.Error("HttpTunnelServer", "err", err)
 				return
 			}
-		case utils.Https:
-		case utils.Tcp:
-			//tunnel.NewTcpTunnel(&config, server).Start()
-		case utils.Udp:
-			log.Error("没有实现当前的协议 %s", config.Type)
 		}
 		if ts != nil {
 			tunnelServers = append(tunnelServers, ts)
@@ -90,7 +88,7 @@ func run() {
 	shutdown(inServer, tunnelServers)
 }
 
-func shutdown(inServer *remote.InServer, tunnelServers []srv.TunnelServer) {
+func shutdown(inServer *remote.InServer, tunnelServers []tunnel.TunnelServer) {
 	inServer.Shutdown()
 	for _, t := range tunnelServers {
 		if t != nil {

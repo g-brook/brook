@@ -4,10 +4,10 @@
   "pingTime": 30000,
   "tunnels": [
     {
-      "type": "http",
+      "type": "tcp",
       "localAddress": "127.0.0.1:8080",
-      "remotePort": 8818,
-      "ProxyId": "proxy1"
+      "ProxyId": "proxy2",
+      "remotePort": 39845
     }
   ]
 }

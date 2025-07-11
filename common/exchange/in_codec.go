@@ -37,6 +37,26 @@ func Encoder(data *Protocol) []byte {
 	return b.Bytes()
 }
 
+func GetByteLen(lenByte []byte) int {
+	return int(binary.BigEndian.Uint32(lenByte))
+}
+
+func GetBody(bodies []byte) (*Protocol, error) {
+	var req Protocol
+	//cmd. 0
+	req.Cmd = Cmd(bodies[0])
+	//type. 1
+	req.PType = PType(bodies[1])
+	//reqId. 2~9
+	req.ReqId = int64(binary.BigEndian.Uint64(bodies[2:10]))
+	//rspCode.
+	rspBytes := bodies[10:12]
+	req.RspCode = RspCode(int16(binary.BigEndian.Uint16(rspBytes)))
+	//data.
+	req.Data = bodies[12:]
+	return &req, nil
+}
+
 // Decoder
 //
 //	@Description: decoder.
@@ -49,7 +69,7 @@ func Decoder(reader io.Reader) (*Protocol, error) {
 	if _, err := io.ReadFull(reader, lenByte); err != nil {
 		return nil, err
 	}
-	dataLen := binary.BigEndian.Uint32(lenByte)
+	dataLen := GetByteLen(lenByte)
 	if dataLen < headerSize {
 		log.Error("packet size error")
 		return nil, errors.New("invalid packet size")
@@ -59,17 +79,5 @@ func Decoder(reader io.Reader) (*Protocol, error) {
 		log.Error(err.Error())
 		return nil, err
 	}
-	var req Protocol
-	//cmd. 0
-	req.Cmd = Cmd(data[0])
-	//type. 1
-	req.PType = PType(data[1])
-	//reqId. 2~9
-	req.ReqId = int64(binary.BigEndian.Uint64(data[2:10]))
-	//rspCode.
-	rspBytes := data[10:12]
-	req.RspCode = RspCode(int16(binary.BigEndian.Uint16(rspBytes)))
-	//data.
-	req.Data = data[12:]
-	return &req, nil
+	return GetBody(data)
 }

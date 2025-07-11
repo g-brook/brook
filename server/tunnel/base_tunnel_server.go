@@ -1,6 +1,7 @@
 package tunnel
 
 import (
+	"context"
 	"github.com/brook/common/configs"
 	"github.com/brook/common/exchange"
 	"github.com/brook/common/log"
@@ -9,13 +10,13 @@ import (
 	"sync"
 )
 
-type HandlerType int
+type EventType int
 
 var (
-	Unregister HandlerType = 1
+	Unregister EventType = 1
 )
 
-type Handler func(ch transport.Channel)
+type Event func(ch transport.Channel)
 
 type BaseTunnelServer struct {
 	srv.BaseServerHandler
@@ -26,20 +27,19 @@ type BaseTunnelServer struct {
 	Managers   map[string]transport.Channel
 	openCh     chan error
 	openChOnce sync.Once
-	handlers   map[HandlerType]Handler
-	bucket     *exchange.MessageBucket
-	//
-	lock sync.Mutex
+	handlers   map[EventType]Event
+	lock       sync.Mutex
+	closeCtx   context.Context
 }
 
-func (b *BaseTunnelServer) AddHandler(htype HandlerType, handler Handler) {
-	b.handlers[htype] = handler
+func (b *BaseTunnelServer) AddEvent(etype EventType, event Event) {
+	b.handlers[etype] = event
 }
 
 // Shutdown  the tunnel server
 func (b *BaseTunnelServer) Shutdown() {
 	if b.Server != nil {
-		b.Server.Shutdown()
+		b.Server.Shutdown(b.closeCtx)
 	}
 	if b.Managers != nil {
 		clear(b.Managers)
@@ -54,7 +54,8 @@ func NewBaseTunnelServer(cfg *configs.ServerTunnelConfig) *BaseTunnelServer {
 		Cfg:      cfg,
 		Managers: make(map[string]transport.Channel),
 		openCh:   make(chan error),
-		handlers: make(map[HandlerType]Handler, 16),
+		handlers: make(map[EventType]Event, 16),
+		closeCtx: context.Background(),
 	}
 }
 func (b *BaseTunnelServer) Boot(_ *srv.Server, _ srv.TraverseBy) {
@@ -70,7 +71,7 @@ func (b *BaseTunnelServer) Start() error {
 		b.Server.AddHandler(b)
 		err := b.Server.Start()
 		if err != nil {
-			log.Error("Start tunnel server port: error,", b.Port())
+			log.Error("Start tunnel server port: error, %v:%v", err, b.Port())
 			b.openCh <- err
 		}
 	}()
@@ -113,4 +114,8 @@ func (b *BaseTunnelServer) background(ch transport.Channel) {
 	case <-ch.Done():
 		b.unRegister(ch)
 	}
+}
+
+func (b *BaseTunnelServer) Done() <-chan struct{} {
+	return b.closeCtx.Done()
 }

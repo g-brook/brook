@@ -6,7 +6,9 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"fmt"
 	"github.com/brook/common"
+	"github.com/google/uuid"
 	"github.com/xtaci/smux"
 	"io"
 	"net"
@@ -22,7 +24,7 @@ type SChannel struct {
 	Stream       *smux.Stream
 	IsBindTunnel bool
 	buf          bytes.Buffer
-	Id           string
+	id           string
 	ctx          context.Context
 	cancel       context.CancelFunc
 	attr         map[common.KeyType]interface{}
@@ -34,6 +36,7 @@ func NewSChannel(stream *smux.Stream, parent context.Context) *SChannel {
 	ctx, cancelFunc := context.WithCancel(parent)
 	ch := &SChannel{Stream: stream,
 		ctx:    ctx,
+		id:     uuid.NewString(),
 		cancel: cancelFunc,
 		attr:   map[common.KeyType]interface{}{},
 		buf:    bytes.Buffer{}} // Initialize as pointer
@@ -99,6 +102,9 @@ func (s *SChannel) GetAttr(key common.KeyType) (interface{}, bool) {
 
 // Read reads data into p
 func (s *SChannel) Read(p []byte) (n int, err error) {
+	if s.IsClose() {
+		return 0, io.EOF
+	}
 	if s.IsBindTunnel {
 		n, err = s.Stream.Read(p)
 	} else {
@@ -120,6 +126,7 @@ func (s *SChannel) Write(p []byte) (n int, err error) {
 			_ = s.Close()
 			return 0, err
 		}
+		fmt.Println("lllll:", s.GetId())
 	}
 	return
 }
@@ -140,7 +147,7 @@ func (s *SChannel) GetWriter() io.Writer {
 }
 
 func (s *SChannel) GetId() string {
-	return s.Id
+	return s.id
 }
 
 func (s *SChannel) Done() <-chan struct{} {

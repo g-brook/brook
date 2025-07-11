@@ -119,5 +119,5 @@ func addChecking(tp *Transport) {
 		}
 		return cli.IsConnection()
 	}
-	tp.reconnect.tryReconnect(reconnect)
+	tp.reconnect.TryReconnect(reconnect)
 }

@@ -5,8 +5,10 @@ import (
 	"github.com/brook/common/exchange"
 	"github.com/brook/common/log"
 	"github.com/brook/common/transport"
+	"github.com/brook/common/utils"
 	defin "github.com/brook/server/define"
-	"github.com/brook/server/srv"
+	"github.com/brook/server/tunnel"
+	"github.com/brook/server/tunnel/tcp"
 )
 
 func init() {
@@ -39,24 +41,32 @@ func pingProcess(request exchange.Heartbeat, ch transport.Channel) (any, error) 
 //	@return any
 //	@return error
 func registerProcess(request exchange.RegisterReqAndRsp, ch transport.Channel) (any, error) {
-	port := request.TunnelPort
-	tunnel := srv.GetTunnel(port)
-	if tunnel == nil {
-		log.Error("Not found tunnel: %d", port)
-		return nil, fmt.Errorf("not found tunnel:%d", port)
-	}
-	log.Debug("Registering tunnel:%v", tunnel)
 	switch sch := ch.(type) {
 	case *transport.SChannel:
 		sch.IsBindTunnel = true
-		sch.Id = request.BindId
 		sch.AddAttr(defin.TunnelProxyId, request.ProxyId)
-		sch.AddAttr(defin.ChannelId, request.BindId)
 	default:
 		log.Error("Not support channel type: %T", ch)
 		return nil, fmt.Errorf("not support channel type:%T", ch)
 	}
-	tunnel.RegisterConn(ch, request)
+	request.BindId = ch.GetId()
+	if request.TunnelType == utils.Tcp {
+		port, err := tcp.OpenTunnelServer(ch, request)
+		if err != nil {
+			return nil, err
+		}
+		request.TunnelPort = port
+		return request, nil
+	} else {
+		port := request.TunnelPort
+		t := tunnel.GetTunnel(port)
+		if t == nil {
+			log.Error("Not found tunnel: %d", port)
+			return nil, fmt.Errorf("not found tunnel:%d", port)
+		}
+		log.Debug("Registering tunnel:%v", t)
+		t.RegisterConn(ch, request)
+	}
 	return request, nil
 }
 

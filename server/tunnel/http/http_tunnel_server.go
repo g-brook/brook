@@ -47,7 +47,7 @@ func NewHttpTunnelServer(server *tunnel.BaseTunnelServer) *HttpTunnelServer {
 		proxyToConn:      make(map[string]map[string]*HttpTracker),
 	}
 	server.DoStart = tunnelServer.startAfter
-	server.AddHandler(tunnel.Unregister, tunnelServer.unRegisterConn)
+	server.AddEvent(tunnel.Unregister, tunnelServer.unRegisterConn)
 	addRoute(server.Cfg, tunnelServer)
 	return tunnelServer
 }
@@ -123,7 +123,7 @@ func (htl *HttpTunnelServer) Reader(ch trp.Channel, _ srv.TraverseBy) {
 // This may be a reserved hook point for future additions.Parameters:
 // None Return value: error, indicating the result of the execution of the operation, and always returns nil.
 func (htl *HttpTunnelServer) startAfter() error {
-	srv.AddTunnel(htl)
+	tunnel.AddTunnel(htl)
 	htl.Server.AddHandler(htl)
 	addr := net.JoinHostPort("0.0.0.0", strconv.Itoa(htl.Cfg.Port))
 	server := &http.Server{
@@ -131,7 +131,7 @@ func (htl *HttpTunnelServer) startAfter() error {
 		Handler:           NewHttpProxy(htl.getRoute),
 		ReadHeaderTimeout: 60 * time.Second,
 	}
-	log.Info("Start http server:%v", htl.Cfg.Port)
+	log.Info("HTTP tunnel server started:%v", htl.Cfg.Port)
 	htl.listener = NewTcpListener()
 	go func() {
 		err := server.Serve(htl.listener)
@@ -172,10 +172,6 @@ func (htl *HttpTunnelServer) RegisterConn(ch trp.Channel, request exchange.Regis
 		log.Warn("Register %V not exists by http tunnelServer.", request.ProxyId)
 	}
 	htl.registerLock.Unlock()
-	go func() {
-		newRequest, _ := exchange.NewRequest(&exchange.ReqWorkConn{})
-		_, _ = ch.Write(newRequest.Bytes())
-	}()
 }
 
 // unRegisterConn is a method of HttpTunnelServer, which is used to unregister a connection.

@@ -7,5 +7,5 @@ var (
 
 	TunnelProxyId common.KeyType = "tunnel_proxy_id"
 
-	ChannelId common.KeyType = "channel_id"
+	ToSChannelId common.KeyType = "to_channel_id"
 )
