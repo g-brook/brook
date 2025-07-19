@@ -43,7 +43,6 @@ func (b *BaseTunnelServer) Shutdown() {
 	}
 	if b.Managers != nil {
 		clear(b.Managers)
-		b.Managers = nil
 	}
 }
 

@@ -2,6 +2,7 @@ package tunnel
 
 import (
 	"bufio"
+	"github.com/brook/common/transport"
 	"io"
 	"net"
 	"net/http"
@@ -11,7 +12,6 @@ import (
 	"github.com/brook/common/exchange"
 	"github.com/brook/common/log"
 	"github.com/brook/common/utils"
-	"github.com/xtaci/smux"
 )
 
 var (
@@ -45,11 +45,12 @@ func (h *HttpTunnelClient) GetName() string {
 //
 // Returns:
 //   - error: An error if the registration fails.
-func (h *HttpTunnelClient) initOpen(_ *smux.Stream) error {
+func (h *HttpTunnelClient) initOpen(_ *transport.SChannel) error {
 	h.BaseTunnelClient.AddReadHandler(exchange.WorkerConnReq, h.bindHandler)
 	rsp, err := h.Register()
 	if err != nil {
 		log.Error("Register fail %v", err)
+		return err
 	} else {
 		log.Info("Register success:PORT-%v", rsp.TunnelPort)
 	}

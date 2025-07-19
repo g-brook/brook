@@ -1,7 +1,6 @@
 package aio
 
 import (
-	"fmt"
 	"io"
 )
 
@@ -77,6 +76,5 @@ func Copy(src io.ReadWriteCloser, dst io.ReadWriteCloser) error {
 		}
 		return err
 	}, GetBuffPool4k())
-	fmt.Println("读取完成了.....")
 	return err
 }

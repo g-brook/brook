@@ -273,7 +273,7 @@ func (sever *Server) Start(opt ...ServerOption) error {
 						return
 					}
 					log.Info("Start server success stream. %s", stream.RemoteAddr())
-					channel := trp.NewSChannel(stream, ctx)
+					channel := trp.NewSChannel(stream, ctx, false)
 					sever.next(func(s ServerHandler) bool {
 						b := true
 						s.Open(channel, func() {
@@ -305,7 +305,7 @@ func (sever *Server) Start(opt ...ServerOption) error {
 
 func (sever *Server) smuxReadLoop(ch *trp.SChannel) {
 	for {
-		if ch.IsBindTunnel {
+		if ch.IsTunnel {
 			return
 		}
 		err := aio.WithBuffer(func(buf []byte) error {
@@ -319,7 +319,7 @@ func (sever *Server) smuxReadLoop(ch *trp.SChannel) {
 				return nil
 			}
 			_, _ = ch.Copy(buf[:n])
-			if !ch.IsBindTunnel {
+			if !ch.IsTunnel {
 				// If already this channel is bind tunnel,
 				sever.next(func(s ServerHandler) bool {
 					b := true

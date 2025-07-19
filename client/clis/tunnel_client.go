@@ -7,9 +7,9 @@ import (
 	"github.com/brook/common/configs"
 	"github.com/brook/common/exchange"
 	"github.com/brook/common/log"
+	"github.com/brook/common/transport"
 	"github.com/brook/common/utils"
 	"github.com/xtaci/smux"
-	"io"
 	"time"
 )
 
@@ -66,8 +66,6 @@ type TunnelClient interface {
 
 	// Close closes the tunnel.
 	Close()
-
-	// Done is done.
 }
 
 // BaseTunnelClient provides a base implementation of the TunnelClient interface.
@@ -76,7 +74,7 @@ type BaseTunnelClient struct {
 
 	Tcc *TunnelClientControl
 
-	DoOpen func(stream *smux.Stream) error
+	DoOpen func(stream *transport.SChannel) error
 }
 
 func NewBaseTunnelClient(cfg *configs.ClientTunnelConfig) *BaseTunnelClient {
@@ -104,6 +102,9 @@ func (b *BaseTunnelClient) GetName() string {
 func (b *BaseTunnelClient) Open(session *smux.Session) error {
 	openFunction := func() error {
 		stream, err := session.OpenStream()
+		if session.IsClosed() {
+			return nil
+		}
 		if err != nil {
 			log.Error("Active session fail %v", err)
 			return err
@@ -112,13 +113,14 @@ func (b *BaseTunnelClient) Open(session *smux.Session) error {
 			b.Tcc.Bucket.Close()
 			b.Tcc.Bucket = nil
 		}
-		bucket := exchange.NewMessageBucket(stream, b.Tcc.cancelCtx)
+		channel := transport.NewSChannel(stream, b.Tcc.cancelCtx, true)
+		bucket := exchange.NewMessageBucket(channel, b.Tcc.cancelCtx)
 		b.Tcc.Bucket = bucket
 		b.Tcc.Bucket.Run()
 		if b.DoOpen == nil {
 			panic("DoOpen is nil")
 		}
-		err = b.DoOpen(stream)
+		err = b.DoOpen(channel)
 		if err != nil {
 			return err
 		}
@@ -146,14 +148,8 @@ func (b *BaseTunnelClient) GetRegisterReq() exchange.RegisterReqAndRsp {
 }
 
 func (b *BaseTunnelClient) Register() (*exchange.RegisterReqAndRsp, error) {
-	b.Tcc.Bucket.AddHandler(exchange.Register, func(p *exchange.Protocol, _ io.ReadWriteCloser) {
-		Tracker.Complete(p)
-	},
-	)
 	req := b.GetRegisterReq()
-	p, err := SyncWrite(req, 10*time.Second, func(p *exchange.Protocol) error {
-		return b.Tcc.Bucket.Push(p)
-	})
+	p, err := b.Tcc.Bucket.SyncPushWithRequest(req)
 	if err != nil {
 		return nil, err
 	}

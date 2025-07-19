@@ -15,6 +15,7 @@ type Service struct {
 	ctx       context.Context
 	connState chan struct{}
 	connOnce  sync.Once
+	manager   *clis.Transport
 }
 
 func (receiver *Service) Connection(_ *clis.ClientControl) {
@@ -33,25 +34,27 @@ func NewService() *Service {
 
 func (receiver *Service) Run(cfg *configs.ClientConfig) context.Context {
 	//Connection to server.
-	transport := clis.NewTransport(cfg)
-	transport.Connection(
+	receiver.manager = clis.NewTransport(cfg)
+	receiver.manager.Connection(
 		clis.WithTimeout(3*time.Second),
 		clis.WithKeepAlive(10*time.Second),
 		clis.WithClientHandler(receiver),
 		clis.WithPingTime(cfg.PingTime*time.Millisecond))
 	<-receiver.connState
+	//init manager transport.
+	clis.InitManagerTransport(receiver.manager)
 	//Update cli status.
-	_ = receiver.connectionTunnel(cfg, transport)
+	_ = receiver.connectionTunnel(cfg)
 	return receiver.background()
 }
 
-func (receiver *Service) connectionTunnel(cfg *configs.ClientConfig, transport *clis.Transport) error {
+func (receiver *Service) connectionTunnel(cfg *configs.ClientConfig) error {
 	if cfg.Tunnels == nil {
 		log.Warn("Tunnels is empty, no tunnels will be opened")
 		return nil
 	}
 	req := exchange.QueryTunnelReq{}
-	p, err := transport.SyncWrite(req, 5*time.Second)
+	p, err := clis.ManagerTransport.SyncWrite(req, 5*time.Second)
 	if err != nil {
 		return err
 	}
@@ -60,7 +63,6 @@ func (receiver *Service) connectionTunnel(cfg *configs.ClientConfig, transport *
 		log.Error(err.Error())
 		return err
 	}
-
 	newCfg := configs.ClientConfig{
 		ServerPort: rsp.TunnelPort,
 		ServerHost: cfg.ServerHost,

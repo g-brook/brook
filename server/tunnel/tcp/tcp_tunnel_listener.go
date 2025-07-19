@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"github.com/brook/common/configs"
 	"github.com/brook/common/exchange"
-	"github.com/brook/common/transport"
 	"github.com/brook/common/utils"
 	"github.com/brook/server/tunnel"
 	"math/rand"
@@ -27,7 +26,7 @@ func init() {
 }
 
 // OpenTunnelServer open tcp tunnel server
-func OpenTunnelServer(ch transport.Channel, request exchange.RegisterReqAndRsp) (int, error) {
+func OpenTunnelServer(request exchange.OpenTunnelReq) (int, error) {
 	if request.TunnelType != utils.Tcp {
 		return 0, fmt.Errorf("not tcp tunnel type, you need open tunnel type is %v", request.TunnelType)
 	}
@@ -55,8 +54,6 @@ func OpenTunnelServer(ch transport.Channel, request exchange.RegisterReqAndRsp) 
 		portPool.Release(request.TunnelPort)
 		return 0, err
 	}
-	server.RegisterConn(ch, request)
-	//tcpTunnelServers[request.TunnelPort] = server
 	tcpTunnelServers.Store(request.TunnelPort, server)
 	return request.TunnelPort, nil
 }

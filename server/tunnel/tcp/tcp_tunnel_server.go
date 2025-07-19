@@ -99,9 +99,5 @@ func (htl *TcpTunnelServer) startAfter() error {
 }
 
 func (htl *TcpTunnelServer) unRegisterConn(ch trp.Channel) {
-	//The channel is closed
-	if ch != nil && ch.IsClose() {
-		htl.Shutdown()
-		CloseTunnelServer(htl.Port())
-	}
+	log.Info("Remove tcp tunnel session.")
 }

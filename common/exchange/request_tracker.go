@@ -1,8 +1,7 @@
-package clis
+package exchange
 
 import (
 	"fmt"
-	"github.com/brook/common/exchange"
 	"sync"
 	"time"
 )
@@ -13,13 +12,13 @@ var Tracker *RequestTracker
 
 func init() {
 	Tracker = &RequestTracker{
-		pending: make(map[int64]chan *exchange.Protocol),
+		pending: make(map[int64]chan *Protocol),
 	}
 }
 
 type RequestTracker struct {
 	mu      sync.Mutex
-	pending map[int64]chan *exchange.Protocol
+	pending map[int64]chan *Protocol
 }
 
 // Register
@@ -28,16 +27,16 @@ type RequestTracker struct {
 //	@receiver rt
 //	@param reqId
 //	@return chan
-func (rt *RequestTracker) Register(reqId int64) chan *exchange.Protocol {
+func (rt *RequestTracker) Register(reqId int64) chan *Protocol {
 	rt.mu.Lock()
 	defer rt.mu.Unlock()
-	ch := make(chan *exchange.Protocol, 1)
+	ch := make(chan *Protocol, 1)
 	rt.pending[reqId] = ch
 	return ch
 }
 
 // Complete delivers a response and removes the tracker entry.
-func (rt *RequestTracker) Complete(resp *exchange.Protocol) {
+func (rt *RequestTracker) Complete(resp *Protocol) bool {
 	rt.mu.Lock()
 	defer rt.mu.Unlock()
 	ch, ok := rt.pending[resp.ReqId]
@@ -45,13 +44,18 @@ func (rt *RequestTracker) Complete(resp *exchange.Protocol) {
 		delete(rt.pending, resp.ReqId)
 		ch <- resp
 	}
+	return ok
 }
 
-func SyncWrite(message exchange.InBound, timeout time.Duration, writer func(protocol *exchange.Protocol) error) (*exchange.Protocol, error) {
-	request, _ := exchange.NewRequest(message)
-	ch := Tracker.Register(request.ReqId)
-	defer Tracker.Remove(request.ReqId)
-	err := writer(request)
+func SyncWriteInBound(message InBound, timeout time.Duration, writer func(protocol *Protocol) error) (*Protocol, error) {
+	request, _ := NewRequest(message)
+	return SyncWriteByProtocol(request, timeout, writer)
+}
+
+func SyncWriteByProtocol(message *Protocol, timeout time.Duration, writer func(protocol *Protocol) error) (*Protocol, error) {
+	ch := Tracker.Register(message.ReqId)
+	defer Tracker.Remove(message.ReqId)
+	err := writer(message)
 	if err != nil {
 		return nil, err
 	}

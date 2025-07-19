@@ -6,7 +6,6 @@ import (
 	"bytes"
 	"context"
 	"errors"
-	"fmt"
 	"github.com/brook/common"
 	"github.com/google/uuid"
 	"github.com/xtaci/smux"
@@ -21,25 +20,26 @@ import (
 // buf is a buffer for storing data temporarily
 // isBindTunnel indicates if the channel is bound to a tunnel
 type SChannel struct {
-	Stream       *smux.Stream
-	IsBindTunnel bool
-	buf          bytes.Buffer
-	id           string
-	ctx          context.Context
-	cancel       context.CancelFunc
-	attr         map[common.KeyType]interface{}
+	Stream   *smux.Stream
+	IsTunnel bool
+	buf      bytes.Buffer
+	id       string
+	ctx      context.Context
+	cancel   context.CancelFunc
+	attr     map[common.KeyType]interface{}
 }
 
 // NewSChannel creates a new SChannel with the given smux stream
 // It initializes a pipe for reading and writing
-func NewSChannel(stream *smux.Stream, parent context.Context) *SChannel {
+func NewSChannel(stream *smux.Stream, parent context.Context, isTunnel bool) *SChannel {
 	ctx, cancelFunc := context.WithCancel(parent)
 	ch := &SChannel{Stream: stream,
-		ctx:    ctx,
-		id:     uuid.NewString(),
-		cancel: cancelFunc,
-		attr:   map[common.KeyType]interface{}{},
-		buf:    bytes.Buffer{}} // Initialize as pointer
+		ctx:      ctx,
+		id:       uuid.NewString(),
+		cancel:   cancelFunc,
+		attr:     map[common.KeyType]interface{}{},
+		IsTunnel: isTunnel,
+		buf:      bytes.Buffer{}} // Initialize as pointer
 	return ch
 }
 
@@ -105,7 +105,7 @@ func (s *SChannel) Read(p []byte) (n int, err error) {
 	if s.IsClose() {
 		return 0, io.EOF
 	}
-	if s.IsBindTunnel {
+	if s.IsTunnel {
 		n, err = s.Stream.Read(p)
 	} else {
 		n, err = s.buf.Read(p)
@@ -126,7 +126,6 @@ func (s *SChannel) Write(p []byte) (n int, err error) {
 			_ = s.Close()
 			return 0, err
 		}
-		fmt.Println("lllll:", s.GetId())
 	}
 	return
 }

@@ -64,7 +64,7 @@ func (t *Transport) openTunnel() {
 }
 
 func (t *Transport) SyncWrite(message exchange.InBound, timeout time.Duration) (*exchange.Protocol, error) {
-	return SyncWrite(message, timeout, func(protocol *exchange.Protocol) error {
+	return exchange.SyncWriteInBound(message, timeout, func(protocol *exchange.Protocol) error {
 		return t.client.cct.Write(protocol.Bytes())
 	})
 }
@@ -91,7 +91,7 @@ func (b *CheckHandler) Read(r *exchange.Protocol, cct *ClientControl) error {
 		log.Debug("Receiver PONG info: %v", cct.cli.getAddress())
 		return nil
 	} else {
-		Tracker.Complete(r)
+		exchange.Tracker.Complete(r)
 		return nil
 	}
 }
