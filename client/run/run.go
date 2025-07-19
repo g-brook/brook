@@ -2,6 +2,7 @@ package run
 
 import (
 	"fmt"
+	"github.com/brook/client/cli"
 	"github.com/brook/common/command"
 	"github.com/brook/common/configs"
 	"github.com/brook/common/log"
@@ -32,6 +33,7 @@ var cmd = &cobra.Command{
 				config = newConfig
 			}
 		}
+		log.NewLogger(&config.Logger)
 		LoadTunnel()
 		verilyBaseConfig(&config)
 		run(&config)
@@ -46,7 +48,7 @@ func verilyBaseConfig(c *configs.ClientConfig) {
 	if c.ServerPort <= 0 {
 		panic("ServerPort is 0, system exit")
 	}
-	CliMainPage.RemoteAddress = fmt.Sprintf("%s:%d", c.ServerHost, c.ServerPort)
+	cli.Page.RemoteAddress = fmt.Sprintf("%s:%d", c.ServerHost, c.ServerPort)
 }
 
 func Start() {
@@ -58,7 +60,7 @@ func Start() {
 }
 
 func run(config *configs.ClientConfig) {
-	//go OpenCli()
+	go OpenCli()
 	service := NewService()
 	ctx := service.Run(config)
 	<-ctx.Done()
@@ -66,8 +68,7 @@ func run(config *configs.ClientConfig) {
 }
 
 func OpenCli() {
-	UpdateStatus("offline")
-	program := tea.NewProgram(initModel(), tea.WithInput(os.Stdin), tea.WithoutSignals(),
+	program := tea.NewProgram(cli.InitModel(), tea.WithInput(os.Stdin), tea.WithoutSignals(),
 		tea.WithOutput(os.Stdout))
 	_, err := program.Run()
 	if err != nil {

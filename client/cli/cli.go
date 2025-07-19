@@ -1,4 +1,4 @@
-package run
+package cli
 
 import (
 	tea "github.com/charmbracelet/bubbletea"
@@ -76,32 +76,12 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (m model) View() string {
 	// The header
 	sb := GetViewPage()
-	//// Iterate over our choices
-	//for i, choice := range m.choices {
-	//
-	//	// Is the cursor pointing at this choice?
-	//	cursor := " " // no cursor
-	//	if m.cursor == i {
-	//		cursor = ">" // cursor!
-	//	}
-	//
-	//	// Is this choice selected?
-	//	checked := " " // not selected
-	//	if _, ok := m.selected[i]; ok {
-	//		checked = "x" // selected!
-	//	}
-	//
-	//	// Render the row
-	//	sb.WriteString(fmt.Sprintf("%s [%s] %s\n", cursor, checked, choice))
-	//}
-	// The footer
 	sb.WriteString("\nPress q to quit.\n")
-
 	// Send the UI for rendering
 	return sb.String()
 }
 
-func initModel() model {
+func InitModel() model {
 	return model{
 		choices:  []string{"Buy carrots", "Buy celery", "Buy kohlrabi"},
 		cursor:   0,

@@ -20,7 +20,6 @@ type Service struct {
 
 func (receiver *Service) Connection(_ *clis.ClientControl) {
 	receiver.connOnce.Do(func() {
-		UpdateStatus("online")
 		close(receiver.connState)
 	})
 }
@@ -35,14 +34,16 @@ func NewService() *Service {
 func (receiver *Service) Run(cfg *configs.ClientConfig) context.Context {
 	//Connection to server.
 	receiver.manager = clis.NewTransport(cfg)
+	//init manager transport.
+	clis.InitManagerTransport(receiver.manager)
 	receiver.manager.Connection(
 		clis.WithTimeout(3*time.Second),
 		clis.WithKeepAlive(10*time.Second),
 		clis.WithClientHandler(receiver),
-		clis.WithPingTime(cfg.PingTime*time.Millisecond))
+		clis.WithPingTime(cfg.PingTime*time.Millisecond),
+		clis.WithClientHandler(clis.ManagerTransport),
+	)
 	<-receiver.connState
-	//init manager transport.
-	clis.InitManagerTransport(receiver.manager)
 	//Update cli status.
 	_ = receiver.connectionTunnel(cfg)
 	return receiver.background()

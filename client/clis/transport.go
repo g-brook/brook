@@ -98,7 +98,8 @@ func (b *CheckHandler) Read(r *exchange.Protocol, cct *ClientControl) error {
 
 func (b *CheckHandler) Timeout(cct *ClientControl) {
 	var h = exchange.Heartbeat{
-		Value: "PING",
+		Value:     "PING",
+		StartTime: time.Now().UnixMilli(),
 	}
 	request, _ := exchange.NewRequest(h)
 	_ = cct.Write(request.Bytes())
@@ -106,18 +107,18 @@ func (b *CheckHandler) Timeout(cct *ClientControl) {
 
 func addChecking(tp *Transport) {
 	reconnect := func() bool {
-		cli := tp.client
-		if !cli.IsConnection() {
-			log.Warn("Connection %s Not Active, start reconnection.", cli.getAddress())
-			err := cli.doConnection()
+		client := tp.client
+		if !client.IsConnection() {
+			log.Warn("Connection %s Not Active, start reconnection.", client.getAddress())
+			err := client.doConnection()
 			if err != nil {
-				log.Warn("Reconnection %s Fail, next time still running.", cli.getAddress())
+				log.Warn("Reconnection %s Fail, next time still running.", client.getAddress())
 			} else {
-				log.Info("👍<--Reconnection %s success OK.✅-->", cli.getAddress())
+				log.Info("👍<--Reconnection %s success OK.✅-->", client.getAddress())
 				tp.openTunnel()
 			}
 		}
-		return cli.IsConnection()
+		return client.IsConnection()
 	}
 	tp.reconnect.TryReconnect(reconnect)
 }

@@ -1,6 +1,7 @@
 package clis
 
 import (
+	"github.com/brook/client/cli"
 	"github.com/brook/common/exchange"
 	"time"
 )
@@ -14,7 +15,28 @@ func InitManagerTransport(transport *Transport) {
 }
 
 type managerTransport struct {
+	BaseClientHandler
 	transport *Transport
+}
+
+func (b *managerTransport) Close(_ *ClientControl) {
+	cli.UpdateStatus("offline")
+}
+
+func (b *managerTransport) Connection(_ *ClientControl) {
+	cli.UpdateStatus("online")
+}
+
+func (b *managerTransport) Read(r *exchange.Protocol, cct *ClientControl) error {
+	//Heart info.
+	if r.Cmd == exchange.Heart {
+		t, _ := exchange.Parse[exchange.Heartbeat](r.Data)
+		startTime := t.StartTime
+		endTime := time.Now().UnixMilli()
+		cli.UpdateSpell(endTime - startTime)
+		return nil
+	}
+	return nil
 }
 
 // NewManagerTransport This function creates a new managerTransport object and returns it
@@ -29,15 +51,15 @@ func NewManagerTransport(tr *Transport) *managerTransport {
 }
 
 // GetTransport This function returns the transport associated with the receiver
-func (receiver *managerTransport) GetTransport() *Transport {
-	// Return the transport associated with the receiver
-	return receiver.transport
+func (b *managerTransport) GetTransport() *Transport {
+	// Return the transport associated with the b
+	return b.transport
 }
 
 // SyncWrite This function is a method of the managerTransport struct and is used to synchronously write a message to the transport with a specified timeout.
-func (receiver *managerTransport) SyncWrite(message exchange.InBound, timeout time.Duration) (*exchange.Protocol, error) {
+func (b *managerTransport) SyncWrite(message exchange.InBound, timeout time.Duration) (*exchange.Protocol, error) {
 	// Call the SyncWrite method of the transport struct and pass in the message and timeout
-	return receiver.transport.SyncWrite(
+	return b.transport.SyncWrite(
 		message,
 		timeout,
 	)

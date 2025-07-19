@@ -41,7 +41,7 @@ var cmd = &cobra.Command{
 			}
 			serverConfig = config
 		}
-		initLogger()
+		initLogger(serverConfig)
 		configCheck(serverConfig)
 		run()
 		return nil
@@ -52,8 +52,8 @@ func configCheck(config configs.ServerConfig) {
 
 }
 
-func initLogger() {
-	log.InitFunc("debug")
+func initLogger(svf configs.ServerConfig) {
+	log.NewLogger(&svf.Logger)
 }
 
 func Start() {

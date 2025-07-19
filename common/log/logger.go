@@ -1,17 +1,52 @@
 package log
 
 import (
+	"github.com/brook/common/configs"
+	"github.com/brook/common/hash"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"gopkg.in/natefinch/lumberjack.v2"
 	"os"
+	"strings"
 )
+
+type LoggerSetting struct {
+	level   string
+	logPath string
+	outs    *hash.Set[string]
+}
 
 var sugar *zap.SugaredLogger
 
-// InitFunc initializes the logging system with the specified log level
+func defaultSetting() *LoggerSetting {
+	return &LoggerSetting{
+		level:   "info",
+		logPath: "./logs/current_brook.log",
+		outs:    hash.NewSet[string]("stdout", "file"),
+	}
+}
+
+func NewLogger(config *configs.LoggerConfig) {
+	setting := &LoggerSetting{
+		outs: hash.NewSet[string](),
+	}
+	if config != nil {
+		setting.level = config.LoggLevel
+		setting.logPath = config.LogPath
+		if config.Outs != "" {
+			infos := strings.Split(config.Outs, ",")
+			for _, v := range infos {
+				setting.outs.Add(v)
+			}
+		}
+	}
+	initLogger(setting)
+}
+
+// InitLogger initializes the logging system with the specified log level
 // It sets up both console and file logging with proper formatting and rotation
-func InitFunc(logLevel string) {
+func initLogger(setting *LoggerSetting) {
+	setting = newSetting(setting)
 	encoder := zapcore.NewConsoleEncoder(zapcore.EncoderConfig{
 		TimeKey:        "time",
 		LevelKey:       "level",
@@ -34,16 +69,38 @@ func InitFunc(logLevel string) {
 		MaxBackups: 10,
 		Compress:   true,
 	})
-	level := parseLevel(logLevel)
+	level := parseLevel(setting.level)
+	var cores []zapcore.Core
+	if setting.outs.Contains("stdout") {
+		core := zapcore.NewCore(encoder, zapcore.AddSync(os.Stdout), level)
+		cores = append(cores, core)
+	}
+	if setting.outs.Contains("file") {
+		core := zapcore.NewCore(encoder, fileWriter, level)
+		cores = append(cores, core)
+	}
 	// Multiple outputs: console + file
 	core := zapcore.NewTee(
-		zapcore.NewCore(encoder, zapcore.AddSync(os.Stdout), level),
-		zapcore.NewCore(encoder, fileWriter, level),
+		cores...,
 	)
 
 	logger := zap.New(core, zap.AddCaller(), zap.AddCallerSkip(1)) // zap.NewProduction()
 	zap.ReplaceGlobals(logger)
 	sugar = logger.Sugar()
+}
+
+func newSetting(setting *LoggerSetting) *LoggerSetting {
+	def := defaultSetting()
+	if setting == nil {
+		setting = def
+	}
+	if setting.level == "" {
+		setting.level = def.level
+	}
+	if setting.outs == nil || setting.outs.Len() == 0 {
+		setting.outs = def.outs
+	}
+	return setting
 }
 
 // parseLevel converts a string level to zapcore.Level

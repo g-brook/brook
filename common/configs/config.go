@@ -26,6 +26,7 @@ type LoggerConfig struct {
 	LoggLevel string `json:"logLevel"`
 
 	LogPath string `json:"logPath"`
+	Outs    string `json:"outs"`
 }
 
 type ServerTunnelConfig struct {
@@ -87,4 +88,5 @@ type ClientConfig struct {
 	ServerHost string                `json:"serverHost"`
 	PingTime   time.Duration         `json:"pingTime"`
 	Tunnels    []*ClientTunnelConfig `json:"tunnels"`
+	Logger     LoggerConfig          `json:"logger"`
 }

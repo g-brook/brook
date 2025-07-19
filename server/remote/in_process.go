@@ -8,6 +8,7 @@ import (
 	defin "github.com/brook/server/define"
 	"github.com/brook/server/tunnel"
 	"github.com/brook/server/tunnel/tcp"
+	"time"
 )
 
 func init() {
@@ -28,7 +29,10 @@ type InProcess[T exchange.InBound] func(request T, ch transport.Channel) (any, e
 //	@return error
 func pingProcess(request exchange.Heartbeat, ch transport.Channel) (any, error) {
 	log.Debug("Receiver Ping message : %s:%v", request.Value, ch.RemoteAddr())
-	heartbeat := exchange.Heartbeat{Value: "PONG"}
+	heartbeat := exchange.Heartbeat{Value: "PONG",
+		StartTime:  request.StartTime,
+		ServerTime: time.Now().UnixMilli(),
+	}
 	return heartbeat, nil
 }
 

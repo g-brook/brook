@@ -1,4 +1,4 @@
-package run
+package cli
 
 import (
 	"github.com/charmbracelet/lipgloss"
@@ -13,7 +13,7 @@ type MainPage struct {
 
 	Status string
 
-	Latency int
+	Latency int64
 }
 
 var style = lipgloss.NewStyle().
@@ -29,27 +29,33 @@ var redStyle = lipgloss.NewStyle().
 var greenStyle = lipgloss.NewStyle().
 	Foreground(lipgloss.Color("#228B22")).Bold(true)
 
-var CliMainPage = MainPage{
-	Title: style.Render("=========== Welcome Your Come  Brook (version:0.0.1) ==========="),
+var Page = MainPage{
+	Title:   style.Render("=========== Welcome Your Come  Brook (version:0.0.1) ==========="),
+	Latency: 0,
+	Status:  "offline",
 }
 
 func UpdateStatus(status string) {
 	switch status {
 	case "online":
-		CliMainPage.Status = greenStyle.Render(status)
+		Page.Status = greenStyle.Render(status)
 	case "offline":
-		CliMainPage.Status = redStyle.Render(status)
+		Page.Status = redStyle.Render(status)
 	default:
-		CliMainPage.Status = status
+		Page.Status = status
 	}
+}
+
+func UpdateSpell(ms int64) {
+	Page.Latency = ms
 }
 
 func GetViewPage() *strings.Builder {
 	var sb strings.Builder
-	writeLine("", &sb, CliMainPage.Title, false)
-	writeLine("Status:", &sb, CliMainPage.Status, true)
-	writeLine("Remote Address:", &sb, CliMainPage.RemoteAddress, true)
-	writeLine("Latency:", &sb, strconv.Itoa(CliMainPage.Latency)+"ms", true)
+	writeLine("", &sb, Page.Title, false)
+	writeLine("Status:", &sb, Page.Status, true)
+	writeLine("Remote Address:", &sb, Page.RemoteAddress, true)
+	writeLine("Latency:", &sb, strconv.FormatInt(Page.Latency, 10)+"ms", true)
 	return &sb
 }
 
