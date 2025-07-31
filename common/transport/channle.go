@@ -8,6 +8,8 @@ import (
 	"net"
 )
 
+type CloseEvent func(channel Channel)
+
 // Channel interface represents a network communication channel
 // It combines io.Reader and io.Writer with net.Conn to provide a comprehensive interface
 // for network operations. This interface is designed to be implemented by different
@@ -60,4 +62,7 @@ type Channel interface {
 	//  @param key
 	//
 	GetAttr(key common.KeyType) (interface{}, bool)
+
+	// OnClose CloseEvent The Channel Setter CloseEvent
+	OnClose(event CloseEvent)
 }

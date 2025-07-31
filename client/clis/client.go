@@ -240,7 +240,7 @@ func (c *Client) doConnection() error {
 		return nil
 	}
 	log.Info("👍---->Connection %s %s success OK.✅--->", c.getAddress(), "^ Tunnel ^")
-	//open smux
+	//OpenStream smux
 	openSmux := func() (*smux.Session, error) {
 		config := smux.DefaultConfig()
 		config.KeepAliveDisabled = !c.opts.Smux.KeepAlive
@@ -276,9 +276,9 @@ func (c *Client) OpenTunnel(config *configs.ClientTunnelConfig) error {
 		return nil
 	}
 	//copy.
-	client := GetTunnelClient(config.Type, config)
+	client := GetTunnelClient(config.TunnelType, config)
 	if client == nil {
-		log.Error("Not found [%s] tunnel client, Pleas check.", config.Type)
+		log.Error("Not found [%s] tunnel client, Pleas check.", config.TunnelType)
 		return errors.New("not found tunnel client")
 	}
 	return client.Open(c.session)

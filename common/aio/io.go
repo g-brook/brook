@@ -2,31 +2,37 @@ package aio
 
 import (
 	"io"
+	"sync"
 )
 
 // Pipe establishes a bidirectional data stream between two ReadWriteClosers, enabling data transfer in both directions.
 // ... existing code ...
 func Pipe(src io.ReadWriteCloser, dst io.ReadWriteCloser) (errors []error) {
-	errCh := make(chan error, 2)
+	var wait sync.WaitGroup
+	errors2 := make([]error, 2)
 	// copyData transfers data from src to dst in a goroutine.
-	copyData := func(src io.ReadWriteCloser, dst io.ReadWriteCloser) {
+	copyData := func(index int, src io.ReadWriteCloser, dst io.ReadWriteCloser) {
 		defer func() {
+			wait.Done()
 			src.Close()
 			dst.Close()
 		}()
-		err := WithBuffer(func(buf []byte) error {
+		errors2[index] = WithBuffer(func(buf []byte) error {
 			_, err := io.CopyBuffer(dst, src, buf)
 			return err
 		}, GetBuffPool16k())
-		errCh <- err
 	}
+	wait.Add(2)
 	// Start bidirectional data transfer
-	go copyData(src, dst)
-	go copyData(dst, src)
-	errors = make([]error, 2)
-	errors[0] = <-errCh
-	errors[1] = <-errCh
-	return errors
+	go copyData(0, src, dst)
+	go copyData(1, dst, src)
+	wait.Wait()
+	for _, e := range errors2 {
+		if e != nil {
+			errors = append(errors, e)
+		}
+	}
+	return
 }
 
 func SignPipe(src io.ReadWriteCloser, dst io.ReadWriteCloser) error {
@@ -50,11 +56,12 @@ func SignPipe(src io.ReadWriteCloser, dst io.ReadWriteCloser) error {
 
 func Copy(src io.ReadWriteCloser, dst io.ReadWriteCloser) error {
 	written := int64(0)
-	err := WithBuffer(func(buf []byte) (err error) {
+	return WithBuffer(func(buf []byte) (err error) {
 		for {
 			nr, er := src.Read(buf)
 			if nr > 0 {
-				nw, ew := dst.Write(buf[0:nr])
+				bytes := buf[0:nr]
+				nw, ew := dst.Write(bytes)
 				if nw < 0 || nr < nw {
 					nw = 0
 				}
@@ -67,7 +74,7 @@ func Copy(src io.ReadWriteCloser, dst io.ReadWriteCloser) error {
 					break
 				}
 			}
-			if er != nil {
+			if er != nil && er != io.EOF {
 				if er == io.EOF {
 					err = er
 				}
@@ -75,6 +82,5 @@ func Copy(src io.ReadWriteCloser, dst io.ReadWriteCloser) error {
 			}
 		}
 		return err
-	}, GetBuffPool4k())
-	return err
+	}, GetBuffPool16k())
 }

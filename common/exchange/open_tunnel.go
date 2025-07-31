@@ -3,10 +3,11 @@ package exchange
 import "github.com/brook/common/utils"
 
 type OpenTunnelReq struct {
-	SessionId  string           `json:"sessionId"`
-	ProxyId    string           `json:"proxy_id"`
-	TunnelType utils.TunnelType `json:"type"`
-	TunnelPort int              `json:"port"`
+	ProxyId      string           `json:"proxy_id"`
+	TunnelType   utils.TunnelType `json:"type"`
+	TunnelPort   int              `json:"port"`
+	UnId         string           `json:"unId"`
+	LocalAddress string           `json:"localAddress"`
 }
 
 func (o OpenTunnelReq) Cmd() Cmd {
@@ -14,8 +15,8 @@ func (o OpenTunnelReq) Cmd() Cmd {
 }
 
 type OpenTunnelResp struct {
-	SessionId  string `json:"sessionId"`
 	TunnelPort int    `json:"port"`
+	UnId       string `json:"unId"`
 }
 
 func (o OpenTunnelResp) Cmd() Cmd {

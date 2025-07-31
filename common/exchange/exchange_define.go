@@ -75,20 +75,20 @@ type Protocol struct {
 	//responseCode.
 	//request never is zero.
 	RspCode RspCode
+
+	//message.
+	RspMsg string
 }
 
-// NewRequest
-//
-//	@Description: new request Protocol.
-//	@param cmd
-//	@param data
-//	@return *Protocol
-//	@return error
+// NewRequest This function creates a new Protocol object from an InBound object
 func NewRequest(data InBound) (*Protocol, error) {
+	// Marshal the InBound object into a byte slice
 	b, err := json.Marshal(data)
+	// If there is an error, return an error
 	if err != nil {
 		return nil, errors.New("new Request error," + err.Error())
 	}
+	// Return a new Protocol object with the marshalled data, an incremented request ID, the command from the InBound object, the request type, and a success response code
 	return &Protocol{
 		Data:    b,
 		ReqId:   increment(),
@@ -98,14 +98,9 @@ func NewRequest(data InBound) (*Protocol, error) {
 	}, nil
 }
 
-// NewResponse
-//
-//	@Description: new response Protocol.
-//	@param cmd
-//	@param reqId
-//	@return *Protocol
-//	@return error
+// NewResponse This function creates a new Protocol object with the given command and request ID
 func NewResponse(cmd Cmd, reqId int64) (*Protocol, error) {
+	// Create a new Protocol object with the given request ID, command, and response type
 	return &Protocol{
 		ReqId:   reqId,
 		Cmd:     cmd,
@@ -121,6 +116,11 @@ func NewResponse(cmd Cmd, reqId int64) (*Protocol, error) {
 //	@return []byte
 func (receiver *Protocol) Bytes() []byte {
 	return Encoder(receiver)
+}
+
+// IsSuccess This function checks if the Protocol receiver is successful
+func (receiver *Protocol) IsSuccess() bool {
+	return receiver.RspCode == RspSuccess
 }
 
 // Parse

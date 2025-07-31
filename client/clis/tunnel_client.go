@@ -75,12 +75,17 @@ type BaseTunnelClient struct {
 	Tcc *TunnelClientControl
 
 	DoOpen func(stream *transport.SChannel) error
+
+	IsAutoOpen bool
+
+	session *smux.Session
 }
 
-func NewBaseTunnelClient(cfg *configs.ClientTunnelConfig) *BaseTunnelClient {
+func NewBaseTunnelClient(cfg *configs.ClientTunnelConfig, isAutoOpen bool) *BaseTunnelClient {
 	cancelCtx, cancelFunc := context.WithCancel(context.Background())
 	return &BaseTunnelClient{
-		cfg: cfg,
+		cfg:        cfg,
+		IsAutoOpen: isAutoOpen,
 		Tcc: &TunnelClientControl{
 			cancelCtx: cancelCtx,
 			cancel:    cancelFunc,
@@ -98,22 +103,30 @@ func (b *BaseTunnelClient) GetName() string {
 	return "BaseTunnelClient"
 }
 
-// Open Active is open
+// Open Active is OpenStream
 func (b *BaseTunnelClient) Open(session *smux.Session) error {
+	b.session = session
+	if b.IsAutoOpen {
+		return b.OpenStream()
+	}
+	return nil
+}
+
+func (b *BaseTunnelClient) OpenStream() error {
 	openFunction := func() error {
-		stream, err := session.OpenStream()
-		if session.IsClosed() {
+		stream, err := b.session.OpenStream()
+		if b.session.IsClosed() {
 			return nil
 		}
 		if err != nil {
 			log.Error("Active session fail %v", err)
 			return err
 		}
+		channel := transport.NewSChannel(stream, b.Tcc.cancelCtx, true)
 		if b.Tcc.Bucket != nil {
 			b.Tcc.Bucket.Close()
 			b.Tcc.Bucket = nil
 		}
-		channel := transport.NewSChannel(stream, b.Tcc.cancelCtx, true)
 		bucket := exchange.NewMessageBucket(channel, b.Tcc.cancelCtx)
 		b.Tcc.Bucket = bucket
 		b.Tcc.Bucket.Run()
@@ -125,10 +138,15 @@ func (b *BaseTunnelClient) Open(session *smux.Session) error {
 			return err
 		}
 		<-bucket.Done()
+		log.Info("Tunnel stream close exit:%v:%v", stream.RemoteAddr(), stream.ID())
 		return nil
 	}
-	b.Tcc.retry(openFunction)
-	return nil
+	if b.IsAutoOpen {
+		b.Tcc.retry(openFunction)
+		return nil
+	} else {
+		return openFunction()
+	}
 }
 
 func (b *BaseTunnelClient) AddReadHandler(cmd exchange.Cmd, read exchange.BucketRead) {
@@ -143,7 +161,7 @@ func (b *BaseTunnelClient) GetRegisterReq() exchange.RegisterReqAndRsp {
 	return exchange.RegisterReqAndRsp{
 		TunnelPort: b.GetCfg().RemotePort,
 		ProxyId:    b.GetCfg().ProxyId,
-		TunnelType: b.GetCfg().Type,
+		TunnelType: b.GetCfg().TunnelType,
 	}
 }
 
@@ -161,6 +179,12 @@ func (b *BaseTunnelClient) Register() (*exchange.RegisterReqAndRsp, error) {
 		return nil, err
 	}
 	return result, nil
+}
+
+func (b *BaseTunnelClient) AsyncRegister(readCallBack exchange.BucketRead) error {
+	req := b.GetRegisterReq()
+	b.Tcc.Bucket.AddHandler(req.Cmd(), readCallBack)
+	return b.Tcc.Bucket.PushWitchRequest(req)
 }
 
 // TunnelsClient at all tunnel tunnel by map.

@@ -7,7 +7,6 @@ import (
 	"github.com/brook/common/transport"
 	defin "github.com/brook/server/define"
 	"github.com/brook/server/tunnel"
-	"github.com/brook/server/tunnel/tcp"
 	"time"
 )
 
@@ -69,20 +68,21 @@ func registerProcess(request exchange.RegisterReqAndRsp, ch transport.Channel) (
 //	@Description: Query tunnel port config.
 //	@param req
 //	@param ch
-func queryTunnelConfigProcess(req exchange.QueryTunnelReq, _ transport.Channel) (any, error) {
+func queryTunnelConfigProcess(req exchange.QueryTunnelReq, ch transport.Channel) (any, error) {
 	port := defin.Get[int](defin.TunnelPortKey)
 	return exchange.QueryTunnelResp{
 		TunnelPort: port,
+		UnId:       ch.GetId(),
 	}, nil
 }
 
-func openTunnelProcess(req exchange.OpenTunnelReq, _ transport.Channel) (any, error) {
-	openPort, err := tcp.OpenTunnelServer(req)
+func openTunnelProcess(req exchange.OpenTunnelReq, ch transport.Channel) (any, error) {
+	openPort, err := OpenTunnelServer(req, ch)
 	if err != nil {
 		return nil, err
 	}
 	return exchange.OpenTunnelResp{
-		SessionId:  req.SessionId,
+		UnId:       req.UnId,
 		TunnelPort: openPort,
 	}, nil
 }

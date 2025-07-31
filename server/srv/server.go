@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/brook/common/aio"
+	"github.com/brook/common/hash"
 	"github.com/brook/common/log"
 	trp "github.com/brook/common/transport"
 	"github.com/panjf2000/gnet/v2"
@@ -82,7 +83,7 @@ func (b *BaseServerHandler) Boot(s *Server, traverse TraverseBy) {
 func NewChannel(conn gnet.Conn, t *Server) *GChannel {
 	ctx := conn.Context()
 	connContext := ctx.(*ConnContext)
-	value, ok := t.connections[connContext.Id]
+	value, ok := t.connections.Load(connContext.Id)
 	if ok {
 		return value
 	}
@@ -90,14 +91,15 @@ func NewChannel(conn gnet.Conn, t *Server) *GChannel {
 	defer connLock.Unlock()
 	bgCtx, cancelFunc := context.WithCancel(context.Background())
 	v2 := &GChannel{
-		Conn:    conn,
-		Id:      connContext.Id,
-		Context: connContext,
-		Server:  t,
-		bgCtx:   bgCtx,
-		cancel:  cancelFunc,
+		Conn:        conn,
+		Id:          connContext.Id,
+		Context:     connContext,
+		Server:      t,
+		bgCtx:       bgCtx,
+		cancel:      cancelFunc,
+		closeEvents: make([]trp.CloseEvent, 0),
 	}
-	t.connections[connContext.Id] = v2
+	t.connections.Store(connContext.Id, v2)
 	if t.InitConnHandler != nil {
 		t.InitConnHandler(v2)
 	}
@@ -115,7 +117,7 @@ type Server struct {
 
 	opts *sOptions
 
-	connections map[string]*GChannel
+	connections *hash.SyncMap[string, *GChannel]
 
 	handlers []ServerHandler
 
@@ -127,8 +129,8 @@ type Server struct {
 func NewServer(port int) *Server {
 	return &Server{
 		port:        port,
+		connections: hash.NewSyncMap[string, *GChannel](),
 		handlers:    make([]ServerHandler, 0),
-		connections: make(map[string]*GChannel),
 	}
 }
 
@@ -141,11 +143,17 @@ func (sever *Server) AddInitConnHandler(init InitConnHandler) {
 }
 
 func (sever *Server) Connections() map[string]*GChannel {
-	return sever.connections
+	tb := make(map[string]*GChannel)
+	f := func(key string, value *GChannel) bool {
+		tb[key] = value
+		return true
+	}
+	sever.connections.Range(f)
+	return tb
 }
 
 func (sever *Server) GetConnection(id string) (*GChannel, bool) {
-	v2, ok := sever.connections[id]
+	v2, ok := sever.connections.Load(id)
 	return v2, ok
 }
 func (sever *Server) OnBoot(engine gnet.Engine) (action gnet.Action) {
@@ -202,7 +210,6 @@ func (sever *Server) OnOpen(c gnet.Conn) (out []byte, action gnet.Action) {
 }
 
 func (sever *Server) OnTraffic(c gnet.Conn) gnet.Action {
-
 	conn2 := NewChannel(c, sever)
 	//Call lastActive.
 	conn2.GetContext().LastActive()
@@ -246,9 +253,9 @@ func (sever *Server) removeIfConnection(v2 *GChannel) {
 		//This use v2.id removing map element.
 		// v2.id eq context.id, so yet use v2.id.
 		//Because v2.context possible is nil.
-		channel, ok := sever.connections[v2.Id]
+		channel, ok := sever.connections.Load(v2.Id)
 		if ok {
-			delete(sever.connections, v2.Id)
+			sever.connections.Delete(v2.Id)
 		}
 		_ = channel.Close()
 	}

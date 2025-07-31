@@ -14,18 +14,26 @@ import (
 type TcpTunnelServer struct {
 	*tunnel.BaseTunnelServer
 	registerLock sync.Mutex
-	allConnects  []string
+	unId         string
+	proxyId      string
+	pool         *tunnel.TunnelPool
+	manner       trp.Channel
+	localAddress string
 }
 
 // NewTcpTunnelServer creates a new TCP tunnel server instance
-func NewTcpTunnelServer(server *tunnel.BaseTunnelServer) *TcpTunnelServer {
+func NewTcpTunnelServer(server *tunnel.BaseTunnelServer,
+	openReq exchange.OpenTunnelReq,
+	ch trp.Channel) *TcpTunnelServer {
 	tunnelServer := &TcpTunnelServer{
 		BaseTunnelServer: server,
-		allConnects:      make([]string, 0),
+		unId:             openReq.UnId,
+		proxyId:          openReq.ProxyId,
+		localAddress:     openReq.LocalAddress,
+		manner:           ch,
 	}
+	tunnelServer.pool = tunnel.NewTunnelPool(tunnelServer.createConn, 1)
 	server.DoStart = tunnelServer.startAfter
-	server.AddEvent(tunnel.Unregister, tunnelServer.unRegisterConn)
-
 	return tunnelServer
 }
 
@@ -37,12 +45,8 @@ func (htl *TcpTunnelServer) RegisterConn(ch trp.Channel, request exchange.Regist
 	htl.registerLock.Lock()
 	defer htl.registerLock.Unlock()
 	htl.BaseTunnelServer.RegisterConn(ch, request)
-	htl.allConnects = append(htl.allConnects, ch.GetId())
+	_ = htl.pool.Put(ch)
 	log.Info("Register tcp tunnel, proxyId: %s", request.ProxyId)
-	go func() {
-		newRequest, _ := exchange.NewRequest(&exchange.ReqWorkConn{})
-		_, _ = ch.Write(newRequest.Bytes())
-	}()
 
 }
 
@@ -63,41 +67,60 @@ func (htl *TcpTunnelServer) Reader(ch trp.Channel, _ srv.TraverseBy) {
 }
 
 func (htl *TcpTunnelServer) Open(ch trp.Channel, _ srv.TraverseBy) {
-	i := len(htl.allConnects)
-	if i <= 0 {
+	userConn := htl.getUserConn()
+	if userConn == nil {
+		_ = ch.Close()
 		return
-	}
-	var rw trp.Channel
-	bytes := make([]byte, 0)
-	for _, chId := range htl.allConnects {
-		if newRw, ok := htl.Managers[chId]; ok {
-			_, err := newRw.Write(bytes)
-			if err == nil {
-				rw = newRw
-				break
-			}
-		}
 	}
 	switch workConn := ch.(type) {
 	case *srv.GChannel:
-		workConn.GetContext().AddAttr(defin.ToSChannelId, rw.GetId())
+		workConn.GetContext().AddAttr(defin.ToSChannelId, userConn.GetId())
 		go func() {
-			err := aio.SignPipe(rw, ch)
-			if err != nil {
-				log.Info("aio.SignPipe error %v", err)
-				workConn.GetContext().AddAttr(defin.ToSChannelId, "")
-			}
+			err := aio.SignPipe(userConn, workConn)
+			log.Error("aio.SignPipe error %v", err)
 		}()
 	}
+}
+
+func (htl *TcpTunnelServer) createConn() (err error) {
+	req := &exchange.ReqWorkConn{
+		ProxyId:      htl.proxyId,
+		Port:         htl.Port(),
+		TunnelType:   htl.Cfg.Type,
+		LocalAddress: htl.localAddress,
+		UnId:         htl.unId,
+	}
+	err = htl.writeMsg(req)
+	return
+}
+
+func (htl *TcpTunnelServer) getUserConn() trp.Channel {
+	sch, _ := htl.pool.Get()
+	return sch
 }
 
 func (htl *TcpTunnelServer) startAfter() error {
 	tunnel.AddTunnel(htl)
 	htl.Server.AddHandler(htl)
 	log.Info("TCP tunnel server started:%v", htl.Port())
+	htl.background()
 	return nil
 }
 
-func (htl *TcpTunnelServer) unRegisterConn(ch trp.Channel) {
-	log.Info("Remove tcp tunnel session.")
+func (htl *TcpTunnelServer) writeMsg(request exchange.InBound) (err error) {
+	rt, _ := exchange.NewRequest(request)
+	_, err = htl.manner.Write(rt.Bytes())
+	return
+}
+
+func (htl *TcpTunnelServer) GetUnId() string {
+	return htl.unId
+}
+
+func (htl *TcpTunnelServer) background() {
+	go func() {
+		<-htl.manner.Done()
+		htl.Shutdown()
+		CloseTunnelServer(htl.Port())
+	}()
 }

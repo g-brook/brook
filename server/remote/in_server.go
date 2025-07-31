@@ -59,41 +59,67 @@ func (t *InServer) getTunnelPort(conn *srv2.GChannel) int32 {
 	return 0
 }
 
+// Shutdown This function shuts down the InServer instance
 func (t *InServer) Shutdown() {
+	// Check if the server is not nil
 	if t.server != nil {
+		// Shutdown the server
 		t.server.Shutdown(context.Background())
 	}
+	// Check if the tunnel server is not nil
 	if t.tunnelServer != nil {
+		// Shutdown the tunnel server
 		t.tunnelServer.Shutdown(context.Background())
 	}
 }
 
+// GetConnection This function returns a connection from the server given an id
+func (t *InServer) GetConnection(id string) (*srv2.GChannel, bool) {
+	// Call the GetConnection function from the server with the given id
+	return t.server.GetConnection(id)
+}
+
+// This function handles the processing of a request from a client
 func inProcess(p *exchange.Protocol, conn transport.Channel) {
+	// Get the command from the protocol
 	cmd := p.Cmd
+	// Check if the command is known
 	entry, ok := handlers[cmd]
 	if !ok {
+		// If the command is not known, log a warning and return
 		log.Warn("Unknown cmd %s ", cmd)
 		return
 	}
+	// Create a new request from the data in the protocol
 	req, err := entry.newRequest(p.Data)
 	if err != nil {
+		// If there is an error creating the request, log a warning and return
 		log.Warn("Cmd %s , unmarshal json, error %s ", cmd, err.Error())
 		return
 	}
+	// Create a new response with the command and request ID from the protocol
 	response, _ := exchange.NewResponse(p.Cmd, p.ReqId)
+	// Process the request and get the response data
 	data, err := entry.process(req, conn)
 	if data != nil {
+		// If there is data in the response, marshal it into bytes
 		byts, err := json.Marshal(data)
 		response.Data = byts
+		// If there is an error marshaling the data, set the response code to fail
 		if err != nil {
 			response.RspCode = exchange.RspFail
 		}
 	}
+	// If there is an error processing the request, set the response code to fail
 	if err != nil {
 		response.RspCode = exchange.RspFail
+		response.RspMsg = err.Error()
 	}
+	// Encode the response into bytes
 	outBytes := exchange.Encoder(response)
+	// Write the encoded response to the connection
 	_, err = conn.Write(outBytes)
+	// If there is an error writing the response, log a warning
 	if err != nil {
 		log.Warn("Writer %s , marshal json, error %s ", cmd, err.Error())
 		return
@@ -116,8 +142,11 @@ func (t *InServer) Start(cf *configs.ServerConfig) *InServer {
 	return t
 }
 
+// This function starts the InServer by starting the onStartServer and onStartTunnelServer functions in separate goroutines
 func (t *InServer) onStart(cf *configs.ServerConfig) {
+	// Start the onStartServer function in a separate goroutine
 	go t.onStartServer(cf)
+	// Start the onStartTunnelServer function in a separate goroutine
 	go t.onStartTunnelServer(cf)
 }
 

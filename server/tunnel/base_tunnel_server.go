@@ -14,6 +14,8 @@ type EventType int
 
 var (
 	Unregister EventType = 1
+
+	Register EventType = 2
 )
 
 type Event func(ch transport.Channel)
@@ -42,6 +44,9 @@ func (b *BaseTunnelServer) Shutdown() {
 		b.Server.Shutdown(b.closeCtx)
 	}
 	if b.Managers != nil {
+		for t := range b.Managers {
+			_ = b.Managers[t].Close()
+		}
 		clear(b.Managers)
 	}
 }
@@ -80,7 +85,7 @@ func (b *BaseTunnelServer) Start() error {
 	if b.DoStart != nil {
 		return b.DoStart()
 	}
-	panic("BaseTunnelServer not overite")
+	return nil
 }
 
 // Port  the tunnel server port
@@ -94,7 +99,11 @@ func (b *BaseTunnelServer) RegisterConn(ch transport.Channel,
 	oldCh, ok := b.Managers[ch.GetId()]
 	if !ok || oldCh != ch {
 		b.Managers[ch.GetId()] = ch
-		go b.background(ch)
+		handler := b.handlers[Register]
+		if handler != nil {
+			handler(ch)
+		}
+		ch.OnClose(b.unRegister)
 	}
 }
 
@@ -105,13 +114,6 @@ func (b *BaseTunnelServer) unRegister(ch transport.Channel) {
 	handler := b.handlers[Unregister]
 	if handler != nil {
 		handler(ch)
-	}
-}
-
-func (b *BaseTunnelServer) background(ch transport.Channel) {
-	select {
-	case <-ch.Done():
-		b.unRegister(ch)
 	}
 }
 

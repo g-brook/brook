@@ -20,6 +20,8 @@ type MessageBucket struct {
 	bucketHandler map[Cmd]BucketRead
 
 	defaultHandler BucketRead
+
+	defaultReader func() error
 }
 
 // NewMessageBucket creates a new MessageBucket struct and returns a pointer to it
@@ -59,6 +61,10 @@ func (m *MessageBucket) read(_, bytes []byte, rw io.ReadWriteCloser) {
 	}
 }
 
+func (m *MessageBucket) SetReaderFunction(fun ReadFunction) {
+	m.bytesBucket.SetReadFunction(fun)
+}
+
 // Run is a function that adds a handler to the bytesBucket and starts the bytesBucket
 func (m *MessageBucket) Run() {
 	m.bytesBucket.AddHandler("Protocol", m.read)
@@ -94,7 +100,9 @@ func (m *MessageBucket) SyncPushWithRequest(message InBound) (*Protocol, error) 
 
 // AddHandler is a function that takes a Cmd and a BucketRead function and adds them to the bucketHandler map
 func (m *MessageBucket) AddHandler(cmd Cmd, bucket BucketRead) {
-	m.bucketHandler[cmd] = bucket
+	if _, ok := m.bucketHandler[cmd]; !ok {
+		m.bucketHandler[cmd] = bucket
+	}
 }
 
 // Done is a function that returns a channel that is closed when the bytesBucket is done

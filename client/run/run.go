@@ -60,7 +60,7 @@ func Start() {
 }
 
 func run(config *configs.ClientConfig) {
-	go OpenCli()
+	//go OpenCli()
 	service := NewService()
 	ctx := service.Run(config)
 	<-ctx.Done()

@@ -8,6 +8,8 @@ import (
 
 var ManagerTransport *managerTransport
 
+type CmdNotify func(*exchange.Protocol) error
+
 // InitManagerTransport This function initializes the ManagerTransport with a given transport
 func InitManagerTransport(transport *Transport) {
 	// Create a new ManagerTransport with the given transport
@@ -17,6 +19,8 @@ func InitManagerTransport(transport *Transport) {
 type managerTransport struct {
 	BaseClientHandler
 	transport *Transport
+	commands  map[exchange.Cmd]CmdNotify
+	UnId      string
 }
 
 func (b *managerTransport) Close(_ *ClientControl) {
@@ -36,6 +40,10 @@ func (b *managerTransport) Read(r *exchange.Protocol, cct *ClientControl) error 
 		cli.UpdateSpell(endTime - startTime)
 		return nil
 	}
+	message, ok := b.commands[r.Cmd]
+	if ok {
+		return message(r)
+	}
 	return nil
 }
 
@@ -45,6 +53,7 @@ func NewManagerTransport(tr *Transport) *managerTransport {
 	transport := &managerTransport{
 		// Set the transport field of the managerTransport object to the given Transport object
 		transport: tr,
+		commands:  make(map[exchange.Cmd]CmdNotify),
 	}
 	// Return the new managerTransport object
 	return transport
@@ -63,4 +72,12 @@ func (b *managerTransport) SyncWrite(message exchange.InBound, timeout time.Dura
 		message,
 		timeout,
 	)
+}
+
+func (b *managerTransport) BindUnId(unId string) {
+	b.UnId = unId
+}
+
+func (b *managerTransport) AddMessage(cmd exchange.Cmd, notify CmdNotify) {
+	b.commands[cmd] = notify
 }

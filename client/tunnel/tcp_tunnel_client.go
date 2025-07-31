@@ -14,18 +14,17 @@ import (
 
 type TcpTunnelClient struct {
 	*clis.BaseTunnelClient
-	reconnect  *clis.ReconnectManager
-	closeTaget chan struct{}
-	mtcp       *MultipleTunnelClient
+	reconnect   *clis.ReconnectManager
+	multipleTcp *MultipleTunnelClient
 }
 
 func NewTcpTunnelClient(config *configs.ClientTunnelConfig, mtpc *MultipleTunnelClient) *TcpTunnelClient {
-	tunnelClient := clis.NewBaseTunnelClient(config)
+	tunnelClient := clis.NewBaseTunnelClient(config, false)
 	client := TcpTunnelClient{
 		BaseTunnelClient: tunnelClient,
-		mtcp:             mtpc,
+		multipleTcp:      mtpc,
 	}
-	tunnelClient.DoOpen = client.initOpen
+	client.BaseTunnelClient.DoOpen = client.initOpen
 	client.reconnect = clis.NewReconnectionManager(3 * time.Second)
 	return &client
 }
@@ -34,45 +33,39 @@ func (t *TcpTunnelClient) GetName() string {
 	return "tcp"
 }
 
-func (t *TcpTunnelClient) initOpen(_ *transport.SChannel) error {
-	t.BaseTunnelClient.AddReadHandler(exchange.WorkerConnReq, t.bindHandler)
-	rsp, err := t.Register()
+func (t *TcpTunnelClient) initOpen(ch *transport.SChannel) error {
+	localConnection, err := t.localConnection()
 	if err != nil {
-		log.Error("Register fail %v", err)
+		if localConnection != nil {
+			_ = localConnection.Close()
+		}
+		_ = ch.Close()
 		return err
-	} else {
-		log.Info("Register success:PORT-%v", rsp.TunnelPort)
+	}
+	err = t.AsyncRegister(func(p *exchange.Protocol, rw io.ReadWriteCloser) {
+		log.Info("Connection local address success then Client to server register success:%v", t.GetCfg().LocalAddress)
+		errors := aio.Pipe(ch, localConnection)
+		if len(errors) > 0 {
+			log.Error("Pipe error %v", errors)
+		}
+	})
+	if err != nil {
+		if localConnection != nil {
+			_ = localConnection.Close()
+		}
+		_ = ch.Close()
+		log.Error("Connection fail %v", err)
+		return err
 	}
 	return nil
 }
-
-func (t *TcpTunnelClient) bindHandler(_ *exchange.Protocol, rw io.ReadWriteCloser) {
-	dstCh := make(chan net.Conn)
-	conn, err := t.reconnection()
-	if err != nil {
-		t.reconnect.TryReconnect(func() bool {
-			conn, err = t.reconnection()
-			if err != nil {
-				return false
-			}
-			dstCh <- conn
-			return true
-		})
-		conn = <-dstCh
-	}
-	errors := aio.Pipe(rw, conn)
-	if len(errors) > 0 {
-		log.Error("Pipe error %v", errors)
-	}
-}
-
-func (t *TcpTunnelClient) reconnection() (net.Conn, error) {
+func (t *TcpTunnelClient) localConnection() (net.Conn, error) {
 	connFunction := func() (net.Conn, error) {
 		dial, err := net.Dial("tcp", t.GetCfg().LocalAddress)
 		if err != nil {
 			return nil, err
 		}
-		log.Info("Connection %v success", t.GetCfg().LocalAddress)
+		log.Info("Connection localAddress, %v success", t.GetCfg().LocalAddress)
 		return dial, err
 	}
 	return connFunction()

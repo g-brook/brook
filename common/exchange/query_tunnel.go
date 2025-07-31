@@ -1,6 +1,7 @@
 package exchange
 
 type QueryTunnelReq struct {
+	session string
 }
 
 // Cmd
@@ -15,7 +16,8 @@ func (r QueryTunnelReq) Cmd() Cmd {
 // QueryTunnelResp
 // @Description: Resp.
 type QueryTunnelResp struct {
-	TunnelPort int `json:"tunnel_port"`
+	TunnelPort int    `json:"tunnel_port"`
+	UnId       string `json:"un_id"`
 }
 
 func (r QueryTunnelReq) QueryTunnelResp() Cmd {

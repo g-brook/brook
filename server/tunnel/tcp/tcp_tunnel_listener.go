@@ -5,7 +5,9 @@ import (
 	"fmt"
 	"github.com/brook/common/configs"
 	"github.com/brook/common/exchange"
+	"github.com/brook/common/transport"
 	"github.com/brook/common/utils"
+	"github.com/brook/server/remote"
 	"github.com/brook/server/tunnel"
 	"math/rand"
 	"sync"
@@ -23,16 +25,24 @@ var portPool *PortPool
 func init() {
 	//tcpTunnelServers = make(map[int]*TcpTunnelServer, 50000)
 	portPool = NewProtPool(portRange[0], portRange[1], time.Minute*5)
+	remote.OpenTunnelServerFun = OpenTunnelServer
+}
+
+func TcpListener() {
 }
 
 // OpenTunnelServer open tcp tunnel server
 // This function opens a tunnel server based on the request parameters.
-func OpenTunnelServer(request exchange.OpenTunnelReq) (int, error) {
+func OpenTunnelServer(request exchange.OpenTunnelReq, ch transport.Channel) (int, error) {
 	//Check if the tunnel port is already in use.
-	if _, ok := tcpTunnelServers.Load(request.TunnelPort); ok {
+	if t, ok := tcpTunnelServers.Load(request.TunnelPort); ok {
+		if request.UnId == t.(*TcpTunnelServer).GetUnId() {
+			return request.TunnelPort, nil
+
+		}
 		//Lock the port.
 		portPool.lockPort(request.TunnelPort)
-		return request.TunnelPort, nil
+		return 0, fmt.Errorf("port already use %v bind", request.TunnelPort)
 	}
 	//Check if the tunnel type is TCP.
 	if request.TunnelType != utils.Tcp {
@@ -62,7 +72,7 @@ func OpenTunnelServer(request exchange.OpenTunnelReq) (int, error) {
 	//Create a new base tunnel server.
 	baseServer := tunnel.NewBaseTunnelServer(config)
 	//Create a new TCP tunnel server.
-	server := NewTcpTunnelServer(baseServer)
+	server := NewTcpTunnelServer(baseServer, request, ch)
 	//Start the server.
 	err := server.Start()
 	if err != nil {

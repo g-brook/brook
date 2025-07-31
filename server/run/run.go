@@ -3,6 +3,7 @@ package run
 import (
 	"context"
 	"fmt"
+	"github.com/brook/server/tunnel/tcp"
 	"os"
 	"os/signal"
 	"syscall"
@@ -67,7 +68,7 @@ func run() {
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 	//Start In-Server.
-	inServer := remote.New().Start(&serverConfig)
+	remote.Inserver = remote.New().Start(&serverConfig)
 	tunnelServers := make([]tunnel.TunnelServer, len(serverConfig.Tunnel))
 	for _, config := range serverConfig.Tunnel {
 		baseServer := tunnel.NewBaseTunnelServer(&config)
@@ -79,13 +80,16 @@ func run() {
 				log.Error("HttpTunnelServer", "err", err)
 				return
 			}
+		case utils.Tcp:
+			tcp.TcpListener()
+			break
 		}
 		if ts != nil {
 			tunnelServers = append(tunnelServers, ts)
 		}
 	}
 	<-ctx.Done()
-	shutdown(inServer, tunnelServers)
+	shutdown(remote.Inserver, tunnelServers)
 }
 
 func shutdown(inServer *remote.InServer, tunnelServers []tunnel.TunnelServer) {

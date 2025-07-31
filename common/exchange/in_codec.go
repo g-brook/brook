@@ -27,6 +27,10 @@ const headerSize = totalPacketSize + cmdSize + ptypeSize + reqIdSize + rspCode
 //	@return []byte
 func Encoder(data *Protocol) []byte {
 	b := new(bytes2.Buffer)
+	if !data.IsSuccess() && data.PType == RESPONSE {
+		bytes := []byte(data.RspMsg)
+		data.Data = bytes
+	}
 	totalLen := len(data.Data) + headerSize
 	_ = binary.Write(b, binary.BigEndian, int32(totalLen))
 	_ = binary.Write(b, binary.BigEndian, int8(data.Cmd))
@@ -54,6 +58,12 @@ func GetBody(bodies []byte) (*Protocol, error) {
 	req.RspCode = RspCode(int16(binary.BigEndian.Uint16(rspBytes)))
 	//data.
 	req.Data = bodies[12:]
+	if req.PType == RESPONSE {
+		if !req.IsSuccess() {
+			req.RspMsg = string(req.Data)
+			req.Data = nil
+		}
+	}
 	return &req, nil
 }
 

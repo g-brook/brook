@@ -64,6 +64,9 @@ func (receiver *Service) connectionTunnel(cfg *configs.ClientConfig) error {
 		log.Error(err.Error())
 		return err
 	}
+	//Bind unId.
+	clis.ManagerTransport.BindUnId(rsp.UnId)
+	//Update config.
 	newCfg := configs.ClientConfig{
 		ServerPort: rsp.TunnelPort,
 		ServerHost: cfg.ServerHost,

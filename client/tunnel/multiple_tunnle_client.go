@@ -40,33 +40,42 @@ func (m *MultipleTunnelClient) GetName() string {
 func (m *MultipleTunnelClient) Open(session *smux.Session) error {
 	// Create a new OpenTunnelReq struct with the proxy ID, tunnel type, and tunnel port.
 	req := &exchange.OpenTunnelReq{
-		ProxyId:    m.cfg.ProxyId,
-		TunnelType: utils.Tcp,
-		TunnelPort: m.cfg.RemotePort,
+		ProxyId:      m.cfg.ProxyId,
+		TunnelType:   utils.Tcp,
+		TunnelPort:   m.cfg.RemotePort,
+		UnId:         clis.ManagerTransport.UnId,
+		LocalAddress: m.cfg.LocalAddress,
 	}
 	// Send the request to the server and wait for a response.
-	_, err := clis.ManagerTransport.SyncWrite(req, 5*time.Second)
+	rsp, err := clis.ManagerTransport.SyncWrite(req, 5*time.Second)
 	if err != nil {
 		// Log an error if the request fails.
-		log.Error("Open tcp tunnel server error %v", err)
+		log.Error("Open tcp tunnel server error %v:%v", req.TunnelPort, err)
 		return err
 	}
-	// Check if a TCP client already exists for the given proxy ID.
-	if _, ok := m.tcpClients.Load(m.cfg.ProxyId); !ok {
-		// If not, create a new TCP client.
-		client := NewTcpTunnelClient(m.cfg, m)
-		// Open the TCP client.
-		err = client.Open(session)
-		if err != nil {
-			// Log an error if the TCP client fails to open.
-			log.Error("Open tcp tunnel server error %v", err)
-			return err
-		}
-		// Store the TCP client in the map.
-		m.tcpClients.Store(m.cfg.ProxyId, client)
+	if !rsp.IsSuccess() {
+		log.Error("Open tcp tunnel server error %v:%v", req.TunnelPort, rsp.RspMsg)
+		return err
 	}
+	clis.ManagerTransport.AddMessage(exchange.WorkerConnReq, func(r *exchange.Protocol) error {
+		// If not, create a new TCP client.
+		go func() {
+			// Store the TCP client in the map.
+			reqWorder, _ := exchange.Parse[exchange.ReqWorkConn](r.Data)
+			newCfg := &configs.ClientTunnelConfig{
+				ProxyId:      reqWorder.ProxyId,
+				RemotePort:   reqWorder.Port,
+				LocalAddress: reqWorder.LocalAddress,
+				TunnelType:   reqWorder.TunnelType,
+			}
+			client := NewTcpTunnelClient(newCfg, m)
+			_ = client.Open(session)
+			_ = client.OpenStream()
+		}()
+		return nil
+	})
 	// Log that the TCP tunnel server was opened successfully.
-	log.Info("Open tcp tunnel server success")
+	log.Info("Open tcp tunnel client success:%v:%v", m.cfg.ProxyId, m.cfg.RemotePort)
 	return nil
 }
 

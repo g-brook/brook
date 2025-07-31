@@ -3,7 +3,6 @@ package srv
 import (
 	"context"
 	"errors"
-	"github.com/RussellLuo/timingwheel"
 	"github.com/brook/common"
 	"github.com/brook/common/transport"
 	"github.com/google/uuid"
@@ -31,6 +30,8 @@ type GChannel struct {
 	bgCtx context.Context
 
 	cancel context.CancelFunc
+
+	closeEvents []transport.CloseEvent
 }
 
 // SetDeadline is a wrapper for gnet.Conn.SetDeadline.
@@ -87,11 +88,15 @@ func (c *GChannel) AddHandler(handler ...GChannelHandler) {
 
 // GetContext
 //
-//	@Description:
-//	@receiver receiver
-//	@return *ConnContext
+// This function returns the context of the GChannel
 func (c *GChannel) GetContext() *ConnContext {
+	// Return the context of the GChannel
 	return c.Context
+}
+
+// OnClose CloseEvent This function takes a pointer to a GChannel and a function as parameters. The function does not return anything.
+func (c *GChannel) OnClose(event transport.CloseEvent) {
+	c.closeEvents = append(c.closeEvents, event)
 }
 
 // Reader
@@ -131,7 +136,7 @@ func (c *GChannel) Write(out []byte) (int, error) {
 	if c.IsClose() {
 		return 0, io.EOF
 	}
-	return c.Conn.Write(out)
+	return len(out), c.Conn.AsyncWrite(out, nil)
 }
 
 // Next
@@ -159,9 +164,6 @@ func (c *GChannel) GetServer() *Server {
 //	@receiver receiver
 //	@return error
 func (c *GChannel) Close() error {
-	if c.Context.Timer != nil {
-		c.Context.Timer.Stop()
-	}
 	if c.Conn != nil {
 		_ = c.Conn.Close()
 	}
@@ -170,6 +172,12 @@ func (c *GChannel) Close() error {
 		handler.DoClose(c)
 	}
 	c.cancel()
+	for _, event := range c.closeEvents {
+		if c != nil {
+			event(c)
+		}
+	}
+	clear(c.closeEvents)
 	return nil
 }
 
@@ -244,7 +252,6 @@ type ConnContext struct {
 	Id         string
 	lastActive time.Time
 	IsTimeOut  bool
-	Timer      *timingwheel.Timer
 	attr       map[common.KeyType]interface{}
 	isSmux     bool
 }

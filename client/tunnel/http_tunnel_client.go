@@ -20,7 +20,7 @@ var (
 
 func init() {
 	clis.RegisterTunnelClient(utils.Http, func(config *configs.ClientTunnelConfig) clis.TunnelClient {
-		tunnelClient := clis.NewBaseTunnelClient(config)
+		tunnelClient := clis.NewBaseTunnelClient(config, true)
 		client := HttpTunnelClient{
 			BaseTunnelClient: tunnelClient,
 		}

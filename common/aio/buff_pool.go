@@ -40,14 +40,11 @@ type ByteBufPool struct {
 	pool *sync.Pool
 }
 
-// Get retrieves a byte buffer from the pool
-// If the pool is empty, a new buffer will be created
 func (b *ByteBufPool) Get() []byte {
 	byts := b.pool.Get().([]byte)
 	return byts
 }
 
-// Put returns a byte buffer to the pool for reuse
 func (b *ByteBufPool) Put(bytes []byte) {
 	b.pool.Put(bytes)
 }
@@ -132,6 +129,8 @@ func WithBuffer(f func(buf []byte) error, bufPool *ByteBufPool) error {
 		panic("function is null ")
 	}
 	buf := bufPool.Get()
-	defer bufPool.Put(buf)
+	defer func() {
+		bufPool.Put(buf)
+	}()
 	return f(buf)
 }

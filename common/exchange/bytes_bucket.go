@@ -7,6 +7,8 @@ import (
 
 type BytesBucketRead func(heads, bodies []byte, rw io.ReadWriteCloser)
 
+type ReadFunction func(sch io.ReadWriteCloser) error
+
 type BytesBucket struct {
 	//open channel.
 	rw io.ReadWriteCloser
@@ -22,9 +24,13 @@ type BytesBucket struct {
 	headerLength int
 
 	witch func(bytes []byte) (any, int)
+
+	readFunction ReadFunction
 }
 
-func NewBytesBucket(rw io.ReadWriteCloser, headerLength int, ctx context.Context) *BytesBucket {
+func NewBytesBucket(rw io.ReadWriteCloser,
+	headerLength int,
+	ctx context.Context) *BytesBucket {
 	cancelCtx, cancelFunc := context.WithCancel(ctx)
 	return &BytesBucket{
 		headerLength:  headerLength,
@@ -50,8 +56,16 @@ func (m *BytesBucket) Push(bytes []byte) error {
 	}
 }
 
+// AddHandler This function adds a handler to the BytesBucket struct
 func (m *BytesBucket) AddHandler(cmd any, bucket BytesBucketRead) {
+	// Assign the bucket parameter to the bucketHandler map with the cmd parameter as the key
 	m.bucketHandler[cmd] = bucket
+}
+
+// SetReadFunction This function sets the read function for the BytesBucket struct
+func (m *BytesBucket) SetReadFunction(fun ReadFunction) {
+	// Assign the passed function to the readFunction field of the BytesBucket struct
+	m.readFunction = fun
 }
 
 func (m *BytesBucket) revLoop() {
@@ -69,10 +83,11 @@ func (m *BytesBucket) revLoop() {
 			_, _ = m.rw.Write(message)
 		}
 	}
+
 }
 
 func (m *BytesBucket) readLoop() {
-	readFunction := func() error {
+	defaultFunction := func() error {
 		maybeHeader := make([]byte, m.headerLength)
 		_, err := m.rw.Read(maybeHeader)
 		if err != nil {
@@ -90,7 +105,12 @@ func (m *BytesBucket) readLoop() {
 		return nil
 	}
 	for {
-		err := readFunction()
+		var err error
+		if m.readFunction != nil {
+			err = m.readFunction(m.rw)
+		} else {
+			err = defaultFunction()
+		}
 		if err == io.EOF {
 			m.cannel()
 			return

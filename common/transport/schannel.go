@@ -20,13 +20,14 @@ import (
 // buf is a buffer for storing data temporarily
 // isBindTunnel indicates if the channel is bound to a tunnel
 type SChannel struct {
-	Stream   *smux.Stream
-	IsTunnel bool
-	buf      bytes.Buffer
-	id       string
-	ctx      context.Context
-	cancel   context.CancelFunc
-	attr     map[common.KeyType]interface{}
+	Stream      *smux.Stream
+	IsTunnel    bool
+	buf         bytes.Buffer
+	id          string
+	ctx         context.Context
+	cancel      context.CancelFunc
+	attr        map[common.KeyType]interface{}
+	closeEvents []CloseEvent
 }
 
 // NewSChannel creates a new SChannel with the given smux stream
@@ -34,12 +35,13 @@ type SChannel struct {
 func NewSChannel(stream *smux.Stream, parent context.Context, isTunnel bool) *SChannel {
 	ctx, cancelFunc := context.WithCancel(parent)
 	ch := &SChannel{Stream: stream,
-		ctx:      ctx,
-		id:       uuid.NewString(),
-		cancel:   cancelFunc,
-		attr:     map[common.KeyType]interface{}{},
-		IsTunnel: isTunnel,
-		buf:      bytes.Buffer{}} // Initialize as pointer
+		ctx:         ctx,
+		id:          uuid.NewString(),
+		cancel:      cancelFunc,
+		attr:        map[common.KeyType]interface{}{},
+		IsTunnel:    isTunnel,
+		closeEvents: make([]CloseEvent, 0),
+		buf:         bytes.Buffer{}} // Initialize as pointer
 	return ch
 }
 
@@ -47,6 +49,12 @@ func NewSChannel(stream *smux.Stream, parent context.Context, isTunnel bool) *SC
 func (s *SChannel) Close() error {
 	err := s.Stream.Close()
 	s.cancel()
+	for _, event := range s.closeEvents {
+		if event != nil {
+			event(s)
+		}
+	}
+	clear(s.closeEvents)
 	return err
 }
 
@@ -84,6 +92,10 @@ func (s *SChannel) AddAttr(key common.KeyType, value interface{}) {
 	s.attr[key] = value
 }
 
+func (s *SChannel) OnClose(event CloseEvent) {
+	s.closeEvents = append(s.closeEvents, event)
+}
+
 func (s *SChannel) IsClose() bool {
 	select {
 	case <-s.Done():
@@ -106,7 +118,7 @@ func (s *SChannel) Read(p []byte) (n int, err error) {
 		return 0, io.EOF
 	}
 	if s.IsTunnel {
-		n, err = s.Stream.Read(p)
+		return s.Stream.Read(p)
 	} else {
 		n, err = s.buf.Read(p)
 	}

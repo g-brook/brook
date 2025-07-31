@@ -48,7 +48,7 @@ type HttpRunnelProxy struct {
 }
 
 type ClientTunnelConfig struct {
-	Type         utils.TunnelType `json:"type"`
+	TunnelType   utils.TunnelType `json:"type"`
 	LocalAddress string           `json:"localAddress"`
 	RemotePort   int              `json:"remotePort"`
 	ProxyId      string           `json:"ProxyId"`
