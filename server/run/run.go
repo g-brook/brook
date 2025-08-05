@@ -76,12 +76,12 @@ func run() {
 		switch config.Type {
 		case utils.Http:
 			ts = http.NewHttpTunnelServer(baseServer)
-			if err := ts.Start(); err != nil {
+			if err := ts.Start(utils.NetworkTcp); err != nil {
 				log.Error("HttpTunnelServer", "err", err)
 				return
 			}
 		case utils.Tcp:
-			tcp.TcpListener()
+			tcp.AcceptTcpListener()
 			break
 		}
 		if ts != nil {

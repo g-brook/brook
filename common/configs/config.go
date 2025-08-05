@@ -11,33 +11,23 @@ var DefServerPort = 8909
 // ServerConfig
 // @Description: 配置文件存储.
 type ServerConfig struct {
-	ServerPort int `json:"serverPort"`
-
-	TunnelPort int `json:"tunnelPort"`
-
-	Tunnel []ServerTunnelConfig `json:"tunnel"`
-
-	Logger LoggerConfig `json:"logger"`
+	ServerPort int                  `json:"serverPort"`
+	TunnelPort int                  `json:"tunnelPort"`
+	Tunnel     []ServerTunnelConfig `json:"tunnel"`
+	Logger     LoggerConfig         `json:"logger"`
 }
 
 // LoggerConfig
 // @Description:
 type LoggerConfig struct {
 	LoggLevel string `json:"logLevel"`
-
-	LogPath string `json:"logPath"`
-	Outs    string `json:"outs"`
+	LogPath   string `json:"logPath"`
+	Outs      string `json:"outs"`
 }
 
 type ServerTunnelConfig struct {
-	//
-	//  Port
-	//  @Description: port.
-	//
-	Port int `json:"port"`
-
-	Type utils.TunnelType `json:"type"`
-
+	Port  int               `json:"port"`
+	Type  utils.TunnelType  `json:"type"`
 	Proxy []HttpRunnelProxy `json:"proxy"`
 }
 
@@ -52,6 +42,7 @@ type ClientTunnelConfig struct {
 	LocalAddress string           `json:"localAddress"`
 	RemotePort   int              `json:"remotePort"`
 	ProxyId      string           `json:"ProxyId"`
+	Network      utils.Network
 }
 
 // GetServerConfig

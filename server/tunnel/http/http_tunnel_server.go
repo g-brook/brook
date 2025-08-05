@@ -6,6 +6,7 @@ import (
 	"github.com/brook/common/exchange"
 	"github.com/brook/common/log"
 	trp "github.com/brook/common/transport"
+	"github.com/brook/common/utils"
 	defin "github.com/brook/server/define"
 	"github.com/brook/server/srv"
 	"github.com/brook/server/tunnel"
@@ -16,8 +17,6 @@ import (
 	"sync"
 	"time"
 )
-
-var ANY any
 
 // HttpTunnelServer is a struct that represents a HTTP tunnel server.
 type HttpTunnelServer struct {
@@ -113,8 +112,8 @@ func (htl *HttpTunnelServer) getProxyConnection(proxyId string, reqId string) (w
 	return
 }
 
-// Reader is a method of HttpTunnelServer, which is used to process incoming requests. It
-func (htl *HttpTunnelServer) Reader(ch trp.Channel, _ srv.TraverseBy) {
+// Open  is a method of HttpTunnelServer, which is used to process incoming requests. It
+func (htl *HttpTunnelServer) Open(ch trp.Channel, _ srv.TraverseBy) {
 	htl.listener.conn <- ch
 }
 
@@ -168,10 +167,30 @@ func (htl *HttpTunnelServer) RegisterConn(ch trp.Channel, request exchange.Regis
 		tracker := NewHttpTracker(ch)
 		proxies[ch.GetId()] = tracker
 		tracker.Run()
+		go func() {
+			err := htl.createConn(ch)
+			if err != nil {
+
+			}
+		}()
 	} else {
 		log.Warn("Register %V not exists by http tunnelServer.", request.ProxyId)
 	}
 	htl.registerLock.Unlock()
+}
+
+func (htl *HttpTunnelServer) createConn(ch trp.Channel) (err error) {
+	req := &exchange.ReqWorkConn{
+		ProxyId:      "proxy3",
+		Port:         htl.Port(),
+		TunnelType:   htl.Cfg.Type,
+		LocalAddress: "127.0.0.1",
+		UnId:         "1234333",
+		Network:      utils.NetworkTcp,
+	}
+	request, err := exchange.NewRequest(req)
+	_, err = ch.Write(request.Bytes())
+	return
 }
 
 // unRegisterConn is a method of HttpTunnelServer, which is used to unregister a connection.

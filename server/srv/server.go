@@ -7,6 +7,7 @@ import (
 	"github.com/brook/common/hash"
 	"github.com/brook/common/log"
 	trp "github.com/brook/common/transport"
+	"github.com/brook/common/utils"
 	"github.com/panjf2000/gnet/v2"
 	"github.com/xtaci/smux"
 	"io"
@@ -295,7 +296,11 @@ func (sever *Server) Start(opt ...ServerOption) error {
 			return nil
 		}
 	}
-	err := gnet.Run(sever, fmt.Sprintf("tcp://:%d", sever.port),
+	network := sever.opts.network
+	if network == "" {
+		network = utils.NetworkTcp
+	}
+	err := gnet.Run(sever, fmt.Sprintf("%s://:%d", network, sever.port),
 		gnet.WithMulticore(true),
 		gnet.WithLogger(&log.GnetLogger{}),
 		gnet.WithReadBufferCap(65535),

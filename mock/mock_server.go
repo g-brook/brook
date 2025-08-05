@@ -24,19 +24,19 @@ func handler(w http.ResponseWriter, r *http.Request) {
 }
 
 func mockHandler(w http.ResponseWriter, r *http.Request) {
+	fmt.Println("你好。。。。。。。。。")
 	// 读取mock.html文件内容
-	content, err := http.Dir("/Users/sixh/Documents/open_project/brook/mock/").Open("mock.html")
+	file, err := http.Dir("/Users/sixh/Documents/open_project/brook/mock/").Open("mock.html")
 	if err != nil {
 		http.Error(w, "无法找到mock.html文件", http.StatusNotFound)
 		return
 	}
-	defer content.Close()
+	defer file.Close()
 
 	// 设置响应头为html
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-
 	// 将文件内容写入响应
-	_, err = io.Copy(w, content)
+	_, err = io.Copy(w, file)
 	if err != nil {
 		http.Error(w, "读取文件失败", http.StatusInternalServerError)
 		return

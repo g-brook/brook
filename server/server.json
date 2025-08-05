@@ -5,7 +5,7 @@
       "type": "http",
       "proxy": [
         {
-          "id": "proxy1",
+          "id": "proxy3",
           "paths": [
             "/*"
           ]

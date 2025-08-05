@@ -68,9 +68,16 @@ func (m *MultipleTunnelClient) Open(session *smux.Session) error {
 				LocalAddress: reqWorder.LocalAddress,
 				TunnelType:   reqWorder.TunnelType,
 			}
-			client := NewTcpTunnelClient(newCfg, m)
-			_ = client.Open(session)
-			_ = client.OpenStream()
+
+			if reqWorder.Network == utils.NetworkTcp {
+				client := NewTcpTunnelClient(newCfg, m)
+				_ = client.Open(session)
+				_ = client.OpenStream()
+			} else if reqWorder.Network == utils.NetworkUdp {
+				client := NewUdpTunnelClient(newCfg, m)
+				_ = client.Open(session)
+				_ = client.OpenStream()
+			}
 		}()
 		return nil
 	})

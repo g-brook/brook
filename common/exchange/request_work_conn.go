@@ -8,6 +8,7 @@ type ReqWorkConn struct {
 	LocalAddress string           `json:"local_address"`
 	TunnelType   utils.TunnelType `json:"tunnel_type"`
 	UnId         string           `json:"un_id"`
+	Network      utils.Network    `json:"network"`
 }
 
 func (r *ReqWorkConn) Cmd() Cmd {

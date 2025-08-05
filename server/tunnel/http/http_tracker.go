@@ -2,9 +2,9 @@ package http
 
 import (
 	"bufio"
-	"bytes"
-	"fmt"
+	"github.com/brook/common/log"
 	"net/http"
+	"net/http/httputil"
 	"sync"
 
 	"github.com/brook/common/transport"
@@ -40,16 +40,16 @@ func (receiver *HttpTracker) readRev() {
 	readResponse := func() {
 		response, err := http.ReadResponse(bufio.NewReader(receiver.channel.GetReader()), nil)
 		if err != nil {
-			fmt.Println(err)
+			log.Error("read response error", err)
 			return
 		}
-		buffer := bytes.NewBuffer(nil)
-		err = response.Write(buffer)
+		header, err := httputil.DumpResponse(response, true)
 		if err != nil {
+			log.Error("read response error", err)
 			return
 		}
 		reqId := response.Header.Get(RequestInfoKey)
-		receiver.send(reqId, buffer)
+		receiver.send(reqId, header)
 	}
 	for {
 		select {
@@ -61,14 +61,15 @@ func (receiver *HttpTracker) readRev() {
 	}
 }
 
-func (receiver *HttpTracker) send(reqId string, buffer *bytes.Buffer) {
+func (receiver *HttpTracker) send(reqId string, buffer []byte) {
 	receiver.mu.Lock()
+	defer receiver.mu.Unlock()
 	ch := receiver.trackers[reqId]
 	if ch != nil {
-		ch <- buffer.Bytes()
+		ch <- buffer
 	}
 	delete(receiver.trackers, reqId)
-	receiver.mu.Unlock()
+
 }
 
 func (receiver *HttpTracker) Close(reqId string) {

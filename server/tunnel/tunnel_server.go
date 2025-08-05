@@ -3,6 +3,7 @@ package tunnel
 import (
 	"github.com/brook/common/exchange"
 	"github.com/brook/common/transport"
+	"github.com/brook/common/utils"
 )
 
 // Save all tunnels channel. port: server.
@@ -38,7 +39,7 @@ func GetTunnel(port int) TunnelServer {
 type TunnelServer interface {
 
 	// Start is start tunnel server.
-	Start() error
+	Start(protocol utils.Network) error
 
 	//
 	// Port

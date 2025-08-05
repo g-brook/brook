@@ -1,6 +1,7 @@
 package utils
 
 type TunnelType string
+type Network string
 
 const (
 	Http  TunnelType = "http"
@@ -8,6 +9,9 @@ const (
 	Tcp   TunnelType = "tcp"
 	Udp   TunnelType = "upd"
 )
+
+const NetworkTcp Network = "tcp"
+const NetworkUdp Network = "udp"
 
 type Number interface {
 	~int | ~int8 | ~int16 | ~int32 | ~int64 | ~float32 | ~float64

@@ -5,6 +5,7 @@ import (
 	"github.com/brook/common/exchange"
 	"github.com/brook/common/log"
 	trp "github.com/brook/common/transport"
+	"github.com/brook/common/utils"
 	defin "github.com/brook/server/define"
 	"github.com/brook/server/srv"
 	"github.com/brook/server/tunnel"
@@ -18,6 +19,7 @@ type TcpTunnelServer struct {
 	proxyId      string
 	pool         *tunnel.TunnelPool
 	manner       trp.Channel
+	network      utils.Network
 	localAddress string
 }
 
@@ -25,12 +27,19 @@ type TcpTunnelServer struct {
 func NewTcpTunnelServer(server *tunnel.BaseTunnelServer,
 	openReq exchange.OpenTunnelReq,
 	ch trp.Channel) *TcpTunnelServer {
+	var network utils.Network
+	if openReq.TunnelType == utils.Tcp {
+		network = utils.NetworkTcp
+	} else {
+		network = utils.NetworkUdp
+	}
 	tunnelServer := &TcpTunnelServer{
 		BaseTunnelServer: server,
 		unId:             openReq.UnId,
 		proxyId:          openReq.ProxyId,
 		localAddress:     openReq.LocalAddress,
 		manner:           ch,
+		network:          network,
 	}
 	tunnelServer.pool = tunnel.NewTunnelPool(tunnelServer.createConn, 1)
 	server.DoStart = tunnelServer.startAfter
@@ -89,6 +98,7 @@ func (htl *TcpTunnelServer) createConn() (err error) {
 		TunnelType:   htl.Cfg.Type,
 		LocalAddress: htl.localAddress,
 		UnId:         htl.unId,
+		Network:      htl.network,
 	}
 	err = htl.writeMsg(req)
 	return
@@ -115,6 +125,10 @@ func (htl *TcpTunnelServer) writeMsg(request exchange.InBound) (err error) {
 
 func (htl *TcpTunnelServer) GetUnId() string {
 	return htl.unId
+}
+
+func (htl *TcpTunnelServer) GetNetwork() utils.Network {
+	return htl.network
 }
 
 func (htl *TcpTunnelServer) background() {

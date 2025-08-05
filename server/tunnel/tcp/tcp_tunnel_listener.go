@@ -28,7 +28,8 @@ func init() {
 	remote.OpenTunnelServerFun = OpenTunnelServer
 }
 
-func TcpListener() {
+func AcceptTcpListener() {
+
 }
 
 // OpenTunnelServer open tcp tunnel server
@@ -45,7 +46,7 @@ func OpenTunnelServer(request exchange.OpenTunnelReq, ch transport.Channel) (int
 		return 0, fmt.Errorf("port already use %v bind", request.TunnelPort)
 	}
 	//Check if the tunnel type is TCP.
-	if request.TunnelType != utils.Tcp {
+	if request.TunnelType != utils.Tcp && request.TunnelType != utils.Udp {
 		return 0, fmt.Errorf("not tcp tunnel type, you need open tunnel type is %v", request.TunnelType)
 	}
 	//Get a dynamic port.
@@ -74,7 +75,8 @@ func OpenTunnelServer(request exchange.OpenTunnelReq, ch transport.Channel) (int
 	//Create a new TCP tunnel server.
 	server := NewTcpTunnelServer(baseServer, request, ch)
 	//Start the server.
-	err := server.Start()
+	nw := server.GetNetwork()
+	err := server.Start(nw)
 	if err != nil {
 		//Release the port if the server fails to start.
 		portPool.Release(request.TunnelPort)

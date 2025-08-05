@@ -6,6 +6,7 @@ import (
 	"github.com/brook/common/exchange"
 	"github.com/brook/common/log"
 	"github.com/brook/common/transport"
+	"github.com/brook/common/utils"
 	"github.com/brook/server/srv"
 	"sync"
 )
@@ -34,7 +35,8 @@ type BaseTunnelServer struct {
 	closeCtx   context.Context
 }
 
-func (b *BaseTunnelServer) AddEvent(etype EventType, event Event) {
+func (b *BaseTunnelServer) AddEvent(etype EventType,
+	event Event) {
 	b.handlers[etype] = event
 }
 
@@ -69,11 +71,11 @@ func (b *BaseTunnelServer) Boot(_ *srv.Server, _ srv.TraverseBy) {
 }
 
 // Start  the tunnel server
-func (b *BaseTunnelServer) Start() error {
+func (b *BaseTunnelServer) Start(network utils.Network) error {
 	go func() {
 		b.Server = srv.NewServer(b.port)
 		b.Server.AddHandler(b)
-		err := b.Server.Start()
+		err := b.Server.Start(srv.WithNetwork(network))
 		if err != nil {
 			log.Error("Start tunnel server port: error, %v:%v", err, b.Port())
 			b.openCh <- err

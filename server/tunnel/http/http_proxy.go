@@ -15,16 +15,14 @@ import (
 )
 
 var (
-	RouteInfoKey = "routeInfo"
-
+	RouteInfoKey   = "routeInfo"
 	RequestInfoKey = "httpRequestId"
-
-	ProxyKey = "proxy"
-
-	ForwardedKey = "X-Forwarded-For"
+	ProxyKey       = "proxy"
+	ForwardedKey   = "X-Forwarded-For"
 )
 
-type timeoutError struct{}
+type timeoutError struct {
+}
 
 func (timeoutError) Error() string   { return "read timeout" }
 func (timeoutError) Timeout() bool   { return true }
@@ -105,6 +103,7 @@ func NewHttpProxy(fun RouteFunction) *Proxy {
 			out.URL.Host = out.Host
 		},
 		ModifyResponse: func(response *http.Response) error {
+			response.Header.Del(RequestInfoKey)
 			return nil
 		},
 		Transport: &http.Transport{

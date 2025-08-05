@@ -2,16 +2,18 @@ package tunnel
 
 import (
 	"bufio"
-	"github.com/brook/common/transport"
-	"io"
-	"net"
-	"net/http"
-
+	"bytes"
+	"fmt"
 	"github.com/brook/client/clis"
 	"github.com/brook/common/configs"
 	"github.com/brook/common/exchange"
 	"github.com/brook/common/log"
+	"github.com/brook/common/transport"
 	"github.com/brook/common/utils"
+	"io"
+	"net"
+	"net/http"
+	"strconv"
 )
 
 var (
@@ -45,7 +47,7 @@ func (h *HttpTunnelClient) GetName() string {
 //
 // Returns:
 //   - error: An error if the registration fails.
-func (h *HttpTunnelClient) initOpen(_ *transport.SChannel) error {
+func (h *HttpTunnelClient) initOpen(sch *transport.SChannel) error {
 	h.BaseTunnelClient.AddReadHandler(exchange.WorkerConnReq, h.bindHandler)
 	rsp, err := h.Register()
 	if err != nil {
@@ -57,8 +59,7 @@ func (h *HttpTunnelClient) initOpen(_ *transport.SChannel) error {
 	return nil
 }
 
-func (h *HttpTunnelClient) bindHandler(_ *exchange.Protocol, rw io.ReadWriteCloser) {
-
+func (h *HttpTunnelClient) bindHandler(req *exchange.Protocol, rw io.ReadWriteCloser) {
 	closeConn := func(conn net.Conn) {
 		if conn != nil {
 			_ = conn.Close()
@@ -92,7 +93,11 @@ func (h *HttpTunnelClient) bindHandler(_ *exchange.Protocol, rw io.ReadWriteClos
 		if response != nil && request != nil {
 			requestId := request.Header.Get(RequestInfoKey)
 			response.Header.Set(RequestInfoKey, requestId)
-			_ = response.Write(rw)
+			bodyBytes, _ := io.ReadAll(response.Body)
+			response.Header.Set("Content-Length", strconv.Itoa(len(bodyBytes)))
+			headerBytes := BuildCustomHTTPHeader(response)
+			merged := append(headerBytes, bodyBytes...)
+			_, err = rw.Write(merged)
 			return nil
 		} else {
 			log.Warn("Read request fail", err)
@@ -111,6 +116,26 @@ func (h *HttpTunnelClient) bindHandler(_ *exchange.Protocol, rw io.ReadWriteClos
 		}
 	}
 
+}
+
+func BuildCustomHTTPHeader(r *http.Response) []byte {
+	var buf bytes.Buffer
+
+	st := fmt.Sprintf("HTTP/%d.%d %03d %s\r\n", r.ProtoMajor, r.ProtoMinor, r.StatusCode, r.Status)
+	// 写入状态行（例如：HTTP/1.1 200 OK）
+	buf.WriteString(st)
+
+	// 写入所有 headers
+	for key, value := range r.Header {
+		if key != "Transfer-Encoding" {
+			buf.WriteString(fmt.Sprintf("%s: %s\r\n", key, value[0]))
+		}
+	}
+
+	// 空行，结束 Header 区域
+	buf.WriteString("\r\n")
+
+	return buf.Bytes()
 }
 
 func getErrorResponse() *http.Response {
