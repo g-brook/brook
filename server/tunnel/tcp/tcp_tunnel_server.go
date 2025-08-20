@@ -1,6 +1,8 @@
 package tcp
 
 import (
+	"sync"
+
 	"github.com/brook/common/aio"
 	"github.com/brook/common/exchange"
 	"github.com/brook/common/log"
@@ -9,7 +11,6 @@ import (
 	defin "github.com/brook/server/define"
 	"github.com/brook/server/srv"
 	"github.com/brook/server/tunnel"
-	"sync"
 )
 
 type TcpTunnelServer struct {

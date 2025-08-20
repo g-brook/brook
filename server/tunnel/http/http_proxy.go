@@ -2,16 +2,17 @@ package http
 
 import (
 	"context"
-	io2 "github.com/brook/common/aio"
-	"github.com/brook/common/log"
-	"github.com/brook/common/utils"
-	"github.com/google/uuid"
 	"io"
 	"net"
 	"net/http"
 	"net/http/httputil"
 	"net/url"
 	"time"
+
+	io2 "github.com/brook/common/aio"
+	"github.com/brook/common/log"
+	"github.com/brook/common/utils"
+	"github.com/google/uuid"
 )
 
 var (

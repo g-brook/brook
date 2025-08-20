@@ -3,6 +3,9 @@ package srv
 import (
 	"context"
 	"fmt"
+	"io"
+	"sync"
+
 	"github.com/brook/common/aio"
 	"github.com/brook/common/hash"
 	"github.com/brook/common/log"
@@ -10,8 +13,6 @@ import (
 	"github.com/brook/common/utils"
 	"github.com/panjf2000/gnet/v2"
 	"github.com/xtaci/smux"
-	"io"
-	"sync"
 )
 
 var connLock sync.Mutex

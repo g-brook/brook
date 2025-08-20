@@ -1,36 +1,41 @@
 package http
 
 import (
+	"bufio"
+	"crypto/tls"
 	"errors"
+	"io"
+	"net"
+	"net/http"
+	"strings"
+	"sync"
+
 	"github.com/brook/common/configs"
 	"github.com/brook/common/exchange"
 	"github.com/brook/common/log"
-	trp "github.com/brook/common/transport"
+	. "github.com/brook/common/transport"
 	"github.com/brook/common/utils"
 	defin "github.com/brook/server/define"
 	"github.com/brook/server/srv"
 	"github.com/brook/server/tunnel"
-	"net"
-	"net/http"
-	"strconv"
-	"strings"
-	"sync"
-	"time"
 )
 
 // HttpTunnelServer is a struct that represents a HTTP tunnel server.
 type HttpTunnelServer struct {
 	*tunnel.BaseTunnelServer
 
-	listener *TcpListener
-
-	// proxyId->bindId(chId)
 	proxyToConn map[string]map[string]*HttpTracker
 
 	registerLock sync.Mutex
+
+	proxy *Proxy
+
+	tlsConfig *tls.Config
+
+	isHttps bool
 }
 
-// NewHttpTunnelServer is a constructor function for HttpTunnelServer. It takes a pointer to BaseTunnelServer as input
+// NewHttpTunnelServer  is a constructor function for HttpTunnelServer. It takes a pointer to BaseTunnelServer as input
 // and returns a pointer to HttpTunnelServer. The constructor sets the DoStart field of BaseTunnelServer to the startAfter
 // method of HttpTunnelServer, which is used to perform cleanup or subsequent processing operations startAfter the server
 // processes the request. The constructor also returns a pointer to HttpTunnelServer.
@@ -47,16 +52,41 @@ func NewHttpTunnelServer(server *tunnel.BaseTunnelServer) *HttpTunnelServer {
 	}
 	server.DoStart = tunnelServer.startAfter
 	server.AddEvent(tunnel.Unregister, tunnelServer.unRegisterConn)
-	addRoute(server.Cfg, tunnelServer)
+	formatCfg(server.Cfg, tunnelServer)
 	return tunnelServer
 }
 
 // addRoute is a function that adds route information to the HttpTunnelServer. It
-func addRoute(cfg *configs.ServerTunnelConfig, this *HttpTunnelServer) {
+func formatCfg(cfg *configs.ServerTunnelConfig, this *HttpTunnelServer) {
 	for _, proxy := range cfg.Proxy {
 		AddRouteInfo(proxy.Id, proxy.Domain, proxy.Paths, this.getProxyConnection)
 		this.proxyToConn[proxy.Id] = make(map[string]*HttpTracker, 100)
 	}
+
+	if cfg.Type == utils.Https {
+		if loadTls(cfg, this) != nil {
+			panic("loadTls error.")
+		}
+		this.isHttps = true
+	}
+}
+
+func loadTls(cfg *configs.ServerTunnelConfig, this *HttpTunnelServer) error {
+	kf := cfg.KeyFile
+	cf := cfg.CertFile
+	if kf == "" || cf == "" {
+		log.Fatal("certFile or KeyFile is nil")
+		return errors.New("certFile or KeyFile is nil")
+	}
+	if !utils.FileExists(cf) || !utils.FileExists(kf) {
+		log.Fatal("certFile or KeyFile is not exist")
+		return errors.New("certFile or KeyFile is not exist")
+	}
+	pair, _ := tls.LoadX509KeyPair(cf, kf)
+	this.tlsConfig = &tls.Config{
+		Certificates: []tls.Certificate{pair},
+	}
+	return nil
 }
 
 // verifyCfg is a function that verifies the configuration of the HttpTunnelServer. It
@@ -64,21 +94,31 @@ func addRoute(cfg *configs.ServerTunnelConfig, this *HttpTunnelServer) {
 func verifyCfg(cfg *configs.ServerTunnelConfig) error {
 	if cfg.Proxy == nil {
 		log.Fatal("proxy is nil")
-		return nil
+		return errors.New("proxy is nil")
+	}
+	if cfg.Type == utils.Https {
+		if cfg.CertFile == "" {
+			log.Fatal("certFile is nil")
+			return errors.New("certFile is nil")
+		}
+		if cfg.KeyFile == "" {
+			log.Fatal("KeyFile is nil")
+			return errors.New("KeyFile is nil")
+		}
 	}
 	for _, proxy := range cfg.Proxy {
 		if proxy.Id == "" {
-			log.Fatal("proxy id is nil")
-			return nil
+			log.Fatal("proxy.id is nil")
+			return errors.New("proxy.id is nil")
 		}
 		if proxy.Paths == nil {
-			log.Fatal("proxy paths is nil")
-			return nil
+			log.Fatal("proxy.paths is nil")
+			return errors.New("proxy.paths is nil")
 		}
 		for _, path := range proxy.Paths {
 			if path == "" {
-				log.Fatal("proxy path is empty")
-				return nil
+				log.Fatal("proxy.paths is empty")
+				return errors.New("proxy.paths is nil")
 			}
 		}
 	}
@@ -97,8 +137,8 @@ func (htl *HttpTunnelServer) getProxyConnection(proxyId string, reqId string) (w
 		bytes := make([]byte, 0)
 		_, err := channel.Write(bytes)
 		if err != nil {
-			_ = channel.Close()
 			log.Error("Read error:", err)
+			_ = channel.Close()
 			continue
 		}
 		tracker := channelIds[s]
@@ -112,9 +152,59 @@ func (htl *HttpTunnelServer) getProxyConnection(proxyId string, reqId string) (w
 	return
 }
 
-// Open  is a method of HttpTunnelServer, which is used to process incoming requests. It
-func (htl *HttpTunnelServer) Open(ch trp.Channel, _ srv.TraverseBy) {
-	htl.listener.conn <- ch
+// Reader    is a method of HttpTunnelServer, which is used to process incoming requests. It
+func (htl *HttpTunnelServer) Reader(ch Channel, tb srv.TraverseBy) {
+	channel := ch.(*srv.GChannel)
+	bt, err := channel.Next(-1)
+	if err != nil {
+		return
+	}
+	conn, ok := ch.GetAttr(defin.HttpChannel)
+	if ok {
+		conn.(*HttpConn).OnData(bt)
+	}
+	//skip next loop.
+	tb()
+}
+func (htl *HttpTunnelServer) Open(ch Channel, tb srv.TraverseBy) {
+	channel := ch.(*srv.GChannel)
+	conn := newHttpConn(ch, htl.isHttps)
+	channel.GetContext().AddAttr(defin.HttpChannel, conn)
+	go func() {
+		var rwConn net.Conn
+		if htl.isHttps {
+			var tlsConn *tls.Conn
+			tlsConn = tls.Server(conn, htl.tlsConfig)
+			if err := tlsConn.Handshake(); err != nil {
+				log.Error("TLS handshake failed: %v", err)
+				_ = conn.Close()
+				return
+			}
+			rwConn = tlsConn
+		} else {
+			rwConn = conn
+		}
+		reader := bufio.NewReader(rwConn)
+		for {
+			req, err := http.ReadRequest(reader)
+			rc := newResponseWriter(rwConn, req)
+			if err != nil {
+				log.Error("Read HTTP request error: %v", err)
+				rc.error(err)
+				_ = rwConn.Close()
+				return
+			}
+			htl.proxy.ServeHTTP(rc, req)
+			_, _ = io.Copy(io.Discard, req.Body)
+			req.Body.Close()
+			rc.finish()
+			if req.Close || req.Header.Get("Connection") == "close" {
+				_ = rwConn.Close()
+				return
+			}
+		}
+	}()
+	tb()
 }
 
 // After is a method of HttpTunnelServer, which is used to perform cleanup or subsequent processing operations startAfter
@@ -124,21 +214,8 @@ func (htl *HttpTunnelServer) Open(ch trp.Channel, _ srv.TraverseBy) {
 func (htl *HttpTunnelServer) startAfter() error {
 	tunnel.AddTunnel(htl)
 	htl.Server.AddHandler(htl)
-	addr := net.JoinHostPort("0.0.0.0", strconv.Itoa(htl.Cfg.Port))
-	server := &http.Server{
-		Addr:              addr,
-		Handler:           NewHttpProxy(htl.getRoute),
-		ReadHeaderTimeout: 60 * time.Second,
-	}
+	htl.proxy = NewHttpProxy(htl.getRoute)
 	log.Info("HTTP tunnel server started:%v", htl.Cfg.Port)
-	htl.listener = NewTcpListener()
-	go func() {
-		err := server.Serve(htl.listener)
-		if err != nil {
-			log.Error("HttpTunnel server stop")
-			return
-		}
-	}()
 	return nil
 }
 
@@ -154,7 +231,7 @@ func (htl *HttpTunnelServer) getRoute(req *http.Request) (*RouteInfo, error) {
 }
 
 // RegisterConn is a method of HttpTunnelServer, which is used to register a connection.
-func (htl *HttpTunnelServer) RegisterConn(ch trp.Channel, request exchange.RegisterReqAndRsp) {
+func (htl *HttpTunnelServer) RegisterConn(ch Channel, request exchange.RegisterReqAndRsp) {
 	if request.ProxyId == "" {
 		log.Warn("Register http tunnel, but It' proxyId is nil")
 		return
@@ -179,7 +256,7 @@ func (htl *HttpTunnelServer) RegisterConn(ch trp.Channel, request exchange.Regis
 	htl.registerLock.Unlock()
 }
 
-func (htl *HttpTunnelServer) createConn(ch trp.Channel) (err error) {
+func (htl *HttpTunnelServer) createConn(ch Channel) (err error) {
 	req := &exchange.ReqWorkConn{
 		ProxyId:      "proxy3",
 		Port:         htl.Port(),
@@ -194,7 +271,7 @@ func (htl *HttpTunnelServer) createConn(ch trp.Channel) (err error) {
 }
 
 // unRegisterConn is a method of HttpTunnelServer, which is used to unregister a connection.
-func (htl *HttpTunnelServer) unRegisterConn(ch trp.Channel) {
+func (htl *HttpTunnelServer) unRegisterConn(ch Channel) {
 	proxyId, ok := ch.GetAttr(defin.TunnelProxyId)
 	if ok {
 		key := proxyId.(string)
@@ -204,28 +281,4 @@ func (htl *HttpTunnelServer) unRegisterConn(ch trp.Channel) {
 		}
 	}
 
-}
-
-// NewTcpListener is a function that returns a pointer to TcpListener.
-func NewTcpListener() *TcpListener {
-	return &TcpListener{
-		conn: make(chan trp.Channel, 1),
-	}
-}
-
-// TcpListener is a struct that implements the net.Listener interface.
-type TcpListener struct {
-	conn chan trp.Channel
-}
-
-func (t *TcpListener) Accept() (net.Conn, error) {
-	return <-t.conn, nil
-}
-
-func (t *TcpListener) Close() error {
-	return nil
-}
-
-func (t *TcpListener) Addr() net.Addr {
-	return (*net.TCPAddr)(nil)
 }

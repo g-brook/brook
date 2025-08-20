@@ -763,3 +763,4 @@ fabric.properties
 
 /client/logs/
 /server/logs/
+/ssl/

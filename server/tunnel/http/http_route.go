@@ -1,8 +1,9 @@
 package http
 
 import (
-	"github.com/brook/common/utils"
 	"net/http"
+
+	"github.com/brook/common/utils"
 )
 
 var Routes []*RouteInfo

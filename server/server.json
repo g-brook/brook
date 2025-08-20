@@ -2,7 +2,9 @@
   "tunnel": [
     {
       "port": 8818,
-      "type": "http",
+      "type": "https",
+      "certFile": "/Users/sixh/Documents/open_project/brook/ssl/server.crt",
+      "keyFile": "/Users/sixh/Documents/open_project/brook/ssl/server.key",
       "proxy": [
         {
           "id": "proxy3",

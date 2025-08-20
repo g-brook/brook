@@ -4,16 +4,17 @@ import (
 	"bufio"
 	"bytes"
 	"fmt"
+	"io"
+	"net"
+	"net/http"
+	"strconv"
+
 	"github.com/brook/client/clis"
 	"github.com/brook/common/configs"
 	"github.com/brook/common/exchange"
 	"github.com/brook/common/log"
 	"github.com/brook/common/transport"
 	"github.com/brook/common/utils"
-	"io"
-	"net"
-	"net/http"
-	"strconv"
 )
 
 var (

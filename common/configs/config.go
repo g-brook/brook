@@ -26,9 +26,11 @@ type LoggerConfig struct {
 }
 
 type ServerTunnelConfig struct {
-	Port  int               `json:"port"`
-	Type  utils.TunnelType  `json:"type"`
-	Proxy []HttpRunnelProxy `json:"proxy"`
+	Port     int               `json:"port"`
+	Type     utils.TunnelType  `json:"type"`
+	KeyFile  string            `json:"keyfile"`
+	CertFile string            `json:"certFile"`
+	Proxy    []HttpRunnelProxy `json:"proxy"`
 }
 
 type HttpRunnelProxy struct {

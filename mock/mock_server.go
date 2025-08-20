@@ -48,6 +48,7 @@ func main() {
 	http.HandleFunc("/proxy2", handler)
 	// 启动服务器，监听 8080 端口
 	fmt.Println("服务器已启动：http://localhost:8080")
+	//err := http.ListenAndServeTLS(":8080", "/Users/sixh/Documents/open_project/brook/ssl/server.crt", "/Users/sixh/Documents/open_project/brook/ssl/server.key", nil)
 	err := http.ListenAndServe(":8080", nil)
 	if err != nil {
 		panic(err)

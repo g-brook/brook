@@ -3,13 +3,15 @@ package srv
 import (
 	"context"
 	"errors"
+	"fmt"
+	"io"
+	"net"
+	"time"
+
 	"github.com/brook/common"
 	"github.com/brook/common/transport"
 	"github.com/google/uuid"
 	"github.com/panjf2000/gnet/v2"
-	"io"
-	"net"
-	"time"
 )
 
 // GChannel
@@ -112,6 +114,7 @@ func (c *GChannel) Read(out []byte) (int, error) {
 	}
 	//ErrShortBuffer
 	n, err := c.Conn.Read(out)
+	fmt.Printf("read:%v:%v\n", n, len(out))
 	if errors.Is(err, io.ErrShortBuffer) {
 		//try read.
 		if len(out) <= 4 {
@@ -142,7 +145,7 @@ func (c *GChannel) Write(out []byte) (int, error) {
 // Next
 //
 //	@Description: Next()
-//	@receiver reveiver
+//	@receiver receiver
 //	@param pos
 //	@return net.Conn
 func (c *GChannel) Next(pos int) ([]byte, error) {

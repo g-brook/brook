@@ -3,10 +3,11 @@ package run
 import (
 	"context"
 	"fmt"
-	"github.com/brook/server/tunnel/tcp"
 	"os"
 	"os/signal"
 	"syscall"
+
+	"github.com/brook/server/tunnel/tcp"
 
 	"github.com/brook/common/command"
 	"github.com/brook/common/configs"
@@ -74,7 +75,7 @@ func run() {
 		baseServer := tunnel.NewBaseTunnelServer(&config)
 		var ts tunnel.TunnelServer
 		switch config.Type {
-		case utils.Http:
+		case utils.Http, utils.Https:
 			ts = http.NewHttpTunnelServer(baseServer)
 			if err := ts.Start(utils.NetworkTcp); err != nil {
 				log.Error("HttpTunnelServer", "err", err)
