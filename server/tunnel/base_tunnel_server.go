@@ -2,13 +2,14 @@ package tunnel
 
 import (
 	"context"
+	"sync"
+
 	"github.com/brook/common/configs"
 	"github.com/brook/common/exchange"
 	"github.com/brook/common/log"
 	"github.com/brook/common/transport"
 	"github.com/brook/common/utils"
 	"github.com/brook/server/srv"
-	"sync"
 )
 
 type EventType int

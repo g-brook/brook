@@ -35,7 +35,7 @@ func Pipe(src io.ReadWriteCloser, dst io.ReadWriteCloser) (errors []error) {
 	return
 }
 
-func SignPipe(src io.ReadWriteCloser, dst io.ReadWriteCloser) error {
+func SinglePipe(src io.ReadWriteCloser, dst io.ReadWriteCloser) error {
 	errCh := make(chan error, 1)
 	// copyData transfers data from src to dst in a goroutine.
 	copyData := func(src io.ReadWriteCloser, dst io.ReadWriteCloser) {
@@ -62,6 +62,7 @@ func Copy(src io.ReadWriteCloser, dst io.ReadWriteCloser) error {
 			if nr > 0 {
 				bytes := buf[0:nr]
 				nw, ew := dst.Write(bytes)
+				//fmt.Println(nw, ":", "写入到SSH-->")
 				if nw < 0 || nr < nw {
 					nw = 0
 				}

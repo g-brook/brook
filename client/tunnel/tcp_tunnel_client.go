@@ -31,7 +31,7 @@ func NewTcpTunnelClient(config *configs.ClientTunnelConfig, mtpc *MultipleTunnel
 }
 
 func (t *TcpTunnelClient) GetName() string {
-	return "tcp"
+	return "TcpTunnelClient"
 }
 
 func (t *TcpTunnelClient) initOpen(ch *transport.SChannel) error {

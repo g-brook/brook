@@ -187,21 +187,19 @@ func (h *HttpConn) SetWriteDeadline(t time.Time) error {
 	return h.ch.SetWriteDeadline(t)
 }
 
-func (h *HttpConn) writeErr() {
-}
-
 type responseWriter struct {
-	conn   net.Conn
-	header http.Header
-	wrote  bool
-	status int
-	req    *http.Request
-	body   *bytes.Buffer
+	conn     net.Conn
+	httpConn *HttpConn
+	header   http.Header
+	wrote    bool
+	status   int
+	req      *http.Request
+	body     *bytes.Buffer
 }
 
-func newResponseWriter(conn net.Conn, req *http.Request) *responseWriter {
+func newResponseWriter(conn net.Conn, httpConn *HttpConn, req *http.Request) *responseWriter {
 	return &responseWriter{
-		conn: conn, header: make(http.Header), req: req, body: bytes.NewBuffer(make([]byte, 0)),
+		conn: conn, httpConn: httpConn, header: make(http.Header), req: req, body: bytes.NewBuffer(make([]byte, 0)),
 	}
 }
 
@@ -222,10 +220,15 @@ func (r *responseWriter) WriteHeader(statusCode int) {
 
 // finish completes the response writing process
 // It ensures proper header setup and writes the complete response to the connection
-func (r *responseWriter) finish() {
+func (r *responseWriter) finish(err error) {
 	// Check if headers have been written, if not write default status 200
 	if !r.wrote {
-		r.WriteHeader(http.StatusOK)
+		if err != nil {
+			r.WriteHeader(http.StatusBadRequest)
+		} else {
+			r.WriteHeader(http.StatusOK)
+		}
+
 	}
 	// Set Content-Length header if not already set
 	if r.header.Get("Content-Length") == "" {
@@ -248,6 +251,10 @@ func (r *responseWriter) finish() {
 	// Write the body content and reset the body buffer
 	resp.Write(r.body.Bytes())
 	r.body.Reset()
+	if err != nil && r.httpConn != nil {
+		_, _ = r.httpConn.Write(resp.Bytes())
+		return
+	}
 	// Write the complete response to the connection
 	_, _ = r.conn.Write(resp.Bytes())
 }
@@ -260,10 +267,13 @@ func (r *responseWriter) error(err error) {
 	if err == nil {
 		return
 	}
+	if !errors.Is(err, PHttpErr) && !errors.Is(err, PHttpsErr) {
+		return
+	}
 	r.req = &http.Request{}
-	r.WriteHeader(http.StatusInternalServerError)
+	r.WriteHeader(http.StatusBadRequest)
 	_, _ = r.Write([]byte(err.Error()))
-	r.finish()
+	r.finish(err)
 }
 
 func writeHeaderLine(rw *bytes.Buffer, is11 bool, code int) {

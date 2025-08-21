@@ -137,7 +137,7 @@ func (c *GChannel) Write(out []byte) (int, error) {
 	if c.IsClose() {
 		return 0, io.EOF
 	}
-	return len(out), c.Conn.AsyncWrite(out, nil)
+	return c.Conn.Write(out)
 }
 
 // Next

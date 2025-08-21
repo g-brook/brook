@@ -175,8 +175,10 @@ func (htl *HttpTunnelServer) Open(ch Channel, tb srv.TraverseBy) {
 		if htl.isHttps {
 			var tlsConn *tls.Conn
 			tlsConn = tls.Server(conn, htl.tlsConfig)
+			errRc := newResponseWriter(tlsConn, conn, nil)
 			if err := tlsConn.Handshake(); err != nil {
-				log.Error("TLS handshake failed: %v", err)
+				log.Debug("TLS handshake failed: %v", err)
+				errRc.error(err)
 				_ = conn.Close()
 				return
 			}
@@ -187,9 +189,9 @@ func (htl *HttpTunnelServer) Open(ch Channel, tb srv.TraverseBy) {
 		reader := bufio.NewReader(rwConn)
 		for {
 			req, err := http.ReadRequest(reader)
-			rc := newResponseWriter(rwConn, req)
+			rc := newResponseWriter(rwConn, conn, req)
 			if err != nil {
-				log.Error("Read HTTP request error: %v", err)
+				log.Debug("Read HTTP request error: %v", err)
 				rc.error(err)
 				_ = rwConn.Close()
 				return
@@ -197,7 +199,7 @@ func (htl *HttpTunnelServer) Open(ch Channel, tb srv.TraverseBy) {
 			htl.proxy.ServeHTTP(rc, req)
 			_, _ = io.Copy(io.Discard, req.Body)
 			req.Body.Close()
-			rc.finish()
+			rc.finish(nil)
 			if req.Close || req.Header.Get("Connection") == "close" {
 				_ = rwConn.Close()
 				return

@@ -10,9 +10,21 @@
   "tunnels": [
     {
       "type": "tcp",
-      "localAddress": "192.168.1.17:22",
+      "localAddress": "192.168.1.17:3306",
       "ProxyId": "proxy2",
       "remotePort": 19682
+    },
+    {
+      "type": "tcp",
+      "localAddress": "192.168.1.17:22",
+      "ProxyId": "proxy1",
+      "remotePort": 19683
+    },
+    {
+      "type": "http",
+      "localAddress": "192.168.1.17:8080",
+      "ProxyId": "proxy3",
+      "remotePort": 8818
     }
   ]
 }

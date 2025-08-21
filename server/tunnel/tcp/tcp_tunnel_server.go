@@ -86,8 +86,8 @@ func (htl *TcpTunnelServer) Open(ch trp.Channel, _ srv.TraverseBy) {
 	case *srv.GChannel:
 		workConn.GetContext().AddAttr(defin.ToSChannelId, userConn.GetId())
 		go func() {
-			err := aio.SignPipe(userConn, workConn)
-			log.Error("aio.SignPipe error %v", err)
+			err := aio.SinglePipe(userConn, workConn)
+			log.Error("aio.SinglePipe error %v", err)
 		}()
 	}
 }
