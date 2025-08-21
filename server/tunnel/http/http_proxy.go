@@ -7,12 +7,14 @@ import (
 	"net/http"
 	"net/http/httputil"
 	"net/url"
+	"sync"
+	"sync/atomic"
 	"time"
 
 	io2 "github.com/brook/common/aio"
+	"github.com/brook/common/exchange"
 	"github.com/brook/common/log"
 	"github.com/brook/common/utils"
-	"github.com/google/uuid"
 )
 
 var (
@@ -20,6 +22,7 @@ var (
 	RequestInfoKey = "httpRequestId"
 	ProxyKey       = "proxy"
 	ForwardedKey   = "X-Forwarded-For"
+	index          atomic.Int64
 )
 
 type timeoutError struct {
@@ -32,18 +35,26 @@ func (timeoutError) Temporary() bool { return true } // optional
 type ProxyConnection struct {
 	net.Conn
 	tracker *HttpTracker
-	reqId   string
+	reqId   int64
 	readBuf []byte
 	readCh  chan []byte
+	mu      sync.Mutex
 }
 
-func NewProxyConnection(conn net.Conn, reqId string, tracker *HttpTracker) *ProxyConnection {
+func NewProxyConnection(conn net.Conn, reqId int64, tracker *HttpTracker) *ProxyConnection {
 	return &ProxyConnection{
 		Conn:    conn,
 		reqId:   reqId,
 		tracker: tracker,
 		readCh:  tracker.trackers[reqId],
 	}
+}
+
+func (proxy *ProxyConnection) Write(b []byte) (n int, err error) {
+	//encode to tunnel.
+	request := exchange.NewTunnelWriter(b, proxy.reqId)
+	err = request.Writer(proxy.Conn)
+	return len(b), err
 }
 
 func (proxy *ProxyConnection) Read(p []byte) (n int, err error) {
@@ -83,8 +94,7 @@ func (h *Proxy) ServeHTTP(writer http.ResponseWriter, request *http.Request) {
 	if info, err := h.routeFun(request); err != nil {
 		newCtx = context.WithValue(newCtx, RouteInfoKey, err)
 	} else {
-		reqId := uuid.NewString()
-		request.Header.Set(RequestInfoKey, reqId)
+		reqId := index.Add(1)
 		newCtx = context.WithValue(newCtx, RequestInfoKey, reqId)
 		newCtx = context.WithValue(newCtx, RouteInfoKey, info)
 	}
@@ -94,7 +104,7 @@ func (h *Proxy) ServeHTTP(writer http.ResponseWriter, request *http.Request) {
 
 func NewHttpProxy(fun RouteFunction) *Proxy {
 	reverseProxy := &httputil.ReverseProxy{
-		BufferPool: io2.GetBuffPool32k(),
+		BufferPool: io2.GetBytePool32k(),
 		Rewrite: func(request *httputil.ProxyRequest) {
 			out := request.Out
 			in := request.In
@@ -118,7 +128,7 @@ func NewHttpProxy(fun RouteFunction) *Proxy {
 				case error:
 					return nil, v
 				case *RouteInfo:
-					return v.getProxyConnection(v.proxyId, id.(string))
+					return v.getProxyConnection(v.proxyId, id.(int64))
 				}
 				return nil, nil
 			},

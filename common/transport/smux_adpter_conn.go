@@ -1,10 +1,11 @@
 package transport
 
 import (
-	"github.com/panjf2000/gnet/v2"
 	"io"
 	"net"
 	"time"
+
+	"github.com/panjf2000/gnet/v2"
 )
 
 type SmuxAdapterConn struct {

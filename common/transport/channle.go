@@ -3,9 +3,10 @@
 package transport
 
 import (
-	"github.com/brook/common"
 	"io"
 	"net"
+
+	"github.com/brook/common"
 )
 
 type CloseEvent func(channel Channel)

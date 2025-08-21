@@ -127,7 +127,7 @@ func verifyCfg(cfg *configs.ServerTunnelConfig) error {
 
 // getProxyConnection is a function that returns a net.Conn object based on the proxyId. It
 // It returns an error if the proxyId is not found.
-func (htl *HttpTunnelServer) getProxyConnection(proxyId string, reqId string) (workConn *ProxyConnection, err error) {
+func (htl *HttpTunnelServer) getProxyConnection(proxyId string, reqId int64) (workConn *ProxyConnection, err error) {
 	channelIds, ok := htl.proxyToConn[proxyId]
 	if !ok {
 		return nil, errors.New("proxy Id not found in proxy connection:" + proxyId)

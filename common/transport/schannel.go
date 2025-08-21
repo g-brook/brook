@@ -6,12 +6,13 @@ import (
 	"bytes"
 	"context"
 	"errors"
-	"github.com/brook/common"
-	"github.com/google/uuid"
-	"github.com/xtaci/smux"
 	"io"
 	"net"
 	"time"
+
+	"github.com/brook/common"
+	"github.com/google/uuid"
+	"github.com/xtaci/smux"
 )
 
 // SChannel struct holds the secure channel information

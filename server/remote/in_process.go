@@ -2,12 +2,13 @@ package remote
 
 import (
 	"fmt"
+	"time"
+
 	"github.com/brook/common/exchange"
 	"github.com/brook/common/log"
 	"github.com/brook/common/transport"
 	defin "github.com/brook/server/define"
 	"github.com/brook/server/tunnel"
-	"time"
 )
 
 func init() {

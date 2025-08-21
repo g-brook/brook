@@ -3,15 +3,16 @@ package tcp
 import (
 	"errors"
 	"fmt"
+	"math/rand"
+	"sync"
+	"time"
+
 	"github.com/brook/common/configs"
 	"github.com/brook/common/exchange"
 	"github.com/brook/common/transport"
 	"github.com/brook/common/utils"
 	"github.com/brook/server/remote"
 	"github.com/brook/server/tunnel"
-	"math/rand"
-	"sync"
-	"time"
 )
 
 // TcpTunnelListener tcp tunnel listener

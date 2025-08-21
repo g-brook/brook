@@ -3,13 +3,14 @@ package remote
 import (
 	"context"
 	"encoding/json"
+	"os"
+
 	"github.com/brook/common/configs"
 	"github.com/brook/common/exchange"
 	"github.com/brook/common/log"
 	"github.com/brook/common/transport"
 	defin "github.com/brook/server/define"
 	srv2 "github.com/brook/server/srv"
-	"os"
 )
 
 const isTunnelConnKey = "TunnelServer-Conn"

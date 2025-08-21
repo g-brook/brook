@@ -1,14 +1,15 @@
 package tunnel
 
 import (
+	"sync"
+	"time"
+
 	"github.com/brook/client/clis"
 	"github.com/brook/common/configs"
 	"github.com/brook/common/exchange"
 	"github.com/brook/common/log"
 	"github.com/brook/common/utils"
 	"github.com/xtaci/smux"
-	"sync"
-	"time"
 )
 
 // This function is used to register a new tunnel client for the TCP protocol

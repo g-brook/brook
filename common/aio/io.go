@@ -20,7 +20,7 @@ func Pipe(src io.ReadWriteCloser, dst io.ReadWriteCloser) (errors []error) {
 		errors2[index] = WithBuffer(func(buf []byte) error {
 			_, err := io.CopyBuffer(dst, src, buf)
 			return err
-		}, GetBuffPool16k())
+		}, GetBytePool16k())
 	}
 	wait.Add(2)
 	// Start bidirectional data transfer
@@ -46,7 +46,7 @@ func SignPipe(src io.ReadWriteCloser, dst io.ReadWriteCloser) error {
 		err := WithBuffer(func(buf []byte) error {
 			_, err := io.CopyBuffer(dst, src, buf)
 			return err
-		}, GetBuffPool16k())
+		}, GetBytePool16k())
 		errCh <- err
 	}
 	// Start bidirectional data transfer
@@ -82,5 +82,5 @@ func Copy(src io.ReadWriteCloser, dst io.ReadWriteCloser) error {
 			}
 		}
 		return err
-	}, GetBuffPool16k())
+	}, GetBytePool16k())
 }

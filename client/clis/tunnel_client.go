@@ -4,13 +4,14 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
+
 	"github.com/brook/common/configs"
 	"github.com/brook/common/exchange"
 	"github.com/brook/common/log"
 	"github.com/brook/common/transport"
 	"github.com/brook/common/utils"
 	"github.com/xtaci/smux"
-	"time"
 )
 
 type TunnelClientControl struct {

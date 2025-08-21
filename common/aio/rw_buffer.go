@@ -32,7 +32,7 @@ func (r *RWBuffer) Read(p []byte) (n int, err error) {
 	return r.buf.Read(p)
 }
 
-// This function closes the RWBuffer and sets the closed flag to true
+// Close This function closes the RWBuffer and sets the closed flag to true
 func (r *RWBuffer) Close() error {
 	// Set the closed flag to true
 	r.closed = true
@@ -40,7 +40,7 @@ func (r *RWBuffer) Close() error {
 	return nil
 }
 
-// This function creates a new ReadWriteCloser object
+// NewRWBuffer This function creates a new ReadWriteCloser object
 func NewRWBuffer() io.ReadWriteCloser {
 	// Create a new RWBuffer object
 	return &RWBuffer{

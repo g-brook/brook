@@ -4,8 +4,9 @@ import (
 	bytes2 "bytes"
 	"encoding/binary"
 	"errors"
-	"github.com/brook/common/log"
 	"io"
+
+	"github.com/brook/common/log"
 )
 
 const totalPacketSize = 4

@@ -1,5 +1,0 @@
-package assert
-
-func AssertNotNull() {
-
-}

@@ -1,13 +1,9 @@
 package http
 
 import (
-	"bufio"
-	"net/http"
-	"net/http/httputil"
 	"sync"
 
-	"github.com/brook/common/log"
-
+	"github.com/brook/common/exchange"
 	"github.com/brook/common/transport"
 )
 
@@ -15,12 +11,12 @@ import (
 type HttpTracker struct {
 	mu       sync.Mutex
 	channel  transport.Channel
-	trackers map[string]chan []byte
+	trackers map[int64]chan []byte
 }
 
 func NewHttpTracker(channel transport.Channel) *HttpTracker {
 	return &HttpTracker{
-		trackers: make(map[string]chan []byte),
+		trackers: make(map[int64]chan []byte),
 		channel:  channel,
 	}
 }
@@ -29,7 +25,7 @@ func (receiver *HttpTracker) Run() {
 	go receiver.readRev()
 }
 
-func (receiver *HttpTracker) AddRequest(reqId string) chan []byte {
+func (receiver *HttpTracker) AddRequest(reqId int64) chan []byte {
 	ch := make(chan []byte, 1)
 	receiver.mu.Lock()
 	defer receiver.mu.Unlock()
@@ -39,17 +35,13 @@ func (receiver *HttpTracker) AddRequest(reqId string) chan []byte {
 
 func (receiver *HttpTracker) readRev() {
 	readResponse := func() {
-		response, err := http.ReadResponse(bufio.NewReader(receiver.channel.GetReader()), nil)
+		pt := exchange.NewTunnelRead()
+		err := pt.Read(receiver.channel)
 		if err != nil {
 			return
 		}
-		bytes, err := httputil.DumpResponse(response, true)
-		if err != nil {
-			log.Error("read response error", err)
-			return
-		}
-		reqId := response.Header.Get(RequestInfoKey)
-		receiver.send(reqId, bytes)
+		reqId := pt.ReqId
+		receiver.send(reqId, pt.Data)
 	}
 	for {
 		select {
@@ -61,7 +53,7 @@ func (receiver *HttpTracker) readRev() {
 	}
 }
 
-func (receiver *HttpTracker) send(reqId string, buffer []byte) {
+func (receiver *HttpTracker) send(reqId int64, buffer []byte) {
 	receiver.mu.Lock()
 	defer receiver.mu.Unlock()
 	ch := receiver.trackers[reqId]
@@ -72,7 +64,7 @@ func (receiver *HttpTracker) send(reqId string, buffer []byte) {
 
 }
 
-func (receiver *HttpTracker) Close(reqId string) {
+func (receiver *HttpTracker) Close(reqId int64) {
 	receiver.mu.Lock()
 	defer receiver.mu.Unlock()
 	c := receiver.trackers[reqId]

@@ -343,7 +343,7 @@ func (sever *Server) smuxReadLoop(ch *trp.SChannel) {
 				})
 			}
 			return nil
-		}, aio.GetBuffPool4k())
+		}, aio.GetBytePool4k())
 		if err != nil {
 			return
 		}

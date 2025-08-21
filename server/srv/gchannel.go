@@ -3,7 +3,6 @@ package srv
 import (
 	"context"
 	"errors"
-	"fmt"
 	"io"
 	"net"
 	"time"
@@ -114,7 +113,6 @@ func (c *GChannel) Read(out []byte) (int, error) {
 	}
 	//ErrShortBuffer
 	n, err := c.Conn.Read(out)
-	fmt.Printf("read:%v:%v\n", n, len(out))
 	if errors.Is(err, io.ErrShortBuffer) {
 		//try read.
 		if len(out) <= 4 {

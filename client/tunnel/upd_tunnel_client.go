@@ -1,15 +1,16 @@
 package tunnel
 
 import (
+	"io"
+	"net"
+	"time"
+
 	"github.com/brook/client/clis"
 	"github.com/brook/common/aio"
 	"github.com/brook/common/configs"
 	"github.com/brook/common/exchange"
 	"github.com/brook/common/log"
 	"github.com/brook/common/transport"
-	"io"
-	"net"
-	"time"
 )
 
 type UdpTunnelClient struct {
