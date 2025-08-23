@@ -23,12 +23,10 @@ func NewSmuxAdapterConn(rawConn gnet.Conn) *SmuxAdapterConn {
 	}
 }
 
-// 实现 io.Reader
 func (s *SmuxAdapterConn) Read(p []byte) (int, error) {
 	return s.reader.Read(p)
 }
 
-// 实现 io.Writer
 func (s *SmuxAdapterConn) Write(p []byte) (int, error) {
 	return s.rawConn.Write(p)
 }

@@ -18,6 +18,7 @@ import (
 
 var cid int32
 
+//go:generate stringer -type=ClientState
 type ClientState int
 
 const (
@@ -90,20 +91,20 @@ type ClientHandler interface {
 type BaseClientHandler struct {
 }
 
-func (b BaseClientHandler) Close(cct *ClientControl) {
+func (b BaseClientHandler) Close(*ClientControl) {
 }
 
-func (b BaseClientHandler) Connection(cct *ClientControl) {}
+func (b BaseClientHandler) Connection(*ClientControl) {}
 
-func (b BaseClientHandler) Read(buffer *exchange.Protocol, cct *ClientControl) error {
+func (b BaseClientHandler) Read(*exchange.Protocol, *ClientControl) error {
 	return nil
 }
 
-func (b BaseClientHandler) Error(err error, cct *ClientControl) {
+func (b BaseClientHandler) Error(error, *ClientControl) {
 
 }
 
-func (b BaseClientHandler) Timeout(cct *ClientControl) {
+func (b BaseClientHandler) Timeout(*ClientControl) {
 
 }
 
@@ -139,7 +140,7 @@ type Client struct {
 //   - host: The server host address.
 //   - port: The server port number.
 //
-// Retur
+// Return
 // Returns:
 //   - *Client: A pointer to the newly created Client instance.
 func NewClient(host string, port int) *Client {
@@ -189,11 +190,6 @@ func (c *Client) Reconnection() error {
 	return nil
 }
 
-// Connection
-//
-//	@Description: connection to server.
-//	@receiver c
-//	@return error
 func (c *Client) Connection(network string, option ...ClientOption) error {
 	c.pre(network, option)
 	go c.handleLoop()
@@ -266,11 +262,6 @@ func (c *Client) setTimeout(dial net.Conn) {
 	}
 }
 
-// OpenTunnel
-//
-//	@Description: Active connection to
-//	@receiver c
-//	@param name
 func (c *Client) OpenTunnel(config *configs.ClientTunnelConfig) error {
 	if !c.isSmux() {
 		return nil
@@ -325,7 +316,10 @@ func (c *Client) readLoop() {
 
 }
 
+// getAddress returns the complete address of the client in the format "host:port"
+// It combines the host and port obtained from the client's methods into a single string
 func (c *Client) getAddress() string {
+	// Using fmt.Sprintf to format the host and port into a string with the format "host:port"
 	return fmt.Sprintf("%s:%d", c.GetHost(), c.GetPort())
 }
 
@@ -333,54 +327,77 @@ func (c *Client) isSmux() bool {
 	return c.opts.Smux != nil
 }
 
-// IsConnection
+// IsConnection checks if the client connection is active and in the correct state
+// This method is used to verify whether the client has an active connection
 //
-//	@receiver c
+// Parameters:
+//   - None
+//
+// Returns:
+//   - bool: Returns true if connection exists and is in Active state, false otherwise
 func (c *Client) IsConnection() bool {
+	// Check if connection object is not nil and state is Active
 	return c.conn != nil && c.state == Active
 }
 
+// handleLoop manages the client's connection lifecycle and event handling
 func (c *Client) handleLoop() {
+	// _close is a nested function to handle connection cleanup
 	//Close connection.
 	_close := func() error {
-		//closed.
-		if c.state != Closed && c.conn != nil {
-			return c.conn.Close()
+		// Check if connection is already closed
+		if c.conn != nil {
+			_ = c.conn.Close()
+		}
+		if c.session != nil {
+			_ = c.session.Close()
 		}
 		return nil
 	}
+	// Main event loop handling various client events
 	for {
 		select {
+		// Handle state changes
 		case c.state = <-c.cct.state:
-			log.Debug("Client state change:%d", c.state)
+			log.Debug("Client state change,%d:%s", c.port, c.state.String())
 			if c.state == Active {
 				c.revReadNext()
 				for _, t := range c.handlers {
+					// Notify all handlers of connection establishment
 					t.Connection(c.cct)
 				}
 			}
 			if c.state == Closed {
 				_ = _close()
+				// Close connection and notify handlers of closure
 				for _, t := range c.handlers {
 					t.Close(c.cct)
 				}
 			}
 		case err := <-c.cct.errors:
+			// Handle errors
 			//sendError.
 			for _, t := range c.handlers {
+				// Notify all handlers of errors
 				t.Error(err, c.cct)
 			}
 		case b := <-c.cct.read:
+			// Handle incoming data
 			for _, t := range c.handlers {
+				// Process received data through all handlers
 				err := t.Read(b, c.cct)
 				if err != nil {
 					_ = c.error("Read error", err)
 				}
 			}
 		case bytes := <-c.cct.write:
+			// Handle outgoing data
 			_, _ = c.rw.Write(bytes)
+			// Write data to the connection
 		case <-c.cct.timeout:
+			// Handle timeout events
 			for _, t := range c.handlers {
+				// Notify all handlers of timeout
 				t.Timeout(c.cct)
 			}
 		}
@@ -399,6 +416,12 @@ func (c *Client) sessionLoop() {
 		for {
 			select {
 			case <-c.session.CloseChan():
+				if c.state != Closed {
+					return
+				}
+				if c.session.IsClosed() {
+					return
+				}
 				log.Warn("Tunnel Session closed %v", c.session.RemoteAddr())
 				c.cct.state <- Closed
 				return
@@ -407,11 +430,6 @@ func (c *Client) sessionLoop() {
 	}
 }
 
-// Write
-//
-//	@Description: Write data..
-//	@receiver c
-//	@param bytes
 func (c *ClientControl) Write(bytes []byte) error {
 	if c.cli.rw == nil {
 		log.Warn("Connection closed")
@@ -421,19 +439,10 @@ func (c *ClientControl) Write(bytes []byte) error {
 	return nil
 }
 
-// Close
-//
-//	@Description: Close Client.
-//	@receiver c
 func (c *ClientControl) Close() {
 	c.state <- Closed
 }
 
-// Error
-//
-//	@Description: Print error.
-//	@receiver c
-//	@param err
 func (c *ClientControl) Error(err error) {
 	c.errors <- err
 }

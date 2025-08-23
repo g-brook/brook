@@ -8,6 +8,7 @@
       "proxy": [
         {
           "id": "proxy3",
+          "domain": "localhost",
           "paths": [
             "/*"
           ]

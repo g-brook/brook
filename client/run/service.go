@@ -2,12 +2,13 @@ package run
 
 import (
 	"context"
+	"sync"
+	"time"
+
 	"github.com/brook/client/clis"
 	"github.com/brook/common/configs"
 	"github.com/brook/common/exchange"
 	"github.com/brook/common/log"
-	"sync"
-	"time"
 )
 
 type Service struct {
@@ -78,6 +79,7 @@ func (receiver *Service) connectionTunnel(cfg *configs.ClientConfig) error {
 	tunnelTransport.Connection(
 		clis.WithPingTime(newCfg.PingTime*time.Millisecond),
 		clis.WithClientSmux(clis.NewSmuxClientOption()))
+	clis.ManagerTransport.WithTunnelTransport(tunnelTransport)
 	return nil
 }
 

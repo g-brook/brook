@@ -1,13 +1,14 @@
 package log
 
 import (
+	"os"
+	"strings"
+
 	"github.com/brook/common/configs"
 	"github.com/brook/common/hash"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"gopkg.in/natefinch/lumberjack.v2"
-	"os"
-	"strings"
 )
 
 type LoggerSetting struct {

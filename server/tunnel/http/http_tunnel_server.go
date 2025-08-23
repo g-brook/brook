@@ -247,10 +247,7 @@ func (htl *HttpTunnelServer) RegisterConn(ch Channel, request exchange.RegisterR
 		proxies[ch.GetId()] = tracker
 		tracker.Run()
 		go func() {
-			err := htl.createConn(ch)
-			if err != nil {
-
-			}
+			_ = htl.createConn(ch)
 		}()
 	} else {
 		log.Warn("Register %V not exists by http tunnelServer.", request.ProxyId)

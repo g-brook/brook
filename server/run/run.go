@@ -24,11 +24,16 @@ var (
 	cfgPath      string
 )
 
-// init
-//
-//	@Description: init.
+// init function is called automatically when the package is initialized
+// It sets up command line flags and registers server-specific flags
 func init() {
+	// Add a persistent string flag for config file path
+	// The flag can be referenced as "--config" or "-c"
+	// Default value is "./server.json"
+	// The flag stores the config file path in cfgPath variable
 	cmd.PersistentFlags().StringVarP(&cfgPath, "config", "c", "./server.json", "config file path")
+	// Register server-specific flags with the command
+	// This function likely adds flags related to server configuration
 	command.RegisterServerFlags(cmd, serverConfig)
 }
 
@@ -65,9 +70,11 @@ func Start() {
 	}
 }
 
+// run is the main entry point for the server application
 func run() {
+	// Create a context that can be cancelled by interrupt signals (SIGINT, SIGTERM)
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
-	defer stop()
+	defer stop() // Ensure the signal notification is stopped when the function returns
 	//Start In-Server.
 	remote.Inserver = remote.New().Start(&serverConfig)
 	tunnelServers := make([]tunnel.TunnelServer, len(serverConfig.Tunnel))

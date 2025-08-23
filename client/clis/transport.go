@@ -1,10 +1,11 @@
 package clis
 
 import (
+	"time"
+
 	"github.com/brook/common/configs"
 	"github.com/brook/common/exchange"
 	"github.com/brook/common/log"
-	"time"
 )
 
 // Transport
@@ -38,19 +39,34 @@ func NewTransport(config *configs.ClientConfig) *Transport {
 	}
 }
 
+// Connection establishes a new connection with the server using the provided options
+// It sets up a new client, adds a handler for checking the connection,
+// and either adds the transport to a reconnection list or opens a tunnel based on the connection result
 func (t *Transport) Connection(opts ...ClientOption) {
+	// Create a new client with the specified host and port
 	t.client = NewClient(t.host, t.port)
+	// Attempt to establish a TCP connection with the provided options
 	err := t.client.Connection("tcp", opts...)
+	// Add a CheckHandler to manage the connection state
 	t.client.AddHandler(&CheckHandler{
 		transport: t,
 	})
 	//The error add to reconnection list.
 	if err != nil {
+		// If connection fails, log a warning and add this transport to a checking list for reconnection
 		log.Warn("Connection to server error:%s", err)
 		addChecking(t)
 	} else {
+		// If connection is successful, open a tunnel for data transmission
 		t.openTunnel()
 	}
+}
+
+// Close closes the transport by closing the underlying client connection.
+// It ensures proper cleanup of resources associated with the transport.
+func (t *Transport) Close() {
+	// Close the client connection using the client's connection table (cct)
+	t.client.cct.Close()
 }
 
 func (t *Transport) openTunnel() {
@@ -81,7 +97,7 @@ type CheckHandler struct {
 	transport *Transport
 }
 
-func (b *CheckHandler) Close(cct *ClientControl) {
+func (b *CheckHandler) Close(*ClientControl) {
 	addChecking(b.transport)
 }
 

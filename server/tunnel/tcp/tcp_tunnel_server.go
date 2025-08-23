@@ -69,7 +69,7 @@ func (htl *TcpTunnelServer) Reader(ch trp.Channel, _ srv.TraverseBy) {
 			if ok {
 				err := aio.Copy(ch, dest)
 				if err != nil {
-					log.Error("aio.copy error %v", err)
+					log.Debug("aio.copy error %v", err)
 				}
 			}
 		}
@@ -87,7 +87,7 @@ func (htl *TcpTunnelServer) Open(ch trp.Channel, _ srv.TraverseBy) {
 		workConn.GetContext().AddAttr(defin.ToSChannelId, userConn.GetId())
 		go func() {
 			err := aio.SinglePipe(userConn, workConn)
-			log.Error("aio.SinglePipe error %v", err)
+			log.Debug("aio.SinglePipe error %v", err)
 		}()
 	}
 }

@@ -1,9 +1,10 @@
 package clis
 
 import (
+	"time"
+
 	"github.com/brook/client/cli"
 	"github.com/brook/common/exchange"
-	"time"
 )
 
 var ManagerTransport *managerTransport
@@ -18,13 +19,21 @@ func InitManagerTransport(transport *Transport) {
 
 type managerTransport struct {
 	BaseClientHandler
-	transport *Transport
-	commands  map[exchange.Cmd]CmdNotify
-	UnId      string
+	transport       *Transport
+	tunnelTransport *Transport
+	commands        map[exchange.Cmd]CmdNotify
+	UnId            string
+}
+
+func (b *managerTransport) WithTunnelTransport(t *Transport) {
+	b.tunnelTransport = t
 }
 
 func (b *managerTransport) Close(_ *ClientControl) {
 	cli.UpdateStatus("offline")
+	if b.tunnelTransport != nil {
+		b.tunnelTransport.Close()
+	}
 }
 
 func (b *managerTransport) Connection(_ *ClientControl) {
