@@ -5,7 +5,7 @@ go 1.24.0
 require (
 	github.com/panjf2000/gnet/v2 v2.9.3
 	github.com/spf13/cobra v1.9.1
-	github.com/xtaci/smux v1.5.34
+	github.com/xtaci/smux v1.5.35
 	go.uber.org/zap v1.27.0
 	gopkg.in/natefinch/lumberjack.v2 v2.2.1
 )
