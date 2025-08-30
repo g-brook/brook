@@ -43,15 +43,9 @@ func NewTunnelRead() *TunnelProtocol {
 // Writer is a method of TunnelProtocol that handles writing data to the given io.Writer
 // It takes a writer as parameter and returns an error if any occurs during the write operation
 func (t *TunnelProtocol) Writer(w io.Writer) error {
-	pool := aio.GetBufPool(int(t.Len))
-	return aio.WithBuf(func(buf *bytes.Buffer) error {
-		err := binary.Write(buf, binary.BigEndian, t.Len)
-		_ = binary.Write(buf, binary.BigEndian, t.Ver)
-		_ = binary.Write(buf, binary.BigEndian, t.ReqId)
-		_, _ = buf.Write(t.Data)
-		_, err = w.Write(buf.Bytes())
-		return err
-	}, pool)
+	buf := t.Encode()
+	_, err := w.Write(buf)
+	return err
 }
 
 func (t *TunnelProtocol) Read(r io.Reader) error {
@@ -70,8 +64,26 @@ func (t *TunnelProtocol) Read(r io.Reader) error {
 		log.Error(err.Error())
 		return err
 	}
+	t.Decode(data)
+	return nil
+}
+
+func (t *TunnelProtocol) Encode() []byte {
+	pool := aio.GetBufPool(int(t.Len))
+	var bufData []byte
+	_ = aio.WithBuf(func(buf *bytes.Buffer) error {
+		err := binary.Write(buf, binary.BigEndian, t.Len)
+		_ = binary.Write(buf, binary.BigEndian, t.Ver)
+		_ = binary.Write(buf, binary.BigEndian, t.ReqId)
+		_, _ = buf.Write(t.Data)
+		bufData = buf.Bytes()
+		return err
+	}, pool)
+	return bufData
+}
+
+func (t *TunnelProtocol) Decode(data []byte) {
 	t.Ver = int8(data[0])
 	t.ReqId = int64(binary.BigEndian.Uint64(data[1:9]))
 	t.Data = data[9:]
-	return nil
 }

@@ -1,4 +1,9 @@
 {
+  "logger": {
+    "logLevel": "debug",
+    "logPath": "./",
+    "outs": "file,stdout"
+  },
   "tunnel": [
     {
       "port": 8818,

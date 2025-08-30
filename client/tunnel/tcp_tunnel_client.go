@@ -11,6 +11,7 @@ import (
 	"github.com/brook/common/exchange"
 	"github.com/brook/common/log"
 	"github.com/brook/common/transport"
+	"github.com/brook/common/utils"
 )
 
 type TcpTunnelClient struct {
@@ -62,7 +63,7 @@ func (t *TcpTunnelClient) initOpen(ch *transport.SChannel) error {
 }
 func (t *TcpTunnelClient) localConnection() (net.Conn, error) {
 	connFunction := func() (net.Conn, error) {
-		dial, err := net.Dial("tcp", t.GetCfg().LocalAddress)
+		dial, err := net.Dial(string(utils.NetworkTcp), t.GetCfg().LocalAddress)
 		if err != nil {
 			return nil, err
 		}

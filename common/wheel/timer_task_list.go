@@ -5,7 +5,7 @@ import (
 )
 
 type Timer interface {
-	Add(task TimerTask)
+	Add(task *TimerTask) error
 	AdvanceClock(timeoutMs int64)
 	Size() int
 	Shutdown()
@@ -22,6 +22,7 @@ func (l *TimerTaskList) SetExpiration(expiration int64) bool {
 	l.mu.Lock()
 	defer l.mu.Unlock()
 	l.expiration = expiration
+	return true
 }
 
 func NewTimerTaskList(taskCounter int64) *TimerTaskList {

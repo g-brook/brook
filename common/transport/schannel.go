@@ -165,3 +165,7 @@ func (s *SChannel) GetId() string {
 func (s *SChannel) Done() <-chan struct{} {
 	return s.ctx.Done()
 }
+
+func (s *SChannel) Ctx() context.Context {
+	return s.ctx
+}

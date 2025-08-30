@@ -7,11 +7,12 @@ const (
 	Http  TunnelType = "http"
 	Https TunnelType = "https"
 	Tcp   TunnelType = "tcp"
-	Udp   TunnelType = "upd"
+	Udp   TunnelType = "udp"
 )
 
-const NetworkTcp Network = "tcp"
-const NetworkUdp Network = "udp"
+const NetworkTcp = Network(Tcp)
+
+const NetworkUdp = Network(Udp)
 
 type Number interface {
 	~int | ~int8 | ~int16 | ~int32 | ~int64 | ~float32 | ~float64
@@ -37,11 +38,6 @@ func NumberDefault[T Number](value T, defaultValue T) T {
 	return DefaultValue(value != 0, value, defaultValue)
 }
 
-// IsNotNil IsNotNil[T comparable]
-//
-//	@Description:
-//	@param value
-//	@return bool
 func IsNotNil[T comparable](value T) bool {
 	var zero T
 	if zero == value {
@@ -50,16 +46,21 @@ func IsNotNil[T comparable](value T) bool {
 	return true
 }
 
-// DefaultValue DefaultValue[T any]
+// DefaultValue is a generic function that returns either a value or a default based on a boolean condition
+// It uses Go's generics feature to work with any type T
 //
-//	@Description:
-//	@param b
-//	@param val
-//	@param def
-//	@return T
+// Parameters:
+//
+//	b: boolean condition to determine which value to return
+//	val: the value to return if b is true
+//	def: the default value to return if b is false
+//
+// Returns:
+//
+//	T: either val or def based on the boolean condition b
 func DefaultValue[T any](b bool, val T, def T) T {
-	if b {
+	if b { // if condition is true, return the provided value
 		return val
 	}
-	return def
+	return def // otherwise return the default value
 }

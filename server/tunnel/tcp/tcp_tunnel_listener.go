@@ -9,7 +9,7 @@ import (
 
 	"github.com/brook/common/configs"
 	"github.com/brook/common/exchange"
-	"github.com/brook/common/transport"
+	. "github.com/brook/common/transport"
 	"github.com/brook/common/utils"
 	"github.com/brook/server/remote"
 	"github.com/brook/server/tunnel"
@@ -24,7 +24,7 @@ var portRange = [2]int{10000, 60000}
 var portPool *PortPool
 
 func init() {
-	//tcpTunnelServers = make(map[int]*TcpTunnelServer, 50000)
+	//tcpTunnelServers = make(map[int]*UdpTunnelServer, 50000)
 	portPool = NewProtPool(portRange[0], portRange[1], time.Minute*5)
 	remote.OpenTunnelServerFun = OpenTunnelServer
 }
@@ -35,9 +35,10 @@ func AcceptTcpListener() {
 
 // OpenTunnelServer open tcp tunnel server
 // This function opens a tunnel server based on the request parameters.
-func OpenTunnelServer(request exchange.OpenTunnelReq, ch transport.Channel) (int, error) {
+func OpenTunnelServer(request exchange.OpenTunnelReq, ch Channel) (int, error) {
 	//Check if the tunnel port is already in use.
 	if t, ok := tcpTunnelServers.Load(request.TunnelPort); ok {
+		//todo://
 		if request.UnId == t.(*TcpTunnelServer).GetUnId() {
 			return request.TunnelPort, nil
 
@@ -69,15 +70,24 @@ func OpenTunnelServer(request exchange.OpenTunnelReq, ch transport.Channel) (int
 	//Create a new server configuration.
 	config := &configs.ServerTunnelConfig{
 		Port: request.TunnelPort,
-		Type: utils.Tcp,
+		Type: request.TunnelType,
 	}
 	//Create a new base tunnel server.
 	baseServer := tunnel.NewBaseTunnelServer(config)
 	//Create a new TCP tunnel server.
-	server := NewTcpTunnelServer(baseServer, request, ch)
+	var server tunnel.TunnelServer
+	var netWork utils.Network
+	if config.Type == utils.Tcp {
+		server = NewTcpTunnelServer(baseServer, request, ch)
+		netWork = utils.NetworkTcp
+	} else if config.Type == utils.Udp {
+		server = NewUdpTunnelServer(baseServer, request, ch)
+		netWork = utils.NetworkUdp
+	} else {
+		return 0, fmt.Errorf("not support tunnel type %v", config.Type)
+	}
 	//Start the server.
-	nw := server.GetNetwork()
-	err := server.Start(nw)
+	err := server.Start(netWork)
 	if err != nil {
 		//Release the port if the server fails to start.
 		portPool.Release(request.TunnelPort)

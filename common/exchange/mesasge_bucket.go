@@ -2,9 +2,10 @@ package exchange
 
 import (
 	"context"
-	"github.com/brook/common/log"
 	"io"
 	"time"
+
+	"github.com/brook/common/log"
 )
 
 // BucketRead is a function type that takes a pointer to a Protocol struct and an io.ReadWriteCloser as parameters
@@ -71,7 +72,10 @@ func (m *MessageBucket) Run() {
 	m.bytesBucket.witch = func(bytes []byte) (any, int) {
 		return "Protocol", GetByteLen(bytes)
 	}
-	m.bytesBucket.Run()
+	m.bytesBucket.doRunning(func(revLoop, readLoop func()) {
+		revLoop()
+		readLoop()
+	})
 }
 
 // Push is a function that takes a pointer to a Protocol struct and pushes it to the bucketPush channel

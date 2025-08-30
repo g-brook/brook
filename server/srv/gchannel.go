@@ -9,6 +9,7 @@ import (
 
 	"github.com/brook/common"
 	"github.com/brook/common/transport"
+	"github.com/brook/common/utils"
 	"github.com/google/uuid"
 	"github.com/panjf2000/gnet/v2"
 )
@@ -33,6 +34,8 @@ type GChannel struct {
 	cancel context.CancelFunc
 
 	closeEvents []transport.CloseEvent
+
+	protocol utils.Network
 }
 
 // SetDeadline is a wrapper for gnet.Conn.SetDeadline.

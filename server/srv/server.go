@@ -84,6 +84,9 @@ func (b *BaseServerHandler) Boot(s *Server, traverse TraverseBy) {
 
 func NewChannel(conn gnet.Conn, t *Server) *GChannel {
 	ctx := conn.Context()
+	if ctx == nil {
+		ctx = NewConnContext()
+	}
 	connContext := ctx.(*ConnContext)
 	value, ok := t.connections.Load(connContext.Id)
 	if ok {
@@ -99,9 +102,12 @@ func NewChannel(conn gnet.Conn, t *Server) *GChannel {
 		Server:      t,
 		bgCtx:       bgCtx,
 		cancel:      cancelFunc,
+		protocol:    t.opts.network,
 		closeEvents: make([]trp.CloseEvent, 0),
 	}
-	t.connections.Store(connContext.Id, v2)
+	if !t.isDatagram() {
+		t.connections.Store(connContext.Id, v2)
+	}
 	if t.InitConnHandler != nil {
 		t.InitConnHandler(v2)
 	}
@@ -155,6 +161,10 @@ func (sever *Server) Connections() map[string]*GChannel {
 }
 
 func (sever *Server) GetConnection(id string) (*GChannel, bool) {
+	if sever.isDatagram() {
+		log.Warn("server protocol is udp, can not get connection by id: %s", id)
+		return nil, false
+	}
 	v2, ok := sever.connections.Load(id)
 	return v2, ok
 }
@@ -246,6 +256,12 @@ func (sever *Server) next(fun func(s ServerHandler) bool) {
 	}
 }
 
+// isDatagram checks if the server is using UDP protocol and initializes the event engine accordingly
+func (sever *Server) isDatagram() bool {
+	// Check if the server is configured to use UDP network
+	return sever.opts.network == utils.NetworkUdp
+}
+
 func (sever *Server) GetPort() int {
 	return sever.port
 }
@@ -255,11 +271,11 @@ func (sever *Server) removeIfConnection(v2 *GChannel) {
 		//This use v2.id removing map element.
 		// v2.id eq context.id, so yet use v2.id.
 		//Because v2.context possible is nil.
-		channel, ok := sever.connections.Load(v2.Id)
+		_, ok := sever.connections.Load(v2.Id)
 		if ok {
 			sever.connections.Delete(v2.Id)
 		}
-		_ = channel.Close()
+		_ = v2.Close()
 	}
 }
 
@@ -300,6 +316,7 @@ func (sever *Server) Start(opt ...ServerOption) error {
 	network := sever.opts.network
 	if network == "" {
 		network = utils.NetworkTcp
+		sever.opts.network = network
 	}
 	err := gnet.Run(sever, fmt.Sprintf("%s://:%d", network, sever.port),
 		gnet.WithMulticore(true),

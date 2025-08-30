@@ -2,8 +2,9 @@ package configs
 
 import (
 	"fmt"
-	"github.com/brook/common/utils"
 	"time"
+
+	"github.com/brook/common/utils"
 )
 
 var DefServerPort = 8909
@@ -44,7 +45,9 @@ type ClientTunnelConfig struct {
 	LocalAddress string           `json:"localAddress"`
 	RemotePort   int              `json:"remotePort"`
 	ProxyId      string           `json:"ProxyId"`
-	Network      utils.Network
+	//default 1500
+	UdpSize int `json:"udpSize"`
+	Network utils.Network
 }
 
 // GetServerConfig

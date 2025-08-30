@@ -14,18 +14,16 @@ import (
 
 // This function is used to register a new tunnel client for the TCP protocol
 func init() {
-	// Register the new tunnel client with the clis package
-	clis.RegisterTunnelClient(utils.Tcp, func(config *configs.ClientTunnelConfig) clis.TunnelClient {
-		// Create a new MultipleTunnelClient instance
+	ft := func(config *configs.ClientTunnelConfig) clis.TunnelClient {
 		client := MultipleTunnelClient{
-			// Set the configuration for the client
-			cfg: config,
-			// Initialize the tcpClients map
+			cfg:        config,
 			tcpClients: sync.Map{},
 		}
-		// Return the new client instance
 		return &client
-	})
+	}
+	// Register the new tunnel client with the clis package
+	clis.RegisterTunnelClient(utils.Tcp, ft)
+	clis.RegisterTunnelClient(utils.Udp, ft)
 }
 
 type MultipleTunnelClient struct {
@@ -42,26 +40,22 @@ func (m *MultipleTunnelClient) Open(session *smux.Session) error {
 	// Create a new OpenTunnelReq struct with the proxy ID, tunnel type, and tunnel port.
 	req := &exchange.OpenTunnelReq{
 		ProxyId:      m.cfg.ProxyId,
-		TunnelType:   utils.Tcp,
+		TunnelType:   m.cfg.TunnelType,
 		TunnelPort:   m.cfg.RemotePort,
 		UnId:         clis.ManagerTransport.UnId,
 		LocalAddress: m.cfg.LocalAddress,
 	}
-	// Send the request to the server and wait for a response.
 	rsp, err := clis.ManagerTransport.SyncWrite(req, 5*time.Second)
 	if err != nil {
-		// Log an error if the request fails.
-		log.Error("Open tcp tunnel server error %v:%v", req.TunnelPort, err)
+		log.Error("Open %v tunnel server error %v:%v", req.TunnelType, req.TunnelPort, err)
 		return err
 	}
 	if !rsp.IsSuccess() {
-		log.Error("Open tcp tunnel server error %v:%v", req.TunnelPort, rsp.RspMsg)
+		log.Error("Open %v tunnel server error %v:%v", req.TunnelType, req.TunnelPort, rsp.RspMsg)
 		return err
 	}
 	clis.ManagerTransport.AddMessage(exchange.WorkerConnReq, func(r *exchange.Protocol) error {
-		// If not, create a new TCP client.
 		go func() {
-			// Store the TCP client in the map.
 			reqWorder, _ := exchange.Parse[exchange.ReqWorkConn](r.Data)
 			newCfg := &configs.ClientTunnelConfig{
 				ProxyId:      reqWorder.ProxyId,
@@ -83,7 +77,7 @@ func (m *MultipleTunnelClient) Open(session *smux.Session) error {
 		return nil
 	})
 	// Log that the TCP tunnel server was opened successfully.
-	log.Info("Open tcp tunnel client success:%v:%v", m.cfg.ProxyId, m.cfg.RemotePort)
+	log.Info("Open %v tunnel client success:%v:%v", m.cfg.TunnelType, m.cfg.ProxyId, m.cfg.RemotePort)
 	return nil
 }
 

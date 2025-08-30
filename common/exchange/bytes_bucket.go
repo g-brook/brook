@@ -42,9 +42,12 @@ func NewBytesBucket(rw io.ReadWriteCloser,
 	}
 }
 
-func (m *BytesBucket) Run() {
-	go m.revLoop()
-	go m.readLoop()
+func (m *BytesBucket) doRunning(fun func(revLoop, readLoop func())) {
+	fun(func() {
+		go m.revLoop()
+	}, func() {
+		go m.readLoop()
+	})
 }
 
 func (m *BytesBucket) Push(bytes []byte) error {

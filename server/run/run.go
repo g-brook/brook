@@ -8,6 +8,7 @@ import (
 	"syscall"
 
 	"github.com/brook/server/tunnel/tcp"
+	"github.com/brook/server/web"
 
 	"github.com/brook/common/command"
 	"github.com/brook/common/configs"
@@ -96,6 +97,8 @@ func run() {
 			tunnelServers = append(tunnelServers, ts)
 		}
 	}
+	web.NewWebServer(8000)
+	// Wait for the context to be cancelled
 	<-ctx.Done()
 	shutdown(remote.Inserver, tunnelServers)
 }

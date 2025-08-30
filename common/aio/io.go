@@ -62,7 +62,6 @@ func Copy(src io.ReadWriteCloser, dst io.ReadWriteCloser) error {
 			if nr > 0 {
 				bytes := buf[0:nr]
 				nw, ew := dst.Write(bytes)
-				//fmt.Println(nw, ":", "写入到SSH-->")
 				if nw < 0 || nr < nw {
 					nw = 0
 				}

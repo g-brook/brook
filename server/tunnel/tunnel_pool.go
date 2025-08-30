@@ -2,10 +2,11 @@ package tunnel
 
 import (
 	"fmt"
-	"github.com/brook/common/log"
-	"github.com/brook/common/transport"
 	"sync"
 	"time"
+
+	"github.com/brook/common/log"
+	"github.com/brook/common/transport"
 )
 
 type GetFunction = func() error
@@ -23,7 +24,7 @@ type TunnelPool struct {
 
 var NewTunnelPool = func(factory GetFunction, size int) *TunnelPool {
 	return &TunnelPool{
-		channels: make(chan transport.Channel, 100),
+		channels: make(chan transport.Channel, size),
 		size:     size,
 		factory:  factory,
 	}
@@ -43,6 +44,7 @@ func (r *TunnelPool) Get() (sch transport.Channel, err error) {
 				_ = sch.Close()
 				return
 			}
+			return
 		}
 	default:
 

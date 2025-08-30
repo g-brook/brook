@@ -7,7 +7,6 @@ import (
 	"github.com/brook/common/exchange"
 	"github.com/brook/common/log"
 	trp "github.com/brook/common/transport"
-	"github.com/brook/common/utils"
 	defin "github.com/brook/server/define"
 	"github.com/brook/server/srv"
 	"github.com/brook/server/tunnel"
@@ -15,34 +14,16 @@ import (
 
 type TcpTunnelServer struct {
 	*tunnel.BaseTunnelServer
-	registerLock sync.Mutex
-	unId         string
-	proxyId      string
-	pool         *tunnel.TunnelPool
-	manner       trp.Channel
-	network      utils.Network
-	localAddress string
+	registerLock  sync.Mutex
+	poolResources *Resources
 }
 
 // NewTcpTunnelServer creates a new TCP tunnel server instance
-func NewTcpTunnelServer(server *tunnel.BaseTunnelServer,
-	openReq exchange.OpenTunnelReq,
-	ch trp.Channel) *TcpTunnelServer {
-	var network utils.Network
-	if openReq.TunnelType == utils.Tcp {
-		network = utils.NetworkTcp
-	} else {
-		network = utils.NetworkUdp
-	}
+func NewTcpTunnelServer(server *tunnel.BaseTunnelServer, openReq exchange.OpenTunnelReq, ch trp.Channel) *TcpTunnelServer {
 	tunnelServer := &TcpTunnelServer{
 		BaseTunnelServer: server,
-		unId:             openReq.UnId,
-		proxyId:          openReq.ProxyId,
-		localAddress:     openReq.LocalAddress,
-		manner:           ch,
-		network:          network,
+		poolResources:    NewResources(ch, openReq, 100),
 	}
-	tunnelServer.pool = tunnel.NewTunnelPool(tunnelServer.createConn, 1)
 	server.DoStart = tunnelServer.startAfter
 	return tunnelServer
 }
@@ -55,7 +36,7 @@ func (htl *TcpTunnelServer) RegisterConn(ch trp.Channel, request exchange.Regist
 	htl.registerLock.Lock()
 	defer htl.registerLock.Unlock()
 	htl.BaseTunnelServer.RegisterConn(ch, request)
-	_ = htl.pool.Put(ch)
+	_ = htl.poolResources.put(ch)
 	log.Info("Register tcp tunnel, proxyId: %s", request.ProxyId)
 
 }
@@ -77,7 +58,7 @@ func (htl *TcpTunnelServer) Reader(ch trp.Channel, _ srv.TraverseBy) {
 }
 
 func (htl *TcpTunnelServer) Open(ch trp.Channel, _ srv.TraverseBy) {
-	userConn := htl.getUserConn()
+	userConn, _ := htl.poolResources.get()
 	if userConn == nil {
 		_ = ch.Close()
 		return
@@ -92,24 +73,6 @@ func (htl *TcpTunnelServer) Open(ch trp.Channel, _ srv.TraverseBy) {
 	}
 }
 
-func (htl *TcpTunnelServer) createConn() (err error) {
-	req := &exchange.ReqWorkConn{
-		ProxyId:      htl.proxyId,
-		Port:         htl.Port(),
-		TunnelType:   htl.Cfg.Type,
-		LocalAddress: htl.localAddress,
-		UnId:         htl.unId,
-		Network:      htl.network,
-	}
-	err = htl.writeMsg(req)
-	return
-}
-
-func (htl *TcpTunnelServer) getUserConn() trp.Channel {
-	sch, _ := htl.pool.Get()
-	return sch
-}
-
 func (htl *TcpTunnelServer) startAfter() error {
 	tunnel.AddTunnel(htl)
 	htl.Server.AddHandler(htl)
@@ -118,23 +81,13 @@ func (htl *TcpTunnelServer) startAfter() error {
 	return nil
 }
 
-func (htl *TcpTunnelServer) writeMsg(request exchange.InBound) (err error) {
-	rt, _ := exchange.NewRequest(request)
-	_, err = htl.manner.Write(rt.Bytes())
-	return
-}
-
 func (htl *TcpTunnelServer) GetUnId() string {
-	return htl.unId
-}
-
-func (htl *TcpTunnelServer) GetNetwork() utils.Network {
-	return htl.network
+	return htl.poolResources.unId
 }
 
 func (htl *TcpTunnelServer) background() {
 	go func() {
-		<-htl.manner.Done()
+		<-htl.poolResources.manner.Done()
 		htl.Shutdown()
 		CloseTunnelServer(htl.Port())
 	}()

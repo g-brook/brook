@@ -2,12 +2,12 @@ package hash
 
 import "sync"
 
-type SyncMap[K, V comparable] struct {
+type SyncMap[K comparable, V any] struct {
 	data sync.Map
 }
 
 // NewSyncMap This function creates a new SyncMap with the given key and value types
-func NewSyncMap[K, V comparable]() *SyncMap[K, V] {
+func NewSyncMap[K comparable, V any]() *SyncMap[K, V] {
 	// Create a new SyncMap with the given key and value types
 	return &SyncMap[K, V]{
 		// Initialize the maps field with a new map

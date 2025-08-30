@@ -17,10 +17,6 @@ import (
 	"github.com/brook/common/utils"
 )
 
-var (
-	RequestInfoKey = "httpRequestId"
-)
-
 // init function is called automatically when the package is initialized
 // It registers a new HTTP tunnel client with the tunnel client registry
 func init() {
