@@ -84,8 +84,8 @@ func (b *BaseServerHandler) Boot(s *Server, traverse TraverseBy) {
 
 func NewChannel(conn gnet.Conn, t *Server) *GChannel {
 	ctx := conn.Context()
-	if ctx == nil {
-		ctx = NewConnContext()
+	if ctx == nil && t.isDatagram() {
+		ctx = NewConnContext(t.isDatagram(), conn.RemoteAddr().String())
 	}
 	connContext := ctx.(*ConnContext)
 	value, ok := t.connections.Load(connContext.Id)
@@ -198,7 +198,7 @@ func (sever *Server) OnClose(c gnet.Conn, _ error) gnet.Action {
 
 func (sever *Server) OnOpen(c gnet.Conn) (out []byte, action gnet.Action) {
 	log.Debug("Open an Connection: %s", c.RemoteAddr().String())
-	c.SetContext(NewConnContext())
+	c.SetContext(NewConnContext(false, ""))
 	conn2 := NewChannel(c, sever)
 	defer sever.removeIfConnection(conn2)
 	if sever.startSmux != nil {

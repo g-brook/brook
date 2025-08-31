@@ -16,7 +16,7 @@
     },
     {
       "type": "udp",
-      "localAddress": "192.168.1.17:9000",
+      "localAddress": "127.0.0.1:9000",
       "ProxyId": "proxy1",
       "remotePort": 19683,
       "udpSize": 1024

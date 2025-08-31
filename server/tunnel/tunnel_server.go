@@ -54,7 +54,7 @@ type TunnelServer interface {
 	//  @param v2 connection.
 	//  @param request request.
 	//
-	RegisterConn(ch transport.Channel, request exchange.RegisterReqAndRsp)
+	RegisterConn(ch transport.Channel, request exchange.TRegister)
 
 	// Shutdown shutdown.
 	Shutdown()

@@ -28,8 +28,8 @@ func NewTcpTunnelServer(server *tunnel.BaseTunnelServer, openReq exchange.OpenTu
 	return tunnelServer
 }
 
-func (htl *TcpTunnelServer) RegisterConn(ch trp.Channel, request exchange.RegisterReqAndRsp) {
-	if request.ProxyId == "" {
+func (htl *TcpTunnelServer) RegisterConn(ch trp.Channel, request exchange.TRegister) {
+	if request.GetProxyId() == "" {
 		log.Warn("Register tcp tunnel, but It' proxyId is nil")
 		return
 	}
@@ -37,7 +37,7 @@ func (htl *TcpTunnelServer) RegisterConn(ch trp.Channel, request exchange.Regist
 	defer htl.registerLock.Unlock()
 	htl.BaseTunnelServer.RegisterConn(ch, request)
 	_ = htl.poolResources.put(ch)
-	log.Info("Register tcp tunnel, proxyId: %s", request.ProxyId)
+	log.Info("Register tcp tunnel, proxyId: %s", request.GetProxyId())
 
 }
 

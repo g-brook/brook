@@ -1,6 +1,7 @@
 package tunnel
 
 import (
+	"encoding/json"
 	"io"
 	"net"
 	"time"
@@ -9,6 +10,7 @@ import (
 	"github.com/brook/common/aio"
 	"github.com/brook/common/configs"
 	"github.com/brook/common/exchange"
+	"github.com/brook/common/hash"
 	"github.com/brook/common/log"
 	"github.com/brook/common/transport"
 	"github.com/brook/common/utils"
@@ -20,6 +22,7 @@ type UdpTunnelClient struct {
 	multipleTcp  *MultipleTunnelClient
 	localAddress *net.UDPAddr
 	bufSize      int
+	udpConnMap   *hash.SyncMap[string, *net.UDPConn]
 }
 
 func NewUdpTunnelClient(cfg *configs.ClientTunnelConfig, mtpc *MultipleTunnelClient) *UdpTunnelClient {
@@ -31,6 +34,7 @@ func NewUdpTunnelClient(cfg *configs.ClientTunnelConfig, mtpc *MultipleTunnelCli
 		BaseTunnelClient: tunnelClient,
 		multipleTcp:      mtpc,
 		bufSize:          cfg.UdpSize,
+		udpConnMap:       hash.NewSyncMap[string, *net.UDPConn](),
 	}
 	var err error
 	client.localAddress, err = net.ResolveUDPAddr("udp", cfg.LocalAddress)
@@ -47,34 +51,20 @@ func (t *UdpTunnelClient) GetName() string {
 	return "udp"
 }
 
-func (t *UdpTunnelClient) initOpen(ch *transport.SChannel) error {
-	localConnection, err := t.localConnection()
-	if err != nil {
-		if localConnection != nil {
-			_ = localConnection.Close()
-		}
-		_ = ch.Close()
-		return err
-	}
+func (t *UdpTunnelClient) initOpen(*transport.SChannel) (err error) {
+
 	stop := make(chan struct{})
-	revLoop := func(rw io.ReadWriteCloser, bucket *exchange.TunnelBucket) {
-		bucket.DefaultRead(func(p *exchange.TunnelProtocol) {
-			_, err2 := localConnection.Write(p.Data)
-			if err2 != nil {
-				log.Error("Write to local address error %v", err2)
-				close(stop)
-			}
-		})
-	}
-	readLoop := func(rw *net.UDPConn, bucket *exchange.TunnelBucket) {
+	readLoop := func(updConn *net.UDPConn, remoteAddress *net.UDPAddr, bucket *exchange.TunnelBucket) {
 		pool := aio.GetByteBufPool(t.bufSize)
 		for {
 			err := aio.WithBuffer(func(buf []byte) error {
-				_, _, err = rw.ReadFromUDP(buf)
+				_, _, err = updConn.ReadFromUDP(buf)
 				if err != nil {
 					return err
 				}
-				_ = bucket.Push(buf, nil)
+				pk := exchange.NewUdpPackage(buf, nil, remoteAddress)
+				data, err := json.Marshal(pk)
+				_ = bucket.Push(data, nil)
 				return err
 			}, pool)
 			if err != nil && err == io.EOF {
@@ -82,37 +72,74 @@ func (t *UdpTunnelClient) initOpen(ch *transport.SChannel) error {
 				return
 			}
 			select {
-			case <-stop:
+			case <-bucket.Done():
+				close(stop)
 				return
 			default:
 			}
 		}
 	}
-	err = t.AsyncRegister(func(p *exchange.Protocol, rw io.ReadWriteCloser) {
+
+	revLoop := func(rw io.ReadWriteCloser, bucket *exchange.TunnelBucket) {
+		bucket.DefaultRead(func(p *exchange.TunnelProtocol) {
+			data := p.Data
+			var pk exchange.UdpPackage
+			err = json.Unmarshal(data, &pk)
+			if err != nil {
+				return
+			}
+			udpConn, err, ok := t.localConn(pk.RemoteAddress)
+			if err != nil {
+				if udpConn != nil {
+					_ = udpConn.Close()
+				}
+				return
+			}
+			_, err2 := udpConn.Write(p.Data)
+			if err2 != nil {
+				log.Error("Write to local address error %v", err2)
+				close(stop)
+				return
+			}
+			if !ok {
+				go readLoop(udpConn, pk.RemoteAddress, bucket)
+			}
+		})
+	}
+	err = t.AsyncRegister(t.getReq(), func(p *exchange.Protocol, rw io.ReadWriteCloser) {
 		log.Info("Connection local address success then Client to server register success:%v", t.GetCfg().LocalAddress)
 		bucket := exchange.NewTunnelBucket(rw, t.Tcc.Context())
-		go revLoop(rw, bucket)
-		go readLoop(localConnection, bucket)
+		revLoop(rw, bucket)
+		bucket.Run()
 		<-stop
 	})
 	if err != nil {
-		if localConnection != nil {
-			_ = localConnection.Close()
-		}
-		_ = ch.Close()
 		log.Error("Connection fail %v", err)
 		return err
 	}
 	return nil
 }
-func (t *UdpTunnelClient) localConnection() (*net.UDPConn, error) {
+func (t *UdpTunnelClient) getReq() *exchange.UdpRegisterReqAndRsp {
+	return &exchange.UdpRegisterReqAndRsp{
+		RegisterReqAndRsp: t.GetRegisterReq(),
+		RemoteAddress:     t.localAddress.String(),
+	}
+}
+func (t *UdpTunnelClient) localConn(rAddr *net.UDPAddr) (*net.UDPConn, error, bool) {
+	//todo:这里要发送ping信息，来看是否需要移除.
+	load, b := t.udpConnMap.Load(rAddr.String())
+	if b {
+		return load, nil, true
+	}
 	connFunction := func() (*net.UDPConn, error) {
 		dial, err := net.DialUDP(string(utils.NetworkUdp), nil, t.localAddress)
 		if err != nil {
 			return nil, err
 		}
 		log.Info("Connection localAddress, %v success", t.GetCfg().LocalAddress)
+		t.udpConnMap.Store(rAddr.String(), dial)
 		return dial, err
 	}
-	return connFunction()
+	dial, err := connFunction()
+	return dial, err, false
 }

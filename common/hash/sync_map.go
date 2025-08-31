@@ -1,9 +1,13 @@
 package hash
 
-import "sync"
+import (
+	"sync"
+	"sync/atomic"
+)
 
 type SyncMap[K comparable, V any] struct {
 	data sync.Map
+	len  atomic.Int32
 }
 
 // NewSyncMap This function creates a new SyncMap with the given key and value types
@@ -15,12 +19,24 @@ func NewSyncMap[K comparable, V any]() *SyncMap[K, V] {
 	}
 }
 
+// Len returns the number of elements in the SyncMap
+// It is a method of the SyncMap type, which is a generic type with key type K and value type V
+// The receiver is a pointer to a SyncMap, allowing access to its fields
+// The method returns an int32 representing the current length of the map
+// It atomically loads the length value using the atomic.Load function of the len field
+func (receiver *SyncMap[K, V]) Len() int {
+	return int(receiver.len.Load())
+}
+
 // LoadOrStore This function takes a receiver of type SyncMap[K, V], a key of type K, and a value of type V, and returns a value of type V and a boolean.
 // It uses the LoadOrStore method of the receiver's data field to either load the value associated with the key or store the value if it doesn't exist.
 // The function then returns the actual value and a boolean indicating whether the value was loaded or stored.
 func (receiver *SyncMap[K, V]) LoadOrStore(key K, value V) (V, bool) {
 	// LoadOrStore method of the receiver's data field is called with the key and value
 	actual, loaded := receiver.data.LoadOrStore(key, value)
+	if !loaded {
+		receiver.len.Add(1)
+	}
 	// The actual value is returned as a value of type V and the loaded boolean is returned
 	return actual.(V), loaded
 }
@@ -34,6 +50,7 @@ func (receiver *SyncMap[K, V]) LoadAndDelete(key any) (V, bool) {
 		var zero V
 		return zero, false
 	}
+	receiver.len.Add(-1)
 	// If the key was found in the map, return the value and true.
 	return value.(V), true
 }
@@ -41,6 +58,7 @@ func (receiver *SyncMap[K, V]) LoadAndDelete(key any) (V, bool) {
 // Delete This function deletes a key from the SyncMap
 func (receiver *SyncMap[K, V]) Delete(key K) {
 	// Call the Delete function from the data field of the SyncMap
+	receiver.len.Add(-1)
 	receiver.data.Delete(key)
 }
 
@@ -49,6 +67,9 @@ func (receiver *SyncMap[K, V]) Swap(key K, value V) (V, bool) {
 	// Swap the value in the data map
 	previous, loaded := receiver.data.Swap(key, value)
 	// Return the previous value and a boolean indicating whether the value was loaded
+	if !loaded {
+		receiver.len.Add(1)
+	}
 	return previous.(V), loaded
 }
 
@@ -76,12 +97,14 @@ func (receiver *SyncMap[K, V]) Range(f func(key K, value V) (shouldContinue bool
 // Clear This function clears the data in the SyncMap
 func (receiver *SyncMap[K, V]) Clear() {
 	// Call the Clear function on the data field of the receiver
+	receiver.len.Store(0)
 	receiver.data.Clear()
 }
 
 // Store This function stores a key-value pair in the SyncMap
 func (receiver *SyncMap[K, V]) Store(key K, value V) {
 	// Store the key-value pair in the data field of the SyncMap
+	receiver.len.Add(1)
 	receiver.data.Store(key, value)
 }
 

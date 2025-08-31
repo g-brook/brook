@@ -46,6 +46,10 @@ func NewSChannel(stream *smux.Stream, parent context.Context, isTunnel bool) *SC
 	return ch
 }
 
+func (c *SChannel) SendTo([]byte, net.Addr) (int, error) {
+	return 0, nil
+}
+
 // Close closes the SChannel by closing the underlying stream
 func (s *SChannel) Close() error {
 	err := s.Stream.Close()

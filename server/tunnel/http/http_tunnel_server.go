@@ -233,15 +233,15 @@ func (htl *HttpTunnelServer) getRoute(req *http.Request) (*RouteInfo, error) {
 }
 
 // RegisterConn is a method of HttpTunnelServer, which is used to register a connection.
-func (htl *HttpTunnelServer) RegisterConn(ch Channel, request exchange.RegisterReqAndRsp) {
-	if request.ProxyId == "" {
+func (htl *HttpTunnelServer) RegisterConn(ch Channel, request exchange.TRegister) {
+	if request.GetProxyId() == "" {
 		log.Warn("Register http tunnel, but It' proxyId is nil")
 		return
 	}
 	htl.registerLock.Lock()
 	htl.BaseTunnelServer.RegisterConn(ch, request)
-	log.Info("Register http tunnel, proxyId: %s", request.ProxyId)
-	proxies, ok := htl.proxyToConn[request.ProxyId]
+	log.Info("Register http tunnel, proxyId: %s", request.GetProxyId())
+	proxies, ok := htl.proxyToConn[request.GetProxyId()]
 	if ok {
 		tracker := NewHttpTracker(ch)
 		proxies[ch.GetId()] = tracker
@@ -250,7 +250,7 @@ func (htl *HttpTunnelServer) RegisterConn(ch Channel, request exchange.RegisterR
 			_ = htl.createConn(ch)
 		}()
 	} else {
-		log.Warn("Register %V not exists by http tunnelServer.", request.ProxyId)
+		log.Warn("Register %V not exists by http tunnelServer.", request.GetProxyId())
 	}
 	htl.registerLock.Unlock()
 }

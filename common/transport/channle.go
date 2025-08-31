@@ -57,6 +57,7 @@ type Channel interface {
 	// IsClose isClose.
 	IsClose() bool
 
+	SendTo(by []byte, addr net.Addr) (int, error)
 	//
 	// GetAttr
 	//  @Description: getKey.

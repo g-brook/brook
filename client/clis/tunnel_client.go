@@ -252,9 +252,11 @@ func (b *BaseTunnelClient) GetRegisterReq() exchange.RegisterReqAndRsp {
 // Register is a method of BaseTunnelClient that handles the registration process
 // It sends a registration request and processes the response
 // Returns the registration result or an error if any step fails
-func (b *BaseTunnelClient) Register() (*exchange.RegisterReqAndRsp, error) {
+func (b *BaseTunnelClient) Register(req exchange.InBound) (*exchange.RegisterReqAndRsp, error) {
 	// Get the registration request from the client
-	req := b.GetRegisterReq()
+	if req == nil {
+		req = b.GetRegisterReq()
+	}
 	// Sync push the request to the TCC bucket and get the response
 	p, err := b.Tcc.Bucket.SyncPushWithRequest(req)
 	if err != nil {
@@ -287,9 +289,11 @@ func (b *BaseTunnelClient) Register() (*exchange.RegisterReqAndRsp, error) {
 // Returns:
 //
 //	error: Any error that occurred during the registration process, or nil if successful
-func (b *BaseTunnelClient) AsyncRegister(readCallBack exchange.BucketRead) error {
+func (b *BaseTunnelClient) AsyncRegister(req exchange.InBound, readCallBack exchange.BucketRead) error {
 	// Create a new registration request using the client's configuration
-	req := b.GetRegisterReq()
+	if req == nil {
+		req = b.GetRegisterReq()
+	}
 	// Register the callback handler for the specific command type in the bucket
 	b.Tcc.Bucket.AddHandler(req.Cmd(), readCallBack)
 	// Push the registration request to the server

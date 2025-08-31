@@ -38,6 +38,13 @@ type GChannel struct {
 	protocol utils.Network
 }
 
+func (c *GChannel) SendTo(by []byte, addr net.Addr) (int, error) {
+	if c.protocol != utils.NetworkUdp {
+		return 0, nil
+	}
+	return c.Conn.SendTo(by, addr)
+}
+
 // SetDeadline is a wrapper for gnet.Conn.SetDeadline.
 func (c *GChannel) SetDeadline(t time.Time) error {
 	return c.Conn.SetDeadline(t)
@@ -260,10 +267,16 @@ type ConnContext struct {
 	isSmux     bool
 }
 
-func NewConnContext() *ConnContext {
+func NewConnContext(isUdp bool, addr string) *ConnContext {
+	var id string
+	if isUdp {
+		id = addr
+	} else {
+		id = uuid.New().String()
+	}
 	return &ConnContext{
 		IsClosed:   false,
-		Id:         uuid.New().String(),
+		Id:         id,
 		lastActive: time.Now(),
 		IsTimeOut:  false,
 		attr:       make(map[common.KeyType]interface{}),

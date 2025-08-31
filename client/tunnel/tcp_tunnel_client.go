@@ -44,7 +44,7 @@ func (t *TcpTunnelClient) initOpen(ch *transport.SChannel) error {
 		_ = ch.Close()
 		return err
 	}
-	err = t.AsyncRegister(func(p *exchange.Protocol, rw io.ReadWriteCloser) {
+	err = t.AsyncRegister(t.GetRegisterReq(), func(p *exchange.Protocol, rw io.ReadWriteCloser) {
 		log.Info("Connection local address success then Client to server register success:%v", t.GetCfg().LocalAddress)
 		errors := aio.Pipe(ch, localConnection)
 		if len(errors) > 0 {

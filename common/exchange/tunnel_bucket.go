@@ -31,7 +31,6 @@ func NewTunnelBucket(rw io.ReadWriteCloser,
 		bytesBucket: NewBytesBucket(rw, 4, ctx), // Initialize bytesBucket with a new BytesBucket instance
 		requests:    hash.NewSyncMap[int64, TunnelBucketRead](),
 	}
-	bucket.Run()
 	return bucket
 }
 
@@ -44,7 +43,7 @@ func (t *TunnelBucket) Push(data []byte, read TunnelBucketRead) error {
 }
 
 // Run is a method of TunnelBucket that starts the tunnel's operation
-func (t *TunnelBucket) Run() {
+func (t *TunnelBucket) Run() *TunnelBucket {
 	t.bytesBucket.AddHandler("Tunnel", t.read)
 	t.bytesBucket.witch = func(bytes []byte) (any, int) {
 		return "Tunnel", int(binary.BigEndian.Uint32(bytes))
@@ -53,6 +52,7 @@ func (t *TunnelBucket) Run() {
 		revLoop()
 		readLoop()
 	})
+	return t
 }
 
 // read is a method of TunnelBucket that processes incoming bytes through a tunnel read operation
@@ -72,4 +72,8 @@ func (m *TunnelBucket) read(_, bytes []byte, _ io.ReadWriteCloser) {
 			m.defaultRead(tp)
 		}
 	}
+}
+
+func (m *TunnelBucket) Done() <-chan struct{} {
+	return m.bytesBucket.Done()
 }

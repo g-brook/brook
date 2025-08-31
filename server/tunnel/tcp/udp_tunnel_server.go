@@ -28,8 +28,8 @@ func NewUdpTunnelServer(server *tunnel.BaseTunnelServer,
 	return tunnelServer
 }
 
-func (htl *UdpTunnelServer) RegisterConn(ch trp.Channel, request exchange.RegisterReqAndRsp) {
-	if request.ProxyId == "" {
+func (htl *UdpTunnelServer) RegisterConn(ch trp.Channel, request exchange.TRegister) {
+	if request.GetProxyId() == "" {
 		log.Warn("Register udp tunnel, but It' proxyId is nil")
 		return
 	}
@@ -39,7 +39,7 @@ func (htl *UdpTunnelServer) RegisterConn(ch trp.Channel, request exchange.Regist
 		defer htl.registerLock.Unlock()
 		htl.BaseTunnelServer.RegisterConn(ch, request)
 		_ = htl.poolResources.put(NewUdpChannel(sch))
-		log.Info("Register udp tunnel, proxyId: %s", request.ProxyId)
+		log.Info("Register udp tunnel, proxyId: %s", request.GetProxyId())
 	}
 }
 

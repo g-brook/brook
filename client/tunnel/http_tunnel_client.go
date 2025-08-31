@@ -55,7 +55,7 @@ func (h *HttpTunnelClient) GetName() string {
 //   - error: An error if the registration fails.
 func (h *HttpTunnelClient) initOpen(sch *transport.SChannel) error {
 	h.BaseTunnelClient.AddReadHandler(exchange.WorkerConnReq, h.bindHandler)
-	rsp, err := h.Register()
+	rsp, err := h.Register(h.GetRegisterReq())
 	if err != nil {
 		log.Error("Register fail %v", err)
 		return err

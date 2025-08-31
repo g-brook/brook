@@ -98,7 +98,7 @@ func (b *BaseTunnelServer) Port() int {
 
 // RegisterConn  register the tunnel server connection
 func (b *BaseTunnelServer) RegisterConn(ch transport.Channel,
-	_ exchange.RegisterReqAndRsp) {
+	_ exchange.TRegister) {
 	oldCh, ok := b.Managers[ch.GetId()]
 	if !ok || oldCh != ch {
 		b.Managers[ch.GetId()] = ch
