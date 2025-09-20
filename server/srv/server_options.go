@@ -1,18 +1,23 @@
 package srv
 
 import (
-	"github.com/brook/common/utils"
 	"time"
+
+	"github.com/brook/common/transport"
+	"github.com/brook/common/utils"
 )
 
 type ServerOption func(opts *sOptions)
 
+type NewChannelFunction func(ch *GChannel) transport.Channel
+
 // Options
 // @Description: 设置的设数.
 type sOptions struct {
-	timeout  int64
-	withSmux *SmuxServerOption
-	network  utils.Network
+	timeout        int64
+	withSmux       *SmuxServerOption
+	network        utils.Network
+	newChannelFunc NewChannelFunction
 }
 
 // SmuxServerOption
@@ -54,6 +59,12 @@ func (t *sOptions) Smux() *SmuxServerOption {
 func WithServerSmux(smux *SmuxServerOption) ServerOption {
 	return func(opts *sOptions) {
 		opts.withSmux = smux
+	}
+}
+
+func WithNewChannelFunc(nfunc NewChannelFunction) ServerOption {
+	return func(opts *sOptions) {
+		opts.newChannelFunc = nfunc
 	}
 }
 

@@ -7,6 +7,7 @@
   "tunnel": [
     {
       "port": 8818,
+      "id": "tunnel1",
       "type": "http",
       "certFile": "/Users/sixh/Documents/open_project/brook/ssl/server.crt",
       "keyFile": "/Users/sixh/Documents/open_project/brook/ssl/server.key",

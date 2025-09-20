@@ -171,13 +171,13 @@ func (sever *Server) GetConnection(id string) (*GChannel, bool) {
 func (sever *Server) OnBoot(engine gnet.Engine) (action gnet.Action) {
 	sever.engine = engine
 	log.Info("Server started %d", sever.port)
-	sever.next(func(s ServerHandler) bool {
+	sever.next(func(s ServerHandler, conn trp.Channel) bool {
 		b := true
 		s.Boot(sever, func() {
 			b = false
 		})
 		return b
-	})
+	}, nil)
 	return gnet.None
 }
 
@@ -186,37 +186,37 @@ func (sever *Server) OnClose(c gnet.Conn, _ error) gnet.Action {
 	conn2 := NewChannel(c, sever)
 	conn2.GetContext().IsClosed = true
 	defer sever.removeIfConnection(conn2)
-	sever.next(func(s ServerHandler) bool {
+	sever.next(func(s ServerHandler, newCh trp.Channel) bool {
 		b := true
-		s.Close(conn2, func() {
+		s.Close(newCh, func() {
 			b = false
 		})
 		return b
-	})
+	}, conn2)
 	return gnet.None
 }
 
 func (sever *Server) OnOpen(c gnet.Conn) (out []byte, action gnet.Action) {
 	log.Debug("Open an Connection: %s", c.RemoteAddr().String())
 	c.SetContext(NewConnContext(false, ""))
-	conn2 := NewChannel(c, sever)
-	defer sever.removeIfConnection(conn2)
+	conn := NewChannel(c, sever)
+	defer sever.removeIfConnection(conn)
 	if sever.startSmux != nil {
-		conn2.Context.isSmux = true
-		conn2.PipeConn = trp.NewSmuxAdapterConn(c)
+		conn.Context.isSmux = true
+		conn.PipeConn = trp.NewSmuxAdapterConn(c)
 		_ = sever.startSmux(
-			conn2.PipeConn,
-			conn2.bgCtx,
+			conn.PipeConn,
+			conn.bgCtx,
 			nil,
 		)
 	} else {
-		sever.next(func(s ServerHandler) bool {
+		sever.next(func(s ServerHandler, newCh trp.Channel) bool {
 			b := true
-			s.Open(conn2, func() {
+			s.Open(newCh, func() {
 				b = false
 			})
 			return b
-		})
+		}, conn)
 	}
 	return
 }
@@ -235,21 +235,27 @@ func (sever *Server) OnTraffic(c gnet.Conn) gnet.Action {
 			}
 		}
 	} else {
-		sever.next(func(s ServerHandler) bool {
+		sever.next(func(s ServerHandler, newCh trp.Channel) bool {
 			b := true
-			//Call Reader method.
-			s.Reader(conn2, func() {
+			s.Reader(newCh, func() {
 				b = false
 			})
 			return b
-		})
+		}, conn2)
 	}
 	return gnet.None
 }
 
-func (sever *Server) next(fun func(s ServerHandler) bool) {
+func (sever *Server) next(fun func(s ServerHandler, conn trp.Channel) bool, conn *GChannel) {
 	for i := 0; i < len(sever.handlers); i++ {
-		b := fun(sever.handlers[i])
+		var newCh trp.Channel
+		channelFunc := sever.opts.newChannelFunc
+		if channelFunc != nil && conn != nil {
+			newCh = channelFunc(conn)
+		} else {
+			newCh = conn
+		}
+		b := fun(sever.handlers[i], newCh)
 		if b {
 			break
 		}
@@ -299,13 +305,13 @@ func (sever *Server) Start(opt ...ServerOption) error {
 					}
 					log.Info("Start server success stream. %s", stream.RemoteAddr())
 					channel := trp.NewSChannel(stream, ctx, false)
-					sever.next(func(s ServerHandler) bool {
+					sever.next(func(s ServerHandler, _ trp.Channel) bool {
 						b := true
 						s.Open(channel, func() {
 							b = false
 						})
 						return b
-					})
+					}, nil)
 					go sever.smuxReadLoop(channel)
 				}
 
@@ -351,13 +357,13 @@ func (sever *Server) smuxReadLoop(ch *trp.SChannel) {
 			_, _ = ch.Copy(buf[:n])
 			if !ch.IsTunnel {
 				// If already this channel is bind tunnel,
-				sever.next(func(s ServerHandler) bool {
+				sever.next(func(s ServerHandler, _ trp.Channel) bool {
 					b := true
 					s.Reader(ch, func() {
 						b = false
 					})
 					return b
-				})
+				}, nil)
 			}
 			return nil
 		}, aio.GetBytePool4k())

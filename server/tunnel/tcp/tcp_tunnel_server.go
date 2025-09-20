@@ -43,7 +43,7 @@ func (htl *TcpTunnelServer) RegisterConn(ch trp.Channel, request exchange.TRegis
 
 func (htl *TcpTunnelServer) Reader(ch trp.Channel, _ srv.TraverseBy) {
 	switch workConn := ch.(type) {
-	case *srv.GChannel:
+	case srv.GContext:
 		chId, ok := workConn.GetContext().GetAttr(defin.ToSChannelId)
 		if ok && chId != "" {
 			dest, ok := htl.Managers[chId.(string)]

@@ -155,7 +155,8 @@ func (h *HttpConn) Read(b []byte) (n int, err error) {
 func (h *HttpConn) Write(b []byte) (n int, err error) {
 	//That's a hack, but we don't want to write to the underlying connection
 	//Do not use the Write method of the connection
-	return h.ch.GetWriter().Write(b)
+	//return h.ch.GetWriter().Write(b)
+	return h.ch.Write(b)
 }
 
 func (h *HttpConn) Close() error {

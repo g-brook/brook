@@ -10,7 +10,6 @@ import (
 	"github.com/brook/common"
 	"github.com/brook/common/transport"
 	"github.com/brook/common/utils"
-	"github.com/google/uuid"
 	"github.com/panjf2000/gnet/v2"
 )
 
@@ -24,8 +23,6 @@ type GChannel struct {
 	Context *ConnContext
 
 	Server *Server
-
-	Handlers []GChannelHandler
 
 	PipeConn *transport.SmuxAdapterConn
 
@@ -62,14 +59,6 @@ func (c *GChannel) GetConn() net.Conn {
 	return c.Conn
 }
 
-// GChannelHandler
-// @Description:
-type GChannelHandler interface {
-	DoOpen(conn *GChannel)
-
-	DoClose(conn *GChannel)
-}
-
 // GetReader
 //
 //	@Description: Get from gnet.conn.
@@ -88,15 +77,6 @@ func (c *GChannel) GetWriter() io.Writer {
 	return c.Conn
 }
 
-// AddHandler
-//
-//	@Description:
-//	@receiver receiver
-//	@param handler
-func (c *GChannel) AddHandler(handler ...GChannelHandler) {
-	c.Handlers = append(c.Handlers, handler...)
-}
-
 // GetContext
 //
 // This function returns the context of the GChannel
@@ -105,18 +85,13 @@ func (c *GChannel) GetContext() *ConnContext {
 	return c.Context
 }
 
-// OnClose CloseEvent This function takes a pointer to a GChannel and a function as parameters. The function does not return anything.
+// OnClose CloseEvent This function takes a pointer to a GChannel
+// and a function as parameters. The function does not return anything.
 func (c *GChannel) OnClose(event transport.CloseEvent) {
 	c.closeEvents = append(c.closeEvents, event)
 }
 
 // Reader
-//
-//	@Description:
-//	@receiver receiver
-//	@param out
-//	@return int
-//	@return error
 func (c *GChannel) Read(out []byte) (int, error) {
 	if c.IsClose() {
 		return 0, io.EOF
@@ -160,33 +135,18 @@ func (c *GChannel) Next(pos int) ([]byte, error) {
 	return c.Conn.Next(pos)
 }
 
-// GetServer
-//
-//	@Description:
-//	@receiver receiver
-//	@return *Server
 func (c *GChannel) GetServer() *Server {
 	return c.Server
 }
 
-// Close
-//
-//	@Description:
-//	@receiver receiver
-//	@return error
 func (c *GChannel) Close() error {
 	if c.Conn != nil {
 		_ = c.Conn.Close()
 	}
 	c.Context.IsClosed = true
-	for _, handler := range c.Handlers {
-		handler.DoClose(c)
-	}
 	c.cancel()
 	for _, event := range c.closeEvents {
-		if c != nil {
-			event(c)
-		}
+		event(c)
 	}
 	clear(c.closeEvents)
 	return nil
@@ -204,84 +164,25 @@ func (c *GChannel) IsClose() bool {
 	}
 }
 
-// RemoteAddr
-//
-//	@Description:
-//	@receiver receiver
-//	@return net.Addr
 func (c *GChannel) RemoteAddr() net.Addr {
 	return c.Conn.RemoteAddr()
 }
-
-//
-// LocalAddr
-//  @Description:
-//  @receiver receiver
-//  @return net.Addr
-//
 
 func (c *GChannel) LocalAddr() net.Addr {
 	return c.Conn.LocalAddr()
 }
 
-// GetNetConn
-//
-//	@Description:
-//	@receiver receiver
-//	@return net.Conn
 func (c *GChannel) GetNetConn() net.Conn {
 	return c.Conn
 }
-
-//
-// isConnection
-//  @Description:
-//  @receiver receiver
-//  @return bool
-//
 
 func (c *GChannel) isConnection() bool {
 	return !c.Context.IsClosed
 }
 
-// GetAttr
-//
-//	@Description: Get conn attr value.
-//	@receiver receiver
-//	@param key
-//	@return interface{}
-//	@return bool
 func (c *GChannel) GetAttr(key common.KeyType) (interface{}, bool) {
 	i, ok := c.Context.attr[key]
 	return i, ok
-}
-
-// ConnContext
-// @Description: connContext info.
-type ConnContext struct {
-	IsClosed   bool
-	Id         string
-	lastActive time.Time
-	IsTimeOut  bool
-	attr       map[common.KeyType]interface{}
-	isSmux     bool
-}
-
-func NewConnContext(isUdp bool, addr string) *ConnContext {
-	var id string
-	if isUdp {
-		id = addr
-	} else {
-		id = uuid.New().String()
-	}
-	return &ConnContext{
-		IsClosed:   false,
-		Id:         id,
-		lastActive: time.Now(),
-		IsTimeOut:  false,
-		attr:       make(map[common.KeyType]interface{}),
-		isSmux:     false,
-	}
 }
 
 // AddAttr

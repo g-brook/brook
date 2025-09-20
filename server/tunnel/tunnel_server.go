@@ -37,6 +37,7 @@ func GetTunnel(port int) TunnelServer {
 // TunnelServer
 // @Description: Define TunnelServer interface.
 type TunnelServer interface {
+	Id() string
 
 	// Start is start tunnel server.
 	Start(protocol utils.Network) error

@@ -1,9 +1,10 @@
 package cli
 
 import (
-	"github.com/charmbracelet/lipgloss"
 	"strconv"
 	"strings"
+
+	"github.com/charmbracelet/lipgloss"
 )
 
 type MainPage struct {

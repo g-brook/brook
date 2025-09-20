@@ -27,6 +27,7 @@ type LoggerConfig struct {
 }
 
 type ServerTunnelConfig struct {
+	Id       string            `json:"id"`
 	Port     int               `json:"port"`
 	Type     utils.TunnelType  `json:"type"`
 	KeyFile  string            `json:"keyfile"`

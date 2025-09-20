@@ -9,6 +9,7 @@ import (
 
 	"github.com/brook/server/tunnel/tcp"
 	"github.com/brook/server/web"
+	"github.com/brook/server/web/db"
 
 	"github.com/brook/common/command"
 	"github.com/brook/common/configs"
@@ -110,4 +111,5 @@ func shutdown(inServer *remote.InServer, tunnelServers []tunnel.TunnelServer) {
 			t.Shutdown()
 		}
 	}
+	db.Close()
 }

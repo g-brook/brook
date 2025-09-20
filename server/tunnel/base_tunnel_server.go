@@ -9,6 +9,7 @@ import (
 	"github.com/brook/common/log"
 	"github.com/brook/common/transport"
 	"github.com/brook/common/utils"
+	"github.com/brook/server/metrics"
 	"github.com/brook/server/srv"
 )
 
@@ -24,16 +25,41 @@ type Event func(ch transport.Channel)
 
 type BaseTunnelServer struct {
 	srv.BaseServerHandler
-	port       int
-	Cfg        *configs.ServerTunnelConfig
-	Server     *srv.Server
-	DoStart    func() error
-	Managers   map[string]transport.Channel
-	openCh     chan error
-	openChOnce sync.Once
-	handlers   map[EventType]Event
-	lock       sync.Mutex
-	closeCtx   context.Context
+	port           int
+	Cfg            *configs.ServerTunnelConfig
+	Server         *srv.Server
+	DoStart        func() error
+	Managers       map[string]transport.Channel
+	openCh         chan error
+	openChOnce     sync.Once
+	handlers       map[EventType]Event
+	lock           sync.Mutex
+	closeCtx       context.Context
+	trafficMetrics *metrics.TunnelTraffic
+}
+
+func (b *BaseTunnelServer) Id() string {
+	return b.Cfg.Id
+
+}
+func (b *BaseTunnelServer) Type() string {
+	return string(b.Cfg.Type)
+}
+
+func (b *BaseTunnelServer) Connections() int {
+	return len(b.Server.Connections())
+}
+
+func (b *BaseTunnelServer) Name() string {
+	return "tunnel"
+}
+
+func (b *BaseTunnelServer) Users() int {
+	return len(b.Managers)
+}
+
+func (b *BaseTunnelServer) TrafficObj() *metrics.TunnelTraffic {
+	return b.trafficMetrics
 }
 
 func (b *BaseTunnelServer) AddEvent(etype EventType,
@@ -52,6 +78,7 @@ func (b *BaseTunnelServer) Shutdown() {
 		}
 		clear(b.Managers)
 	}
+	metrics.M.RemoveServer(b)
 }
 
 // NewBaseTunnelServer Create a new instance of the underlying tunnel server
@@ -76,7 +103,9 @@ func (b *BaseTunnelServer) Start(network utils.Network) error {
 	go func() {
 		b.Server = srv.NewServer(b.port)
 		b.Server.AddHandler(b)
-		err := b.Server.Start(srv.WithNetwork(network))
+		err := b.Server.Start(srv.WithNetwork(network), srv.WithNewChannelFunc(func(ch *srv.GChannel) transport.Channel {
+			return metrics.NewMetricsChannel(ch, b.trafficMetrics)
+		}))
 		if err != nil {
 			log.Error("Start tunnel server port: error, %v:%v", err, b.Port())
 			b.openCh <- err
@@ -86,6 +115,8 @@ func (b *BaseTunnelServer) Start(network utils.Network) error {
 		return err
 	}
 	if b.DoStart != nil {
+		b.trafficMetrics = metrics.M.PutServer(b)
+		b.trafficMetrics.Print()
 		return b.DoStart()
 	}
 	return nil

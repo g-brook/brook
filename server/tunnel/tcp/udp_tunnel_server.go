@@ -45,7 +45,7 @@ func (htl *UdpTunnelServer) RegisterConn(ch trp.Channel, request exchange.TRegis
 
 func (htl *UdpTunnelServer) Reader(ch trp.Channel, tb srv.TraverseBy) {
 	switch workConn := ch.(type) {
-	case *srv.GChannel:
+	case srv.GContext:
 		userConn, _ := htl.poolResources.get()
 		if userConn == nil {
 			_ = ch.Close()

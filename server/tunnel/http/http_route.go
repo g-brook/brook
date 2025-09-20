@@ -1,6 +1,7 @@
 package http
 
 import (
+	"net"
 	"net/http"
 
 	"github.com/brook/common/utils"
@@ -9,7 +10,7 @@ import (
 var Routes []*RouteInfo
 
 // ProxyConnectionFunction is a function that returns a net.Conn
-type ProxyConnectionFunction func(proxyId string, reqId int64) (workConn *ProxyConnection, err error)
+type ProxyConnectionFunction func(proxyId string, reqId int64) (workConn net.Conn, err error)
 
 // RouteFunction is a function that returns a RouteInfo
 type RouteFunction func(request *http.Request) (*RouteInfo, error)

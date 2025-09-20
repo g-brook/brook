@@ -127,7 +127,7 @@ func verifyCfg(cfg *configs.ServerTunnelConfig) error {
 
 // getProxyConnection is a function that returns a net.Conn object based on the proxyId. It
 // It returns an error if the proxyId is not found.
-func (htl *HttpTunnelServer) getProxyConnection(proxyId string, reqId int64) (workConn *ProxyConnection, err error) {
+func (htl *HttpTunnelServer) getProxyConnection(proxyId string, reqId int64) (workConn net.Conn, err error) {
 	channelIds, ok := htl.proxyToConn[proxyId]
 	if !ok {
 		return nil, errors.New("proxy Id not found in proxy connection:" + proxyId)
@@ -154,7 +154,7 @@ func (htl *HttpTunnelServer) getProxyConnection(proxyId string, reqId int64) (wo
 
 // Reader    is a method of HttpTunnelServer, which is used to process incoming requests. It
 func (htl *HttpTunnelServer) Reader(ch Channel, tb srv.TraverseBy) {
-	channel := ch.(*srv.GChannel)
+	channel := ch.(srv.GContext)
 	bt, err := channel.Next(-1)
 	if err != nil {
 		return
@@ -167,7 +167,7 @@ func (htl *HttpTunnelServer) Reader(ch Channel, tb srv.TraverseBy) {
 	tb()
 }
 func (htl *HttpTunnelServer) Open(ch Channel, tb srv.TraverseBy) {
-	channel := ch.(*srv.GChannel)
+	channel := ch.(srv.GContext)
 	conn := newHttpConn(ch, htl.isHttps)
 	channel.GetContext().AddAttr(defin.HttpChannel, conn)
 	go func() {
