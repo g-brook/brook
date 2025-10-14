@@ -32,7 +32,7 @@ func (d dbLog) Debugf(s string, i ...interface{}) {
 
 func Open() {
 	var err error
-	options := badger.DefaultOptions("/tmp/badger")
+	options := badger.DefaultOptions("./fdb")
 	options.Logger = dbLog{}
 	DB, err = badger.Open(options)
 	if err != nil {

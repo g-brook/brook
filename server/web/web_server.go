@@ -2,33 +2,49 @@ package web
 
 import (
 	"embed"
+	"fmt"
 	"io/fs"
+	"math/rand"
 	"net/http"
+	"time"
 
 	"github.com/brook/common/log"
 	"github.com/brook/server/web/api"
 	"github.com/brook/server/web/db"
+	"github.com/brook/server/web/sql"
 	"github.com/gorilla/mux"
 )
 
 //go:embed dist/*
 var embeddedFiles embed.FS
 var (
-	root = "dist"
+	root    = "dist"
+	charset = "abcdefghijklmnopqrstuvwxyz" +
+		"ABCDEFGHIJKLMNPQRSTUVWXYZ123456789!@#$%^&*()"
 )
 
 type Server struct {
 }
 
 func NewWebServer(port int) {
-	//staticFs, _ := fs.Sub(embeddedFiles, root)
-	//http.Handle("/", http.FileServer(http.FS(staticFs)))
+	if port <= 0 || port > 30000 {
+		log.Info("port is invalid %d, use default port: 8812", port)
+		port = 8000
+	}
 	doRoute()
 	db.Open()
-	err := http.ListenAndServe(":8000", nil)
+	err := sql.InitSQLDB()
 	if err != nil {
+		log.Error("init sql db err %v", err)
 		return
 	}
+	go func() {
+		log.Info("start web server on port %d", port)
+		err = http.ListenAndServe(fmt.Sprintf(":%d", port), nil)
+		if err != nil {
+			panic("start web server err: " + err.Error())
+		}
+	}()
 }
 
 func doRoute() {
@@ -44,4 +60,13 @@ func doRoute() {
 	//static source
 	r.PathPrefix("/").Handler(http.FileServer(http.FS(staticFs)))
 	http.Handle("/", r)
+}
+
+func randomPassword(length int) string {
+	rand.Seed(time.Now().UnixNano())
+	password := make([]byte, length)
+	for i := range password {
+		password[i] = charset[rand.Intn(len(charset))]
+	}
+	return string(password)
 }

@@ -1,0 +1,57 @@
+package sql
+
+import (
+	"database/sql"
+
+	"github.com/brook/common/log"
+	_ "github.com/mattn/go-sqlite3"
+)
+
+var SqlDB *sql.DB
+
+type Result struct {
+	rows *sql.Rows
+}
+
+func (t *Result) Close() {
+	err := t.rows.Close()
+	if err != nil {
+		log.Error("err: %v", err)
+	}
+}
+
+// InitSQLDB initializes the SQLite database connection with specific settings
+// It returns an error if the connection fails or if there are issues configuring the connection parameters
+func InitSQLDB() error {
+	// Open a connection to the SQLite database file named "db.db" in the current directory
+	db, err := sql.Open("sqlite3", "./db.db")
+	if err != nil {
+		// Return the error if the database connection cannot be established
+		return err
+	}
+	// Set the maximum number of idle connections in the connection pool to 1
+	db.SetMaxIdleConns(1)
+	// Set the maximum number of open connections to 1
+	db.SetMaxOpenConns(1)
+	// Set the maximum lifetime of a connection to 0 (connections can be reused indefinitely)
+	db.SetConnMaxLifetime(0)
+	// Assign the database connection to the global SqlDB variable
+	SqlDB = db
+	// Return nil to indicate successful initialization
+	return nil
+}
+
+func Query(sql string, args ...any) (*Result, error) {
+	rows, err := SqlDB.Query(sql, args...)
+	if err != nil {
+		return nil, err
+	}
+	return &Result{
+		rows: rows,
+	}, nil
+}
+
+func Exec(sql string, args ...any) error {
+	_, err := SqlDB.Exec(sql, args...)
+	return err
+}

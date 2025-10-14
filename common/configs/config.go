@@ -12,10 +12,12 @@ var DefServerPort = 8909
 // ServerConfig
 // @Description: 配置文件存储.
 type ServerConfig struct {
-	ServerPort int                  `json:"serverPort"`
-	TunnelPort int                  `json:"tunnelPort"`
-	Tunnel     []ServerTunnelConfig `json:"tunnel"`
-	Logger     LoggerConfig         `json:"logger"`
+	ServerPort int                   `json:"serverPort"`
+	TunnelPort int                   `json:"tunnelPort"`
+	EnableWeb  bool                  `json:"enableWeb"`
+	WebPort    int                   `json:"webPort"`
+	Tunnel     []*ServerTunnelConfig `json:"tunnel"`
+	Logger     LoggerConfig          `json:"logger"`
 }
 
 // LoggerConfig

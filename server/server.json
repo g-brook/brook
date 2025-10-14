@@ -1,4 +1,6 @@
 {
+  "enableWeb": true,
+  "webPort": 8000,
   "logger": {
     "logLevel": "debug",
     "logPath": "./",

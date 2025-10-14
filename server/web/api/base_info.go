@@ -1,10 +1,8 @@
 package api
 
 import (
-	"math/rand"
-	"time"
-
 	"github.com/brook/common/log"
+	"github.com/brook/common/utils"
 	"github.com/brook/server/web/db"
 	"github.com/brook/server/web/errs"
 )
@@ -17,9 +15,6 @@ func init() {
 
 const (
 	userInfoKey string = "brook_user_info"
-	user        string = "brook"
-	charset            = "abcdefghijklmnopqrstuvwxyz" +
-		"ABCDEFGHIJKLMNPQRSTUVWXYZ123456789!@#$%^&*()"
 )
 
 func login(req *Request[LoginInfo]) *Response {
@@ -33,7 +28,7 @@ func login(req *Request[LoginInfo]) *Response {
 	if info.Username != req.Body.Username || info.Password != req.Body.Password {
 		return NewResponseFail(errs.CodeSysErr, "Login in fail. Username or password is wrong.")
 	}
-	token := RandomPassword(32)
+	token := utils.RandomString(32)
 	err = db.PutWithTtl(token, info, TokenTtl)
 	if err != nil {
 		return NewResponseFail(errs.CodeSysErr, "Login in fail.")
@@ -49,14 +44,17 @@ func getBaseInfo(*Request[any]) *Response {
 	return NewResponseSuccess(bf)
 }
 
-func initBrookServer(*Request[any]) *Response {
+func initBrookServer(r *Request[InitInfo]) *Response {
 	info, err := db.Get[UserInfo](userInfoKey)
 	if info != nil {
-		return NewResponseFail(errs.CodeSysErr, "Failed to initialize Brook server: it is already running.")
+		return NewResponseFail(errs.CodeSysErr, "Failed to initialize Brook server: it has already been initialized.")
+	}
+	if r.Body.Password != r.Body.ConfirmPassword {
+		return NewResponseFail(errs.CodeSysErr, "Failed to initialize Brook server: password and confirm password are not the same.")
 	}
 	info = &UserInfo{
-		Username: user,
-		Password: RandomPassword(10),
+		Username: r.Body.Username,
+		Password: r.Body.Password,
 	}
 	err = db.Put(userInfoKey, info)
 	if err != nil {
@@ -65,13 +63,4 @@ func initBrookServer(*Request[any]) *Response {
 	//cjqQpvKuyd
 	log.Info("Initialize brook server success, and userName is: %s and password is: %s", info.Username, info.Password)
 	return NewResponseSuccess(info)
-}
-
-func RandomPassword(length int) string {
-	rand.Seed(time.Now().UnixNano())
-	password := make([]byte, length)
-	for i := range password {
-		password[i] = charset[rand.Intn(len(charset))]
-	}
-	return string(password)
 }

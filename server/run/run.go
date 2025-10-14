@@ -77,11 +77,17 @@ func run() {
 	// Create a context that can be cancelled by interrupt signals (SIGINT, SIGTERM)
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop() // Ensure the signal notification is stopped when the function returns
+	if serverConfig.EnableWeb {
+		web.NewWebServer(serverConfig.WebPort)
+	}
 	//Start In-Server.
 	remote.Inserver = remote.New().Start(&serverConfig)
+
+	// Get tunnelServer infos.
+	tunnelConfig := GetTunnelConfig(serverConfig)
 	tunnelServers := make([]tunnel.TunnelServer, len(serverConfig.Tunnel))
-	for _, config := range serverConfig.Tunnel {
-		baseServer := tunnel.NewBaseTunnelServer(&config)
+	for _, config := range tunnelConfig {
+		baseServer := tunnel.NewBaseTunnelServer(config)
 		var ts tunnel.TunnelServer
 		switch config.Type {
 		case utils.Http, utils.Https:
@@ -98,8 +104,6 @@ func run() {
 			tunnelServers = append(tunnelServers, ts)
 		}
 	}
-	web.NewWebServer(8000)
-	// Wait for the context to be cancelled
 	<-ctx.Done()
 	shutdown(remote.Inserver, tunnelServers)
 }

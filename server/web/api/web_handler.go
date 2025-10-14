@@ -5,6 +5,7 @@ import (
 	"io"
 	"net/http"
 
+	"github.com/brook/common/log"
 	"github.com/brook/server/web/db"
 	"github.com/brook/server/web/errs"
 )
@@ -130,12 +131,14 @@ func updateTtl(auth string) {
 }
 
 func writeError(writer http.ResponseWriter) {
+	log.Error("system error....")
 	fail := NewResponseFail(errs.CodeSysErr, "system error")
 	marshal, _ := json.Marshal(fail)
 	_, _ = writer.Write(marshal)
 }
 
 func writeAuthError(writer http.ResponseWriter) {
+	log.Error("system error....")
 	fail := NewResponseFail(errs.CodeNotAuth, "not authorization")
 	marshal, _ := json.Marshal(fail)
 	_, _ = writer.Write(marshal)
