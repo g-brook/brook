@@ -7,17 +7,14 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/brook/server/tunnel/tcp"
+	"github.com/brook/server/tunnel/base"
 	"github.com/brook/server/web"
 	"github.com/brook/server/web/db"
 
 	"github.com/brook/common/command"
 	"github.com/brook/common/configs"
 	"github.com/brook/common/log"
-	"github.com/brook/common/utils"
 	"github.com/brook/server/remote"
-	"github.com/brook/server/tunnel"
-	"github.com/brook/server/tunnel/http"
 	"github.com/spf13/cobra"
 )
 
@@ -82,38 +79,13 @@ func run() {
 	}
 	//Start In-Server.
 	remote.Inserver = remote.New().Start(&serverConfig)
-
 	// Get tunnelServer infos.
-	tunnelConfig := GetTunnelConfig(serverConfig)
-	tunnelServers := make([]tunnel.TunnelServer, len(serverConfig.Tunnel))
-	for _, config := range tunnelConfig {
-		baseServer := tunnel.NewBaseTunnelServer(config)
-		var ts tunnel.TunnelServer
-		switch config.Type {
-		case utils.Http, utils.Https:
-			ts = http.NewHttpTunnelServer(baseServer)
-			if err := ts.Start(utils.NetworkTcp); err != nil {
-				log.Error("HttpTunnelServer", "err", err)
-				return
-			}
-		case utils.Tcp:
-			tcp.AcceptTcpListener()
-			break
-		}
-		if ts != nil {
-			tunnelServers = append(tunnelServers, ts)
-		}
-	}
+	base.RunTunnelServer(&serverConfig)
 	<-ctx.Done()
-	shutdown(remote.Inserver, tunnelServers)
+	shutdown(remote.Inserver)
 }
 
-func shutdown(inServer *remote.InServer, tunnelServers []tunnel.TunnelServer) {
+func shutdown(inServer *remote.InServer) {
 	inServer.Shutdown()
-	for _, t := range tunnelServers {
-		if t != nil {
-			t.Shutdown()
-		}
-	}
 	db.Close()
 }

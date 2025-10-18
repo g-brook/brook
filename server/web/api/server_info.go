@@ -4,10 +4,15 @@ import (
 	"strconv"
 
 	"github.com/brook/server/metrics"
+	"github.com/brook/server/tunnel"
+	"github.com/brook/server/tunnel/base"
+	"github.com/brook/server/web/errs"
 )
 
 func init() {
 	RegisterRoute(NewRoute("/getServerInfo", "POST"), getServerInfo)
+	RegisterRoute(NewRoute("/stopServer", "POST"), stopServer)
+	RegisterRoute(NewRoute("/startServer", "POST"), startServer)
 }
 
 // GetServerInfo retrieves information about the server
@@ -28,4 +33,38 @@ func getServerInfo(req *Request[QueryServerInfo]) *Response {
 	}
 
 	return NewResponseSuccess(v)
+}
+
+func startServer(req *Request[QueryServerInfo]) *Response {
+	if req.Body.ProxyId == "" {
+		return NewResponseFail(errs.CodeSysErr, "proxyId is empty")
+	}
+	for _, t := range metrics.M.GetServers() {
+		b := t.Id() == req.Body.ProxyId
+		if b {
+			return NewResponseFail(errs.CodeSysErr, "server already started")
+		}
+	}
+	err := base.RunServer(req.Body.ProxyId)
+	if err != nil {
+		return NewResponseFail(errs.CodeSysErr, err.Error())
+	}
+	return NewResponseSuccess(nil)
+}
+
+func stopServer(req *Request[QueryServerInfo]) *Response {
+	if req.Body.ProxyId == "" {
+		return NewResponseFail(errs.CodeSysErr, "proxyId is empty")
+	}
+	for _, t := range metrics.M.GetServers() {
+		b := t.Id() == req.Body.ProxyId
+		if b {
+			switch t := t.(type) {
+			case tunnel.TunnelServer:
+				t.(tunnel.TunnelServer).Shutdown()
+			}
+		}
+	}
+	return NewResponseSuccess(nil)
+
 }

@@ -13,13 +13,14 @@ import (
 	"github.com/brook/common/utils"
 	"github.com/brook/server/remote"
 	"github.com/brook/server/tunnel"
+	"github.com/google/uuid"
 )
 
 // TcpTunnelListener tcp tunnel listener
 
 var tcpTunnelServers sync.Map
 
-var portRange = [2]int{10000, 60000}
+var portRange = [2]int{10000, 65535}
 
 var portPool *PortPool
 
@@ -29,13 +30,23 @@ func init() {
 	remote.OpenTunnelServerFun = OpenTunnelServer
 }
 
-func AcceptTcpListener() {
+func RunStart(cfg *configs.ServerTunnelConfig) {
+	if cfg.Type == utils.Tcp || cfg.Type == utils.Udp {
+		_, _ = OpenTunnelServer(exchange.OpenTunnelReq{
+			TunnelPort: cfg.Port,
+			TunnelType: cfg.Type,
+			ProxyId:    cfg.Id,
+			UnId:       uuid.New().String(),
+		}, nil)
 
+	} else {
+		panic(errors.New("not support tunnel type"))
+	}
 }
 
 // OpenTunnelServer open tcp tunnel server
 // This function opens a tunnel server based on the request parameters.
-func OpenTunnelServer(request exchange.OpenTunnelReq, ch Channel) (int, error) {
+func OpenTunnelServer(request exchange.OpenTunnelReq, manager Channel) (int, error) {
 	//Check if the tunnel port is already in use.
 	if t, ok := tcpTunnelServers.Load(request.TunnelPort); ok {
 		//todo://
@@ -71,17 +82,22 @@ func OpenTunnelServer(request exchange.OpenTunnelReq, ch Channel) (int, error) {
 	config := &configs.ServerTunnelConfig{
 		Port: request.TunnelPort,
 		Type: request.TunnelType,
+		Id:   request.ProxyId,
 	}
+	return running(request, manager, config)
+}
+
+func running(request exchange.OpenTunnelReq, manager Channel, config *configs.ServerTunnelConfig) (int, error) {
 	//Create a new base tunnel server.
 	baseServer := tunnel.NewBaseTunnelServer(config)
 	//Create a new TCP tunnel server.
 	var server tunnel.TunnelServer
 	var netWork utils.Network
 	if config.Type == utils.Tcp {
-		server = NewTcpTunnelServer(baseServer, request, ch)
+		server = NewTcpTunnelServer(baseServer, request, manager)
 		netWork = utils.NetworkTcp
 	} else if config.Type == utils.Udp {
-		server = NewUdpTunnelServer(baseServer, request, ch)
+		server = NewUdpTunnelServer(baseServer, request, manager)
 		netWork = utils.NetworkUdp
 	} else {
 		return 0, fmt.Errorf("not support tunnel type %v", config.Type)

@@ -3,6 +3,7 @@ package tunnel
 import (
 	"context"
 	"sync"
+	"time"
 
 	"github.com/brook/common/configs"
 	"github.com/brook/common/exchange"
@@ -36,6 +37,7 @@ type BaseTunnelServer struct {
 	lock           sync.Mutex
 	closeCtx       context.Context
 	trafficMetrics *metrics.TunnelTraffic
+	runtime        time.Time
 }
 
 func (b *BaseTunnelServer) Id() string {
@@ -111,6 +113,7 @@ func (b *BaseTunnelServer) Start(network utils.Network) error {
 			b.openCh <- err
 		}
 	}()
+	b.runtime = time.Now()
 	if err := <-b.openCh; err != nil {
 		return err
 	}
@@ -125,6 +128,10 @@ func (b *BaseTunnelServer) Start(network utils.Network) error {
 // Port  the tunnel server port
 func (b *BaseTunnelServer) Port() int {
 	return b.port
+}
+
+func (b *BaseTunnelServer) Runtime() time.Time {
+	return b.runtime
 }
 
 // RegisterConn  register the tunnel server connection

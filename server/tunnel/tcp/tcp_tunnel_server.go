@@ -86,9 +86,11 @@ func (htl *TcpTunnelServer) GetUnId() string {
 }
 
 func (htl *TcpTunnelServer) background() {
-	go func() {
-		<-htl.poolResources.manner.Done()
-		htl.Shutdown()
-		CloseTunnelServer(htl.Port())
-	}()
+	if htl.poolResources.manner != nil {
+		go func() {
+			<-htl.poolResources.manner.Done()
+			htl.Shutdown()
+			CloseTunnelServer(htl.Port())
+		}()
+	}
 }

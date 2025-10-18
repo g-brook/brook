@@ -35,6 +35,17 @@ type HttpTunnelServer struct {
 	isHttps bool
 }
 
+func RunStart(cfg *configs.ServerTunnelConfig) {
+	server := tunnel.NewBaseTunnelServer(cfg)
+	tunnelServer := NewHttpTunnelServer(server)
+	err := tunnelServer.Start(utils.NetworkTcp)
+	if err != nil {
+		log.Error("start http tunnel server error: ", err)
+	} else {
+		log.Info("start http tunnel server success %v", cfg.Port)
+	}
+}
+
 // NewHttpTunnelServer  is a constructor function for HttpTunnelServer. It takes a pointer to BaseTunnelServer as input
 // and returns a pointer to HttpTunnelServer. The constructor sets the DoStart field of BaseTunnelServer to the startAfter
 // method of HttpTunnelServer, which is used to perform cleanup or subsequent processing operations startAfter the server
@@ -257,7 +268,7 @@ func (htl *HttpTunnelServer) RegisterConn(ch Channel, request exchange.TRegister
 
 func (htl *HttpTunnelServer) createConn(ch Channel) (err error) {
 	req := &exchange.ReqWorkConn{
-		ProxyId:      "proxy3",
+		ProxyId:      htl.Cfg.Id,
 		Port:         htl.Port(),
 		TunnelType:   htl.Cfg.Type,
 		LocalAddress: "127.0.0.1",

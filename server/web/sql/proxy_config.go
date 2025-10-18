@@ -8,6 +8,8 @@ type ProxyConfig struct {
 	ProxyID    string `db:"proxy_id" json:"proxyId"`
 	Protocol   string `db:"protocol" json:"protocol"`
 	State      int    `db:"state" json:"state"`
+	IsRunning  bool   `json:"isRunning"`
+	Runtime    string `json:"runtime"`
 }
 
 func AddProxyConfig(p ProxyConfig) error {
@@ -23,38 +25,54 @@ func DelProxyConfig(id int64) error {
 	return err
 }
 
-func GetAllProxyConfig() []ProxyConfig {
+func GetAllProxyConfig() []*ProxyConfig {
 	res, err := Query("select idx,name, tag, remote_port, proxy_id, protocol,state from proxy_config where state = 1")
 	if err != nil {
 		return nil
 	}
 	defer res.Close()
 
-	var list []ProxyConfig
+	var list []*ProxyConfig
 	for res.rows.Next() {
 		var p ProxyConfig
 		if err := res.rows.Scan(&p.Idx, &p.Name, &p.Tag, &p.RemotePort, &p.ProxyID, &p.Protocol, &p.State); err != nil {
 			return nil
 		}
-		list = append(list, p)
+		list = append(list, &p)
 	}
 	return list
 }
 
-func QueryProxyConfig() []ProxyConfig {
+func GetAllProxyConfigByProxyId(proxyId string) *ProxyConfig {
+	res, err := Query("select idx,name, tag, remote_port, proxy_id, protocol,state from proxy_config where state = 1 and proxy_id = ?", proxyId)
+	if err != nil {
+		return nil
+	}
+	defer res.Close()
+
+	for res.rows.Next() {
+		var p ProxyConfig
+		if err := res.rows.Scan(&p.Idx, &p.Name, &p.Tag, &p.RemotePort, &p.ProxyID, &p.Protocol, &p.State); err == nil {
+			return &p
+		}
+	}
+	return nil
+}
+
+func QueryProxyConfig() []*ProxyConfig {
 	res, err := Query("select idx,name, tag, remote_port, proxy_id, protocol,state from proxy_config")
 	if err != nil {
 		return nil
 	}
 	defer res.Close()
 
-	var list []ProxyConfig
+	var list []*ProxyConfig
 	for res.rows.Next() {
 		var p ProxyConfig
 		if err := res.rows.Scan(&p.Idx, &p.Name, &p.Tag, &p.RemotePort, &p.ProxyID, &p.Protocol, &p.State); err != nil {
 			return nil
 		}
-		list = append(list, p)
+		list = append(list, &p)
 	}
 	return list
 }

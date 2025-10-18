@@ -1,5 +1,9 @@
 package metrics
 
+import (
+	"time"
+)
+
 type TunnelMetrics interface {
 	Id() string
 	Name() string
@@ -7,4 +11,5 @@ type TunnelMetrics interface {
 	Type() string
 	Connections() int
 	Users() int
+	Runtime() time.Time
 }

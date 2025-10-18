@@ -72,9 +72,11 @@ func (htl *UdpTunnelServer) GetUnId() string {
 }
 
 func (htl *UdpTunnelServer) background() {
-	go func() {
-		<-htl.poolResources.manner.Done()
-		htl.Shutdown()
-		CloseTunnelServer(htl.Port())
-	}()
+	if htl.poolResources.manner != nil {
+		go func() {
+			<-htl.poolResources.manner.Done()
+			htl.Shutdown()
+			CloseTunnelServer(htl.Port())
+		}()
+	}
 }

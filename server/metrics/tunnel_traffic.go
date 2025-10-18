@@ -1,6 +1,7 @@
 package metrics
 
 import (
+	"runtime"
 	"sync"
 	"time"
 )
@@ -89,7 +90,7 @@ func (ts *TunnelTraffic) Print() {
 		defer ticker.Stop()
 		for range ticker.C {
 			in, out := ts.Sum()
-			println("TunnelTraffic", ts.Id, ts.port, ts.name, in, out)
+			println("TunnelTraffic", ts.Id, ts.port, ts.name, in, out, runtime.NumGoroutine())
 		}
 	}()
 }
