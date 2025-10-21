@@ -119,7 +119,6 @@ func (b *BaseTunnelServer) Start(network utils.Network) error {
 	}
 	if b.DoStart != nil {
 		b.trafficMetrics = metrics.M.PutServer(b)
-		b.trafficMetrics.Print()
 		return b.DoStart()
 	}
 	return nil

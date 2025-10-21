@@ -1,7 +1,6 @@
 package metrics
 
 import (
-	"runtime"
 	"sync"
 	"time"
 )
@@ -84,13 +83,13 @@ func (ts *TunnelTraffic) Sum() (in uint64, out uint64) {
 	return
 }
 
-func (ts *TunnelTraffic) Print() {
-	go func() {
-		ticker := time.NewTicker(5 * time.Second)
-		defer ticker.Stop()
-		for range ticker.C {
-			in, out := ts.Sum()
-			println("TunnelTraffic", ts.Id, ts.port, ts.name, in, out, runtime.NumGoroutine())
-		}
-	}()
-}
+//func (ts *TunnelTraffic) Print() {
+//	go func() {
+//		ticker := time.NewTicker(5 * time.Second)
+//		defer ticker.Stop()
+//		for range ticker.C {
+//			in, out := ts.Sum()
+//			println("TunnelTraffic", ts.Id, ts.port, ts.name, in, out, defin.NumGoroutine())
+//		}
+//	}()
+//}

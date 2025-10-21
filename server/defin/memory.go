@@ -1,8 +1,9 @@
 package defin
 
 import (
-	"github.com/brook/common"
 	"sync"
+
+	"github.com/brook/common"
 )
 
 var Store Memory
@@ -33,4 +34,8 @@ func Delete(key common.KeyType) {
 	Store.rn.Lock()
 	defer Store.rn.Unlock()
 	delete(Store.values, key)
+}
+
+func GetToken() string {
+	return Get[string](TokenKey)
 }

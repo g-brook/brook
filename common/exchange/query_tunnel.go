@@ -1,7 +1,7 @@
 package exchange
 
-type QueryTunnelReq struct {
-	session string
+type LoginReq struct {
+	Token string `json:"token"`
 }
 
 // Cmd
@@ -9,17 +9,18 @@ type QueryTunnelReq struct {
 //	@Description: getCmd
 //	@receiver r
 //	@return Cmd
-func (r QueryTunnelReq) Cmd() Cmd {
-	return QueryTunnel
+func (r LoginReq) Cmd() Cmd {
+	return LoginTunnel
 }
 
-// QueryTunnelResp
+// LoginResp
 // @Description: Resp.
-type QueryTunnelResp struct {
-	TunnelPort int    `json:"tunnel_port"`
-	UnId       string `json:"un_id"`
+type LoginResp struct {
+	TunnelPort int `json:"tunnel_port"`
+
+	UnId string `json:"un_id"`
 }
 
-func (r QueryTunnelReq) QueryTunnelResp() Cmd {
-	return QueryTunnel
+func (r LoginReq) QueryTunnelResp() Cmd {
+	return LoginTunnel
 }

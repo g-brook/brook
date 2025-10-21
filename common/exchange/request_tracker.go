@@ -61,7 +61,10 @@ func SyncWriteByProtocol(message *Protocol, timeout time.Duration, writer func(p
 	}
 	select {
 	case resp := <-ch:
-		return resp, nil
+		if resp.IsSuccess() {
+			return resp, nil
+		}
+		return nil, fmt.Errorf("request failed: ,%d:%s", resp.RspCode, resp.RspMsg)
 	case <-time.After(timeout):
 		return nil, fmt.Errorf("timeout waiting for response")
 	}

@@ -2,9 +2,18 @@ package api
 
 import (
 	"encoding/json"
+	"time"
 
 	"github.com/brook/server/web/sql"
 )
+
+type AuthInfo struct {
+	Token      string `json:"token"`
+	Status     bool   `json:"status"`
+	CreateTime string `json:"createTime"`
+	//过期时间
+	Expire time.Time `json:"expire"`
+}
 
 type UserInfo struct {
 	Username string `json:"username"`

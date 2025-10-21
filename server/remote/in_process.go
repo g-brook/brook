@@ -7,14 +7,14 @@ import (
 	"github.com/brook/common/exchange"
 	"github.com/brook/common/log"
 	"github.com/brook/common/transport"
-	defin "github.com/brook/server/define"
+	"github.com/brook/server/defin"
 	"github.com/brook/server/tunnel"
 )
 
 func init() {
 	Register(exchange.Heart, pingProcess)
 	Register(exchange.Register, registerProcess)
-	Register(exchange.QueryTunnel, queryTunnelConfigProcess)
+	Register(exchange.LoginTunnel, loginProcess)
 	Register(exchange.OpenTunnel, openTunnelProcess)
 	Register(exchange.UdpRegister, dupRegisterProcess)
 }
@@ -77,9 +77,14 @@ func doRegister(request exchange.TRegister, ch transport.Channel) (any, error) {
 	return request, nil
 }
 
-func queryTunnelConfigProcess(_ exchange.QueryTunnelReq, ch transport.Channel) (any, error) {
+func loginProcess(req exchange.LoginReq, ch transport.Channel) (any, error) {
+	token := defin.GetToken()
+	if token != req.Token {
+		log.Warn("token not match,1:%v,2:%v", token, req.Token)
+		return nil, fmt.Errorf("token not match")
+	}
 	port := defin.Get[int](defin.TunnelPortKey)
-	return exchange.QueryTunnelResp{
+	return exchange.LoginResp{
 		TunnelPort: port,
 		UnId:       ch.GetId(),
 	}, nil

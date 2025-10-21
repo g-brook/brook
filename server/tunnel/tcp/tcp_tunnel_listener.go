@@ -11,7 +11,6 @@ import (
 	"github.com/brook/common/exchange"
 	. "github.com/brook/common/transport"
 	"github.com/brook/common/utils"
-	"github.com/brook/server/remote"
 	"github.com/brook/server/tunnel"
 	"github.com/google/uuid"
 )
@@ -27,7 +26,7 @@ var portPool *PortPool
 func init() {
 	//tcpTunnelServers = make(map[int]*UdpTunnelServer, 50000)
 	portPool = NewProtPool(portRange[0], portRange[1], time.Minute*5)
-	remote.OpenTunnelServerFun = OpenTunnelServer
+	//remote.OpenTunnelServerFun = OpenTunnelServer
 }
 
 func RunStart(cfg *configs.ServerTunnelConfig) {
@@ -49,7 +48,6 @@ func RunStart(cfg *configs.ServerTunnelConfig) {
 func OpenTunnelServer(request exchange.OpenTunnelReq, manager Channel) (int, error) {
 	//Check if the tunnel port is already in use.
 	if t, ok := tcpTunnelServers.Load(request.TunnelPort); ok {
-		//todo://
 		if request.UnId == t.(*TcpTunnelServer).GetUnId() {
 			return request.TunnelPort, nil
 

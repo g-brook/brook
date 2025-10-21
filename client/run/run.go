@@ -2,13 +2,14 @@ package run
 
 import (
 	"fmt"
+	"os"
+
 	"github.com/brook/client/cli"
 	"github.com/brook/common/command"
 	"github.com/brook/common/configs"
 	"github.com/brook/common/log"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/spf13/cobra"
-	"os"
 )
 
 var (
@@ -47,6 +48,9 @@ func verilyBaseConfig(c *configs.ClientConfig) {
 	}
 	if c.ServerPort <= 0 {
 		panic("ServerPort is 0, system exit")
+	}
+	if c.Token == "" {
+		panic("Token is nil, system exit")
 	}
 	cli.Page.RemoteAddress = fmt.Sprintf("%s:%d", c.ServerHost, c.ServerPort)
 }

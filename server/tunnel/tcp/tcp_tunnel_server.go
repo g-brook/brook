@@ -7,7 +7,7 @@ import (
 	"github.com/brook/common/exchange"
 	"github.com/brook/common/log"
 	trp "github.com/brook/common/transport"
-	defin "github.com/brook/server/define"
+	"github.com/brook/server/defin"
 	"github.com/brook/server/srv"
 	"github.com/brook/server/tunnel"
 )

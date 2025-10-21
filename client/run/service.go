@@ -46,7 +46,10 @@ func (receiver *Service) Run(cfg *configs.ClientConfig) context.Context {
 	)
 	<-receiver.connState
 	//Update cli status.
-	_ = receiver.connectionTunnel(cfg)
+	err := receiver.connectionTunnel(cfg)
+	if err != nil {
+		panic("Brook exit:%v" + err.Error())
+	}
 	return receiver.background()
 }
 
@@ -55,12 +58,14 @@ func (receiver *Service) connectionTunnel(cfg *configs.ClientConfig) error {
 		log.Warn("Tunnels is empty, no tunnels will be opened")
 		return nil
 	}
-	req := exchange.QueryTunnelReq{}
+	req := exchange.LoginReq{
+		Token: cfg.Token,
+	}
 	p, err := clis.ManagerTransport.SyncWrite(req, 5*time.Second)
 	if err != nil {
 		return err
 	}
-	rsp, err := exchange.Parse[exchange.QueryTunnelResp](p.Data)
+	rsp, err := exchange.Parse[exchange.LoginResp](p.Data)
 	if err != nil {
 		log.Error(err.Error())
 		return err

@@ -9,7 +9,7 @@ import (
 	"github.com/brook/common/exchange"
 	"github.com/brook/common/log"
 	"github.com/brook/common/transport"
-	defin "github.com/brook/server/define"
+	defin "github.com/brook/server/defin"
 	srv2 "github.com/brook/server/srv"
 )
 

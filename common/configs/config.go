@@ -14,6 +14,7 @@ var DefServerPort = 8909
 type ServerConfig struct {
 	ServerPort int                   `json:"serverPort"`
 	TunnelPort int                   `json:"tunnelPort"`
+	Token      string                `json:"token"`
 	EnableWeb  bool                  `json:"enableWeb"`
 	WebPort    int                   `json:"webPort"`
 	Tunnel     []*ServerTunnelConfig `json:"tunnel"`
@@ -88,4 +89,5 @@ type ClientConfig struct {
 	PingTime   time.Duration         `json:"pingTime"`
 	Tunnels    []*ClientTunnelConfig `json:"tunnels"`
 	Logger     LoggerConfig          `json:"logger"`
+	Token      string                `json:"token"`
 }

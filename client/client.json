@@ -2,6 +2,7 @@
   "serverPort": 8909,
   "serverHost": "127.0.0.1",
   "pingTime": 30000,
+  "token": "5852455554506b5a72725724255e6e35434a756f76352a2a4963456d694d4676",
   "logger": {
     "logLevel": "debug",
     "logPath": "./",
@@ -12,20 +13,7 @@
       "type": "tcp",
       "localAddress": "192.168.1.17:3306",
       "ProxyId": "proxy2",
-      "remotePort": 19682
-    },
-    {
-      "type": "udp",
-      "localAddress": "127.0.0.1:9000",
-      "ProxyId": "proxy1",
-      "remotePort": 19683,
-      "udpSize": 1024
-    },
-    {
-      "type": "http",
-      "localAddress": "192.168.1.17:8080",
-      "ProxyId": "proxy3",
-      "remotePort": 8818
+      "remotePort": 30001
     }
   ]
 }

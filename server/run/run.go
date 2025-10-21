@@ -7,14 +7,15 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/brook/server/tunnel/base"
-	"github.com/brook/server/web"
-	"github.com/brook/server/web/db"
-
 	"github.com/brook/common/command"
 	"github.com/brook/common/configs"
 	"github.com/brook/common/log"
+	"github.com/brook/server/defin"
 	"github.com/brook/server/remote"
+	"github.com/brook/server/tunnel/base"
+	"github.com/brook/server/web"
+	"github.com/brook/server/web/db"
+	"github.com/brook/server/web/service"
 	"github.com/spf13/cobra"
 )
 
@@ -47,18 +48,18 @@ var cmd = &cobra.Command{
 			}
 			serverConfig = config
 		}
-		initLogger(serverConfig)
-		configCheck(serverConfig)
+		initLogger(&serverConfig)
+		configCheck(&serverConfig)
 		run()
 		return nil
 	},
 }
 
-func configCheck(config configs.ServerConfig) {
+func configCheck(config *configs.ServerConfig) {
 
 }
 
-func initLogger(svf configs.ServerConfig) {
+func initLogger(svf *configs.ServerConfig) {
 	log.NewLogger(&svf.Logger)
 }
 
@@ -81,8 +82,21 @@ func run() {
 	remote.Inserver = remote.New().Start(&serverConfig)
 	// Get tunnelServer infos.
 	base.RunTunnelServer(&serverConfig)
+	afterRun(&serverConfig)
 	<-ctx.Done()
 	shutdown(remote.Inserver)
+}
+
+// afterRun is a function that sets the authentication token based on the server configuration
+// It takes a ServerConfig pointer as parameter and sets the token in the defin package
+func afterRun(config *configs.ServerConfig) {
+	var token string
+	if config.EnableWeb {
+		token = service.GetToken()
+	} else {
+		token = config.Token
+	}
+	defin.Set(defin.TokenKey, token)
 }
 
 func shutdown(inServer *remote.InServer) {

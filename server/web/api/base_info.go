@@ -60,7 +60,6 @@ func initBrookServer(r *Request[InitInfo]) *Response {
 	if err != nil {
 		return NewResponseFail(errs.CodeSysErr, "Initialize brook server fail")
 	}
-	//cjqQpvKuyd
 	log.Info("Initialize brook server success, and userName is: %s and password is: %s", info.Username, info.Password)
 	return NewResponseSuccess(info)
 }

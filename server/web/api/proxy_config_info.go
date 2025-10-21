@@ -94,8 +94,8 @@ func addProxyConfigs(req *Request[sql.ProxyConfig]) *Response {
 	if body.Name == "" {
 		return NewResponseFail(errs.CodeSysErr, "name is empty")
 	}
-	if body.RemotePort < 30000 || body.RemotePort > 65535 {
-		return NewResponseFail(errs.CodeSysErr, "port is invalid, the remote port range[30000-65535]")
+	if body.RemotePort < 10000 || body.RemotePort > 65535 {
+		return NewResponseFail(errs.CodeSysErr, "port is invalid, the remote port range[10000-65535]")
 	}
 	if body.Protocol == "" {
 		return NewResponseFail(errs.CodeSysErr, "protocol is empty")

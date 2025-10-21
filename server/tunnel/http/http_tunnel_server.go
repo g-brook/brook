@@ -15,7 +15,7 @@ import (
 	"github.com/brook/common/log"
 	. "github.com/brook/common/transport"
 	"github.com/brook/common/utils"
-	defin "github.com/brook/server/define"
+	"github.com/brook/server/defin"
 	"github.com/brook/server/srv"
 	"github.com/brook/server/tunnel"
 )
