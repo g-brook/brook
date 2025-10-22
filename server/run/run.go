@@ -81,7 +81,7 @@ func run() {
 	//Start In-Server.
 	remote.Inserver = remote.New().Start(&serverConfig)
 	// Get tunnelServer infos.
-	base.RunTunnelServer(&serverConfig)
+	base.InitTunnelConfig(&serverConfig)
 	afterRun(&serverConfig)
 	<-ctx.Done()
 	shutdown(remote.Inserver)

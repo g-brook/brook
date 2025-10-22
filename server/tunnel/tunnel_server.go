@@ -57,6 +57,9 @@ type TunnelServer interface {
 	//
 	RegisterConn(ch transport.Channel, request exchange.TRegister)
 
+	// PutManager put tunnel manager.
+	PutManager(ch transport.Channel)
+
 	// Shutdown shutdown.
 	Shutdown()
 }

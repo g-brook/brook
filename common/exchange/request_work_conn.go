@@ -1,16 +1,10 @@
 package exchange
 
-import "github.com/brook/common/utils"
-
-type ReqWorkConn struct {
-	Port         int              `json:"port"`
-	ProxyId      string           `json:"proxy_id"`
-	LocalAddress string           `json:"local_address"`
-	TunnelType   utils.TunnelType `json:"tunnel_type"`
-	UnId         string           `json:"un_id"`
-	Network      utils.Network    `json:"network"`
+type WorkConnReqByServer struct {
+	ProxyId    string `json:"proxy_id"`
+	RemotePort int    `json:"remote_port"`
 }
 
-func (r *ReqWorkConn) Cmd() Cmd {
+func (r *WorkConnReqByServer) Cmd() Cmd {
 	return WorkerConnReq
 }

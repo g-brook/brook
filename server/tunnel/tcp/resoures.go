@@ -3,50 +3,39 @@ package tcp
 import (
 	"github.com/brook/common/exchange"
 	trp "github.com/brook/common/transport"
-	"github.com/brook/common/utils"
 	. "github.com/brook/server/tunnel"
 )
 
 type Resources struct {
-	pool         *TunnelPool
-	unId         string
-	proxyId      string
-	manner       trp.Channel
-	network      utils.Network
-	localAddress string
-	port         int
-	tunnelType   utils.TunnelType
+	pool       *TunnelPool
+	proxyId    string
+	remotePort int
+	getManager func() trp.Channel
 }
 
 // NewResources creates and returns a new Resources instance
 // This is a constructor function that initializes a Resources struct
-func NewResources(manner trp.Channel,
-	openReq exchange.OpenTunnelReq, size int) *Resources {
+func NewResources(size int, proxyId string, remotePort int, getManager func() trp.Channel) *Resources {
 	p := &Resources{
-		manner:       manner,
-		unId:         openReq.UnId,
-		proxyId:      openReq.ProxyId,
-		localAddress: openReq.LocalAddress,
-		port:         openReq.TunnelPort,
-		tunnelType:   openReq.TunnelType,
-		network:      utils.Network(openReq.TunnelType),
+		proxyId:    proxyId,
+		remotePort: remotePort,
+		getManager: getManager,
 	}
 	p.pool = NewTunnelPool(p.createConnection, size)
 	return p
 }
 
 func (htl *Resources) createConnection() error {
-	req := &exchange.ReqWorkConn{
-		ProxyId:      htl.proxyId,
-		Port:         htl.port,
-		TunnelType:   htl.tunnelType,
-		LocalAddress: htl.localAddress,
-		UnId:         htl.unId,
-		Network:      htl.network,
+	manager := htl.getManager()
+	if manager != nil {
+		req := &exchange.WorkConnReqByServer{
+			ProxyId:    htl.proxyId,
+			RemotePort: htl.remotePort,
+		}
+		request, _ := exchange.NewRequest(req)
+		manager.Write(request.Bytes())
 	}
-	request, _ := exchange.NewRequest(req)
-	_, err := htl.manner.Write(request.Bytes())
-	return err
+	return nil
 }
 
 func (htl *Resources) get() (trp.Channel, error) {

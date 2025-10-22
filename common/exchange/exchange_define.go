@@ -45,7 +45,7 @@ const (
 	// OpenTunnel Open Tunnel
 	OpenTunnel Cmd = 5
 
-	// ConnWork
+	// WorkerConnReq ConnWork
 	WorkerConnReq Cmd = 6
 
 	UdpRegister Cmd = 7

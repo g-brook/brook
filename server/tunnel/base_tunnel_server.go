@@ -3,10 +3,12 @@ package tunnel
 import (
 	"context"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/brook/common/configs"
 	"github.com/brook/common/exchange"
+	"github.com/brook/common/hash"
 	"github.com/brook/common/log"
 	"github.com/brook/common/transport"
 	"github.com/brook/common/utils"
@@ -20,6 +22,8 @@ var (
 	Unregister EventType = 1
 
 	Register EventType = 2
+
+	index atomic.Uint64
 )
 
 type Event func(ch transport.Channel)
@@ -30,7 +34,8 @@ type BaseTunnelServer struct {
 	Cfg            *configs.ServerTunnelConfig
 	Server         *srv.Server
 	DoStart        func() error
-	Managers       map[string]transport.Channel
+	TunnelChannel  map[string]transport.Channel
+	ManagerChannel *hash.SyncSet[transport.Channel]
 	openCh         chan error
 	openChOnce     sync.Once
 	handlers       map[EventType]Event
@@ -57,7 +62,7 @@ func (b *BaseTunnelServer) Name() string {
 }
 
 func (b *BaseTunnelServer) Users() int {
-	return len(b.Managers)
+	return len(b.TunnelChannel)
 }
 
 func (b *BaseTunnelServer) TrafficObj() *metrics.TunnelTraffic {
@@ -69,16 +74,23 @@ func (b *BaseTunnelServer) AddEvent(etype EventType,
 	b.handlers[etype] = event
 }
 
+func (b *BaseTunnelServer) PutManager(ch transport.Channel) {
+	b.ManagerChannel.Add(ch)
+	ch.OnClose(func(channel transport.Channel) {
+		b.ManagerChannel.Remove(channel)
+	})
+}
+
 // Shutdown  the tunnel server
 func (b *BaseTunnelServer) Shutdown() {
 	if b.Server != nil {
 		b.Server.Shutdown(b.closeCtx)
 	}
-	if b.Managers != nil {
-		for t := range b.Managers {
-			_ = b.Managers[t].Close()
+	if b.TunnelChannel != nil {
+		for t := range b.TunnelChannel {
+			_ = b.TunnelChannel[t].Close()
 		}
-		clear(b.Managers)
+		clear(b.TunnelChannel)
 	}
 	metrics.M.RemoveServer(b)
 }
@@ -86,12 +98,13 @@ func (b *BaseTunnelServer) Shutdown() {
 // NewBaseTunnelServer Create a new instance of the underlying tunnel server
 func NewBaseTunnelServer(cfg *configs.ServerTunnelConfig) *BaseTunnelServer {
 	return &BaseTunnelServer{
-		port:     cfg.Port,
-		Cfg:      cfg,
-		Managers: make(map[string]transport.Channel),
-		openCh:   make(chan error),
-		handlers: make(map[EventType]Event, 16),
-		closeCtx: context.Background(),
+		port:           cfg.Port,
+		Cfg:            cfg,
+		TunnelChannel:  make(map[string]transport.Channel),
+		ManagerChannel: hash.NewSyncSet[transport.Channel](),
+		openCh:         make(chan error),
+		handlers:       make(map[EventType]Event, 16),
+		closeCtx:       context.Background(),
 	}
 }
 func (b *BaseTunnelServer) Boot(_ *srv.Server, _ srv.TraverseBy) {
@@ -136,9 +149,9 @@ func (b *BaseTunnelServer) Runtime() time.Time {
 // RegisterConn  register the tunnel server connection
 func (b *BaseTunnelServer) RegisterConn(ch transport.Channel,
 	_ exchange.TRegister) {
-	oldCh, ok := b.Managers[ch.GetId()]
+	oldCh, ok := b.TunnelChannel[ch.GetId()]
 	if !ok || oldCh != ch {
-		b.Managers[ch.GetId()] = ch
+		b.TunnelChannel[ch.GetId()] = ch
 		handler := b.handlers[Register]
 		if handler != nil {
 			handler(ch)
@@ -150,7 +163,7 @@ func (b *BaseTunnelServer) RegisterConn(ch transport.Channel,
 func (b *BaseTunnelServer) unRegister(ch transport.Channel) {
 	b.lock.Lock()
 	defer b.lock.Unlock()
-	delete(b.Managers, ch.GetId())
+	delete(b.TunnelChannel, ch.GetId())
 	handler := b.handlers[Unregister]
 	if handler != nil {
 		handler(ch)
@@ -159,4 +172,21 @@ func (b *BaseTunnelServer) unRegister(ch transport.Channel) {
 
 func (b *BaseTunnelServer) Done() <-chan struct{} {
 	return b.closeCtx.Done()
+}
+
+func (b *BaseTunnelServer) GetManager() transport.Channel {
+	if b.ManagerChannel.Len() == 0 {
+		return nil
+	}
+	i := b.ManagerChannel.Len()
+	v := index.Add(1) % uint64(i)
+	bt := 0
+br:
+	channel := b.ManagerChannel.List()[v]
+	if channel.IsClose() && bt < i {
+		b.ManagerChannel.Remove(channel)
+		bt++
+		goto br
+	}
+	return channel
 }

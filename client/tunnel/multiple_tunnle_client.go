@@ -16,8 +16,8 @@ import (
 func init() {
 	ft := func(config *configs.ClientTunnelConfig) clis.TunnelClient {
 		client := MultipleTunnelClient{
-			cfg:        config,
-			tcpClients: sync.Map{},
+			clientTunnelConfig: config,
+			tcpClients:         sync.Map{},
 		}
 		return &client
 	}
@@ -27,8 +27,8 @@ func init() {
 }
 
 type MultipleTunnelClient struct {
-	cfg        *configs.ClientTunnelConfig
-	tcpClients sync.Map
+	clientTunnelConfig *configs.ClientTunnelConfig
+	tcpClients         sync.Map
 }
 
 func (m *MultipleTunnelClient) GetName() string {
@@ -39,37 +39,34 @@ func (m *MultipleTunnelClient) GetName() string {
 func (m *MultipleTunnelClient) Open(session *smux.Session) error {
 	// Create a new OpenTunnelReq struct with the proxy ID, tunnel type, and tunnel port.
 	req := &exchange.OpenTunnelReq{
-		ProxyId:      m.cfg.ProxyId,
-		TunnelType:   m.cfg.TunnelType,
-		TunnelPort:   m.cfg.RemotePort,
-		UnId:         clis.ManagerTransport.UnId,
-		LocalAddress: m.cfg.LocalAddress,
+		ProxyId: m.clientTunnelConfig.ProxyId,
+		UnId:    clis.ManagerTransport.UnId,
 	}
 	rsp, err := clis.ManagerTransport.SyncWrite(req, 5*time.Second)
 	if err != nil {
-		log.Error("Open %v tunnel server error %v:%v", req.TunnelType, req.TunnelPort, err)
+		log.Error("Open %v tunnel server error %v", m.clientTunnelConfig.ProxyId, err)
 		return err
 	}
 	if !rsp.IsSuccess() {
-		log.Error("Open %v tunnel server error %v:%v", req.TunnelType, req.TunnelPort, rsp.RspMsg)
+		log.Error("Open %v tunnel server error %v", m.clientTunnelConfig.ProxyId, rsp.RspMsg)
 		return err
 	}
+	parse, _ := exchange.Parse[exchange.OpenTunnelResp](rsp.Data)
+	clis.ManagerTransport.PutConfig(m.clientTunnelConfig)
 	clis.ManagerTransport.AddMessage(exchange.WorkerConnReq, func(r *exchange.Protocol) error {
 		go func() {
-			reqWorder, _ := exchange.Parse[exchange.ReqWorkConn](r.Data)
-			newCfg := &configs.ClientTunnelConfig{
-				ProxyId:      reqWorder.ProxyId,
-				RemotePort:   reqWorder.Port,
-				LocalAddress: reqWorder.LocalAddress,
-				TunnelType:   reqWorder.TunnelType,
+			reqWorder, _ := exchange.Parse[exchange.WorkConnReqByServer](r.Data)
+			config := clis.ManagerTransport.GetConfig(reqWorder.ProxyId)
+			if config == nil {
+				return
 			}
-
-			if reqWorder.Network == utils.NetworkTcp {
-				client := NewTcpTunnelClient(newCfg, m)
+			config.RemotePort = reqWorder.RemotePort
+			if config.TunnelType == utils.Tcp {
+				client := NewTcpTunnelClient(config, m)
 				_ = client.Open(session)
 				_ = client.OpenStream()
-			} else if reqWorder.Network == utils.NetworkUdp {
-				client := NewUdpTunnelClient(newCfg, m)
+			} else if config.TunnelType == utils.Udp {
+				client := NewUdpTunnelClient(config, m)
 				_ = client.Open(session)
 				_ = client.OpenStream()
 			}
@@ -77,7 +74,7 @@ func (m *MultipleTunnelClient) Open(session *smux.Session) error {
 		return nil
 	})
 	// Log that the TCP tunnel server was opened successfully.
-	log.Info("Open %v tunnel client success:%v:%v", m.cfg.TunnelType, m.cfg.ProxyId, m.cfg.RemotePort)
+	log.Info("Open %v tunnel client success:%v:%v", m.clientTunnelConfig.TunnelType, m.clientTunnelConfig.ProxyId, parse.TunnelPort)
 	return nil
 }
 

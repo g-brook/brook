@@ -19,6 +19,8 @@ type LoginResp struct {
 	TunnelPort int `json:"tunnel_port"`
 
 	UnId string `json:"un_id"`
+
+	AutoTunnel bool `json:"auto_login"`
 }
 
 func (r LoginReq) QueryTunnelResp() Cmd {

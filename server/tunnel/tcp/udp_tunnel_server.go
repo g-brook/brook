@@ -10,25 +10,23 @@ import (
 	"github.com/brook/server/tunnel"
 )
 
-type UdpTunnelServer struct {
+type TunnelUdpServer struct {
 	*tunnel.BaseTunnelServer
-	registerLock  sync.Mutex
-	poolResources *Resources
+	registerLock sync.Mutex
+	resources    *Resources
 }
 
 // NewUdpTunnelServer creates a new TCP tunnel server instance
-func NewUdpTunnelServer(server *tunnel.BaseTunnelServer,
-	openReq exchange.OpenTunnelReq,
-	ch trp.Channel) *UdpTunnelServer {
-	tunnelServer := &UdpTunnelServer{
+func NewUdpTunnelServer(server *tunnel.BaseTunnelServer) *TunnelUdpServer {
+	tunnelServer := &TunnelUdpServer{
 		BaseTunnelServer: server,
-		poolResources:    NewResources(ch, openReq, 2),
+		resources:        NewResources(100, server.Cfg.Id, server.Cfg.Port, server.GetManager),
 	}
 	server.DoStart = tunnelServer.startAfter
 	return tunnelServer
 }
 
-func (htl *UdpTunnelServer) RegisterConn(ch trp.Channel, request exchange.TRegister) {
+func (htl *TunnelUdpServer) RegisterConn(ch trp.Channel, request exchange.TRegister) {
 	if request.GetProxyId() == "" {
 		log.Warn("Register udp tunnel, but It' proxyId is nil")
 		return
@@ -38,45 +36,30 @@ func (htl *UdpTunnelServer) RegisterConn(ch trp.Channel, request exchange.TRegis
 		htl.registerLock.Lock()
 		defer htl.registerLock.Unlock()
 		htl.BaseTunnelServer.RegisterConn(ch, request)
-		_ = htl.poolResources.put(NewUdpChannel(sch))
+		_ = htl.resources.put(NewUdpChannel(sch))
 		log.Info("Register udp tunnel, proxyId: %s", request.GetProxyId())
 	}
 }
 
-func (htl *UdpTunnelServer) Reader(ch trp.Channel, tb srv.TraverseBy) {
+func (htl *TunnelUdpServer) Reader(ch trp.Channel, tb srv.TraverseBy) {
 	switch workConn := ch.(type) {
 	case srv.GContext:
-		userConn, _ := htl.poolResources.get()
+		userConn, _ := htl.resources.get()
 		if userConn == nil {
 			_ = ch.Close()
 			return
 		}
 		data, _ := workConn.Next(-1)
 		userConn.(*UdpChannel).AsyncWriter(data, ch)
-		_ = htl.poolResources.put(userConn)
+		_ = htl.resources.put(userConn)
 		return
 	}
 	tb()
 }
 
-func (htl *UdpTunnelServer) startAfter() error {
+func (htl *TunnelUdpServer) startAfter() error {
 	tunnel.AddTunnel(htl)
 	htl.Server.AddHandler(htl)
 	log.Info("udp tunnel server started:%v", htl.Port())
-	htl.background()
 	return nil
-}
-
-func (htl *UdpTunnelServer) GetUnId() string {
-	return htl.poolResources.unId
-}
-
-func (htl *UdpTunnelServer) background() {
-	if htl.poolResources.manner != nil {
-		go func() {
-			<-htl.poolResources.manner.Done()
-			htl.Shutdown()
-			CloseTunnelServer(htl.Port())
-		}()
-	}
 }

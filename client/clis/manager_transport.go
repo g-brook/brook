@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/brook/client/cli"
+	"github.com/brook/common/configs"
 	"github.com/brook/common/exchange"
 )
 
@@ -23,6 +24,7 @@ type managerTransport struct {
 	tunnelTransport *Transport
 	commands        map[exchange.Cmd]CmdNotify
 	UnId            string
+	configs         map[string]*configs.ClientTunnelConfig
 }
 
 func (b *managerTransport) WithTunnelTransport(t *Transport) {
@@ -63,6 +65,7 @@ func NewManagerTransport(tr *Transport) *managerTransport {
 		// Set the transport field of the managerTransport object to the given Transport object
 		transport: tr,
 		commands:  make(map[exchange.Cmd]CmdNotify),
+		configs:   make(map[string]*configs.ClientTunnelConfig),
 	}
 	// Return the new managerTransport object
 	return transport
@@ -81,6 +84,14 @@ func (b *managerTransport) SyncWrite(message exchange.InBound, timeout time.Dura
 		message,
 		timeout,
 	)
+}
+
+func (b *managerTransport) GetConfig(proxyId string) *configs.ClientTunnelConfig {
+	return b.configs[proxyId]
+}
+
+func (b *managerTransport) PutConfig(config *configs.ClientTunnelConfig) {
+	b.configs[config.ProxyId] = config
 }
 
 func (b *managerTransport) BindUnId(unId string) {

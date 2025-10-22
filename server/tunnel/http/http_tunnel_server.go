@@ -35,17 +35,6 @@ type HttpTunnelServer struct {
 	isHttps bool
 }
 
-func RunStart(cfg *configs.ServerTunnelConfig) {
-	server := tunnel.NewBaseTunnelServer(cfg)
-	tunnelServer := NewHttpTunnelServer(server)
-	err := tunnelServer.Start(utils.NetworkTcp)
-	if err != nil {
-		log.Error("start http tunnel server error: ", err)
-	} else {
-		log.Info("start http tunnel server success %v", cfg.Port)
-	}
-}
-
 // NewHttpTunnelServer  is a constructor function for HttpTunnelServer. It takes a pointer to BaseTunnelServer as input
 // and returns a pointer to HttpTunnelServer. The constructor sets the DoStart field of BaseTunnelServer to the startAfter
 // method of HttpTunnelServer, which is used to perform cleanup or subsequent processing operations startAfter the server
@@ -144,7 +133,7 @@ func (htl *HttpTunnelServer) getProxyConnection(proxyId string, reqId int64) (wo
 		return nil, errors.New("proxy Id not found in proxy connection:" + proxyId)
 	}
 	for s := range channelIds {
-		channel := htl.BaseTunnelServer.Managers[s]
+		channel := htl.BaseTunnelServer.TunnelChannel[s]
 		bytes := make([]byte, 0)
 		_, err := channel.Write(bytes)
 		if err != nil {
@@ -267,13 +256,9 @@ func (htl *HttpTunnelServer) RegisterConn(ch Channel, request exchange.TRegister
 }
 
 func (htl *HttpTunnelServer) createConn(ch Channel) (err error) {
-	req := &exchange.ReqWorkConn{
-		ProxyId:      htl.Cfg.Id,
-		Port:         htl.Port(),
-		TunnelType:   htl.Cfg.Type,
-		LocalAddress: "127.0.0.1",
-		UnId:         "1234333",
-		Network:      utils.NetworkTcp,
+	req := &exchange.WorkConnReqByServer{
+		ProxyId:    htl.Cfg.Id,
+		RemotePort: htl.Cfg.Port,
 	}
 	request, err := exchange.NewRequest(req)
 	_, err = ch.Write(request.Bytes())

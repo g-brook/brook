@@ -4,10 +4,44 @@ import (
 	"encoding/json"
 
 	sf "github.com/brook/common/configs"
+	"github.com/brook/common/hash"
 	"github.com/brook/common/log"
 	"github.com/brook/common/utils"
 	"github.com/brook/server/web/sql"
 )
+
+type LocalTunnelConfig struct {
+	configs hash.SyncMap[string, *ConfigNode]
+}
+
+// GetConfig retrieves a server tunnel configuration by proxy ID
+//
+// Parameters:
+//   - proxyId: string identifier of the proxy to retrieve configuration for
+//
+// Returns:
+//   - *sf.ServerTunnelConfig: pointer to the server tunnel configuration associated with the proxy ID
+func (receiver *LocalTunnelConfig) GetConfig(proxyId string) *ConfigNode {
+	load, _ := receiver.configs.Load(proxyId) // Load retrieves the value for a key from the sync.Map
+	return load
+}
+
+func NewLocalTunnelConfig() *LocalTunnelConfig {
+	return &LocalTunnelConfig{
+		configs: hash.SyncMap[string, *ConfigNode]{},
+	}
+}
+
+func InitTunnelConfig(sc *sf.ServerConfig) {
+	var ltc = NewLocalTunnelConfig()
+	for _, item := range GetTunnelConfig(sc) {
+		ltc.configs.Store(item.Id, &ConfigNode{
+			config: item,
+			state:  false,
+		})
+	}
+	tunnelAPI = ltc
+}
 
 // GetTunnelConfig retrieves the server tunnel configuration
 // This function is used to obtain the configuration settings for establishing a server tunnel
