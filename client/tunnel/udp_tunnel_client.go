@@ -2,6 +2,7 @@ package tunnel
 
 import (
 	"encoding/json"
+	"fmt"
 	"io"
 	"net"
 	"time"
@@ -106,12 +107,18 @@ func (t *UdpTunnelClient) initOpen(*transport.SChannel) (err error) {
 			}
 		})
 	}
-	err = t.AsyncRegister(t.getReq(), func(p *exchange.Protocol, rw io.ReadWriteCloser) {
-		log.Info("Connection local address success then Client to server register success:%v", t.GetCfg().LocalAddress)
-		bucket := exchange.NewTunnelBucket(rw, t.Tcc.Context())
-		revLoop(rw, bucket)
-		bucket.Run()
-		<-stop
+	err = t.AsyncRegister(t.getReq(), func(p *exchange.Protocol, rw io.ReadWriteCloser) error {
+		if p.IsSuccess() {
+			log.Info("Connection local address success then Client to server register success:%v", t.GetCfg().LocalAddress)
+			bucket := exchange.NewTunnelBucket(rw, t.TcControl.Context())
+			revLoop(rw, bucket)
+			bucket.Run()
+			<-stop
+		} else {
+			log.Error("Connection local address success then Client to server register fail:%v", t.GetCfg().LocalAddress)
+			return fmt.Errorf("register fail")
+		}
+		return nil
 	})
 	if err != nil {
 		log.Error("Connection fail %v", err)
@@ -126,7 +133,6 @@ func (t *UdpTunnelClient) getReq() *exchange.UdpRegisterReqAndRsp {
 	}
 }
 func (t *UdpTunnelClient) localConn(rAddr *net.UDPAddr) (*net.UDPConn, error, bool) {
-	//todo:这里要发送ping信息，来看是否需要移除.
 	load, b := t.udpConnMap.Load(rAddr.String())
 	if b {
 		return load, nil, true

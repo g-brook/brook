@@ -46,33 +46,23 @@ func (receiver *TunnelClientControl) Cancel() {
 // It is designed to repeatedly execute the function f with a fixed interval
 // until the context associated with the TunnelClientControl is cancelled
 func (receiver *TunnelClientControl) retry(f func() error) {
-	// Launch a new goroutine to handle the retry mechanism
 	go func() {
-		// Create a ticker that will trigger every 5 seconds
 		ticker := time.NewTicker(time.Second * 5)
-		// Ensure the ticker is stopped when this function exits
 		defer ticker.Stop()
-		// Infinite loop to continuously attempt function execution
 		for {
-			// Check if the context has been cancelled
 			select {
 			case <-receiver.Context().Done():
 				return
 			default:
-				// Continue with execution if context is not cancelled
 			}
-			// Execute the provided function and handle any errors
 			if err := f(); err != nil {
 				log.Warn("Active tunnel error...")
 			}
-			// Reset the ticker to maintain consistent 5-second intervals
 			ticker.Reset(time.Second * 5)
-			// Wait for either context cancellation or the next ticker event
 			select {
 			case <-receiver.Context().Done():
 				return
 			case <-ticker.C:
-				// Continue to next iteration when ticker fires
 			}
 		}
 	}()
@@ -92,6 +82,8 @@ type TunnelClient interface {
 	//   - error: An error if the tunnel could not be opened.
 	Open(session *smux.Session) error
 
+	Done() <-chan struct{}
+
 	// Close closes the tunnel.
 	Close()
 }
@@ -100,13 +92,17 @@ type TunnelClient interface {
 type BaseTunnelClient struct {
 	cfg *configs.ClientTunnelConfig
 
-	Tcc *TunnelClientControl
+	TcControl *TunnelClientControl
 
 	DoOpen func(stream *transport.SChannel) error
 
-	IsAutoOpen bool
+	DoRelease func(stream *transport.SChannel) error
 
 	session *smux.Session
+
+	isRetryOpen bool
+
+	isOpen bool
 }
 
 // NewBaseTunnelClient creates a new BaseTunnelClient instance with the provided configuration
@@ -118,17 +114,14 @@ type BaseTunnelClient struct {
 //
 // Returns:
 //   - A pointer to the newly created BaseTunnelClient instance
-func NewBaseTunnelClient(cfg *configs.ClientTunnelConfig, isAutoOpen bool) *BaseTunnelClient {
-	// Create a cancellable context and its corresponding cancel function
+func NewBaseTunnelClient(cfg *configs.ClientTunnelConfig, isRetryOpen bool) *BaseTunnelClient {
 	cancelCtx, cancelFunc := context.WithCancel(context.Background())
-	// Initialize and return a new BaseTunnelClient with the provided configuration
-	// and a new TunnelClientControl with the cancellable context
 	return &BaseTunnelClient{
-		cfg:        cfg,        // Assign the provided configuration
-		IsAutoOpen: isAutoOpen, // Set the auto-open flag
-		Tcc: &TunnelClientControl{ // Initialize the tunnel client control structure
-			cancelCtx: cancelCtx,  // Store the cancellable context
-			cancel:    cancelFunc, // Store the cancel function
+		cfg:         cfg,
+		isRetryOpen: isRetryOpen,
+		TcControl: &TunnelClientControl{
+			cancelCtx: cancelCtx,
+			cancel:    cancelFunc,
 		},
 	}
 }
@@ -147,83 +140,61 @@ func (b *BaseTunnelClient) GetName() string {
 	return "BaseTunnelClient" // Return the string "BaseTunnelClient" as the client name
 }
 
-// Open Active is OpenStream
-// Open establishes a connection using the provided session
-// It sets the session for the BaseTunnelClient and optionally opens a stream
-// if auto-open is enabled.
-//
-// Parameters:
-//
-//	session - A pointer to a smux.Session representing the multiplexed session
-//
-// Returns:
-//
-//	error - If auto-open is enabled and stream opening fails, returns the error;
-//	        otherwise returns nil
 func (b *BaseTunnelClient) Open(session *smux.Session) error {
-	// Set the session for the BaseTunnelClient
 	b.session = session
-	// Check if auto-open is enabled
-	if b.IsAutoOpen {
-		// If enabled, attempt to open a stream and return any error
-		return b.OpenStream()
-	}
-	// If auto-open is disabled, return nil
-	return nil
+	return b.OpenStream()
 }
 
 // OpenStream opens a new stream for the BaseTunnelClient
 // It handles both automatic and manual stream opening based on the IsAutoOpen flag
 func (b *BaseTunnelClient) OpenStream() error {
-	// Define an inner function that contains the actual stream opening logic
+	if b.isOpen {
+		return fmt.Errorf("tunnel is open")
+	}
 	openFunction := func() error {
-		// Try to open a new stream from the session
 		stream, err := b.session.OpenStream()
-		// Check if the session is closed, return early if true
 		if b.session.IsClosed() {
+			_ = b.session.Close()
 			return nil
 		}
-		// Handle any errors that occurred during stream opening
 		if err != nil {
 			log.Error("Active session fail %v", err)
 			return err
 		}
-		// Create a new secure channel for the stream
-		channel := transport.NewSChannel(stream, b.Tcc.cancelCtx, true)
-		// Close any existing bucket and reset it to nil
-		if b.Tcc.Bucket != nil {
-			b.Tcc.Bucket.Close()
-			b.Tcc.Bucket = nil
-		}
-		// Create a new message bucket for the channel
-		bucket := exchange.NewMessageBucket(channel, b.Tcc.cancelCtx)
-		b.Tcc.Bucket = bucket
-		// Start the bucket processing
-		b.Tcc.Bucket.Run()
-		// Check if DoOpen is properly initialized
-		if b.DoOpen == nil {
-			panic("DoOpen is nil")
-		}
-		// Execute the DoOpen callback with the new channel
+		ctx := b.TcControl.cancelCtx
+		channel := transport.NewSChannel(stream, ctx, true)
+		bucket := exchange.NewMessageBucket(channel, ctx)
+		b.TcControl.Bucket = bucket
+		bucket.Run()
 		err = b.DoOpen(channel)
 		if err != nil {
+			bucket.Close()
 			return err
 		}
-		// Wait for the bucket to complete processing
-		<-bucket.Done()
-		// Log the stream closure information
+		b.isOpen = true
+		<-b.Done()
 		log.Info("Tunnel stream close exit:%v:%v", stream.RemoteAddr(), stream.ID())
+		b.release(channel)
 		return nil
 	}
-	// Handle automatic or manual stream opening based on IsAutoOpen flag
-	if b.IsAutoOpen {
-		// If auto-open is enabled, use retry mechanism
-		b.Tcc.retry(openFunction)
-		return nil
+	// If auto-open is enabled, use retry mechanism
+	if b.isRetryOpen {
+		b.TcControl.retry(openFunction)
 	} else {
-		// Otherwise, directly execute and return the result of openFunction
 		return openFunction()
 	}
+	return nil
+}
+
+func (b *BaseTunnelClient) release(ch *transport.SChannel) {
+	if b.DoRelease != nil {
+		_ = b.DoRelease(ch)
+	}
+	_ = ch.Close()
+	b.TcControl.Cancel()
+	b.TcControl.Bucket.Close()
+	b.TcControl = nil
+	b.isOpen = false
 }
 
 // AddReadHandler adds a read handler for a specific command to the tunnel client
@@ -231,12 +202,15 @@ func (b *BaseTunnelClient) OpenStream() error {
 //   - cmd: The command type to handle
 //   - read: The read handler function that processes the command
 func (b *BaseTunnelClient) AddReadHandler(cmd exchange.Cmd, read exchange.BucketRead) {
-	// Add the handler to the tunnel's command channel
-	b.Tcc.Bucket.AddHandler(cmd, read)
+	b.TcControl.Bucket.AddHandler(cmd, read)
+}
+
+func (b *BaseTunnelClient) Done() <-chan struct{} {
+	return b.TcControl.Context().Done()
 }
 
 func (b *BaseTunnelClient) Close() {
-	b.Tcc.cancel()
+	b.TcControl.cancel()
 }
 
 // GetRegisterReq returns a RegisterReqAndRsp struct with configuration data from the BaseTunnelClient
@@ -253,28 +227,23 @@ func (b *BaseTunnelClient) GetRegisterReq() exchange.RegisterReqAndRsp {
 // It sends a registration request and processes the response
 // Returns the registration result or an error if any step fails
 func (b *BaseTunnelClient) Register(req exchange.InBound) (*exchange.RegisterReqAndRsp, error) {
-	// Get the registration request from the client
 	if req == nil {
 		req = b.GetRegisterReq()
 	}
-	// Sync push the request to the TCC bucket and get the response
-	p, err := b.Tcc.Bucket.SyncPushWithRequest(req)
+	p, err := b.TcControl.Bucket.SyncPushWithRequest(req)
 	if err != nil {
 		// Return error if the request fails
 		return nil, err
 	}
-	// Check if the response code indicates success
 	if p.RspCode != exchange.RspSuccess {
 		// Return error if the response code is not success
 		return nil, errors.New(fmt.Sprintf("register error: %d", p.RspCode))
 	}
-	// Parse the response data into RegisterReqAndRsp struct
 	result, err := exchange.Parse[exchange.RegisterReqAndRsp](p.Data)
 	if err != nil {
 		// Return error if parsing fails
 		return nil, err
 	}
-	// Return the parsed result
 	return result, nil
 }
 
@@ -290,14 +259,11 @@ func (b *BaseTunnelClient) Register(req exchange.InBound) (*exchange.RegisterReq
 //
 //	error: Any error that occurred during the registration process, or nil if successful
 func (b *BaseTunnelClient) AsyncRegister(req exchange.InBound, readCallBack exchange.BucketRead) error {
-	// Create a new registration request using the client's configuration
 	if req == nil {
 		req = b.GetRegisterReq()
 	}
-	// Register the callback handler for the specific command type in the bucket
-	b.Tcc.Bucket.AddHandler(req.Cmd(), readCallBack)
-	// Push the registration request to the server
-	return b.Tcc.Bucket.PushWitchRequest(req)
+	b.TcControl.Bucket.AddHandler(req.Cmd(), readCallBack)
+	return b.TcControl.Bucket.PushWitchRequest(req)
 }
 
 // TunnelsClient at all tunnel tunnel by map.

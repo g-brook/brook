@@ -9,7 +9,7 @@ import (
 )
 
 // BucketRead is a function type that takes a pointer to a Protocol struct and an io.ReadWriteCloser as parameters
-type BucketRead func(p *Protocol, rw io.ReadWriteCloser)
+type BucketRead func(p *Protocol, rw io.ReadWriteCloser) error
 
 // MessageBucket is a struct that contains a BytesBucket, a channel for pushing Protocol structs, a map of Cmd to BucketRead functions, and a default BucketRead function
 type MessageBucket struct {

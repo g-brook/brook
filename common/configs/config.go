@@ -48,9 +48,9 @@ type ClientTunnelConfig struct {
 	TunnelType   utils.TunnelType `json:"type"`
 	LocalAddress string           `json:"localAddress"`
 	ProxyId      string           `json:"ProxyId"`
-	RemotePort   int
 	//default 1500
-	UdpSize int `json:"udpSize"`
+	UdpSize    int `json:"udpSize"`
+	RemotePort int
 }
 
 // GetServerConfig

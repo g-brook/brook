@@ -17,24 +17,16 @@ import (
 	"github.com/brook/common/utils"
 )
 
-// init function is called automatically when the package is initialized
-// It registers a new HTTP tunnel client with the tunnel client registry
-func init() {
-	// Register a new HTTP tunnel client with the utils.Http type identifier
-	// The provided function is a factory that creates and configures a new HttpTunnelClient
-	clis.RegisterTunnelClient(utils.Http, func(config *configs.ClientTunnelConfig) clis.TunnelClient {
-		// Create a new base tunnel client with the provided configuration and set isHttp to true
-		tunnelClient := clis.NewBaseTunnelClient(config, true)
-		// Create a new HttpTunnelClient embedding the base tunnel client
-		client := HttpTunnelClient{
-			BaseTunnelClient: tunnelClient,
-		}
-		// Assign the initOpen method to the DoOpen function pointer of the base tunnel client
-		// This method will be called when the tunnel is opened
-		tunnelClient.DoOpen = client.initOpen
-		// Return a pointer to the newly created HTTP tunnel client
-		return &client
-	})
+func NewHttpTunnelClient(config *configs.ClientTunnelConfig) *HttpTunnelClient {
+	tunnelClient := clis.NewBaseTunnelClient(config, true)
+	// Create a new HttpTunnelClient embedding the base tunnel client
+	client := HttpTunnelClient{
+		BaseTunnelClient: tunnelClient,
+	}
+	// Assign the initOpen method to the DoOpen function pointer of the base tunnel client
+	// This method will be called when the tunnel is opened
+	tunnelClient.DoOpen = client.initOpen
+	return &client
 }
 
 // HttpTunnelClient is a tunnel client that handles HTTP connections.
@@ -53,7 +45,7 @@ func (h *HttpTunnelClient) GetName() string {
 //
 // Returns:
 //   - error: An error if the registration fails.
-func (h *HttpTunnelClient) initOpen(sch *transport.SChannel) error {
+func (h *HttpTunnelClient) initOpen(*transport.SChannel) error {
 	h.BaseTunnelClient.AddReadHandler(exchange.WorkerConnReq, h.bindHandler)
 	rsp, err := h.Register(h.GetRegisterReq())
 	if err != nil {
@@ -66,7 +58,7 @@ func (h *HttpTunnelClient) initOpen(sch *transport.SChannel) error {
 }
 
 // bindHandler handles the binding of HTTP tunnel client requests
-func (h *HttpTunnelClient) bindHandler(_ *exchange.Protocol, rw io.ReadWriteCloser) {
+func (h *HttpTunnelClient) bindHandler(_ *exchange.Protocol, rw io.ReadWriteCloser) error {
 	// closeConn is a helper function to close network connections
 	closeConn := func(conn net.Conn) {
 		if conn != nil {
@@ -140,8 +132,8 @@ func (h *HttpTunnelClient) bindHandler(_ *exchange.Protocol, rw io.ReadWriteClos
 	for {
 		select {
 		// Check for context cancellation
-		case <-h.Tcc.Context().Done():
-			return
+		case <-h.TcControl.Context().Done():
+			return nil
 		default:
 		}
 		// Process next request

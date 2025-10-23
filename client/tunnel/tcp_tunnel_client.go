@@ -1,6 +1,7 @@
 package tunnel
 
 import (
+	"fmt"
 	"io"
 	"net"
 	"time"
@@ -44,11 +45,17 @@ func (t *TcpTunnelClient) initOpen(ch *transport.SChannel) error {
 		_ = ch.Close()
 		return err
 	}
-	err = t.AsyncRegister(t.GetRegisterReq(), func(p *exchange.Protocol, rw io.ReadWriteCloser) {
+	err = t.AsyncRegister(t.GetRegisterReq(), func(p *exchange.Protocol, rw io.ReadWriteCloser) error {
 		log.Info("Connection local address success then Client to server register success:%v", t.GetCfg().LocalAddress)
-		errors := aio.Pipe(ch, localConnection)
-		if len(errors) > 0 {
-			log.Error("Pipe error %v", errors)
+		if p.IsSuccess() {
+			errors := aio.Pipe(ch, localConnection)
+			if len(errors) > 0 {
+				log.Error("Pipe error %v", errors)
+			}
+			return nil
+		} else {
+			log.Error("Connection local address success then Client to server register fail:%v", t.GetCfg().LocalAddress)
+			return fmt.Errorf("register fail")
 		}
 	})
 	if err != nil {

@@ -11,7 +11,7 @@
   "tunnels": [
     {
       "type": "tcp",
-      "localAddress": "127.0.0.1:3306",
+      "localAddress": "172.16.70.107:2222",
       "ProxyId": "test"
     }
   ]
