@@ -1,10 +1,10 @@
 package exchange
 
-type WorkConnReqByServer struct {
+type WorkConnReq struct {
 	ProxyId    string `json:"proxy_id"`
 	RemotePort int    `json:"remote_port"`
 }
 
-func (r *WorkConnReqByServer) Cmd() Cmd {
+func (r *WorkConnReq) Cmd() Cmd {
 	return WorkerConnReq
 }

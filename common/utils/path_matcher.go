@@ -44,6 +44,7 @@ func (r *PathMatcher) AddPathMatcher(path string, handler interface{}) {
 				children:   make([]*node, 0),             // Initialize empty children slice
 				isParam:    strings.HasPrefix(part, ":"), // Check if it's a parameter
 				isWildcard: strings.HasPrefix(part, "*"), // Check if it's a wildcard
+				handler:    handler,
 			}
 			// Add the new child to current node's children
 			cur.children = append(cur.children, child)

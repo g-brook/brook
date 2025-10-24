@@ -28,7 +28,7 @@ func NewResources(size int, proxyId string, remotePort int, getManager func() tr
 func (htl *Resources) createConnection() error {
 	manager := htl.getManager()
 	if manager != nil {
-		req := &exchange.WorkConnReqByServer{
+		req := &exchange.WorkConnReq{
 			ProxyId:    htl.proxyId,
 			RemotePort: htl.remotePort,
 		}

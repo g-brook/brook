@@ -11,7 +11,7 @@ import (
 )
 
 type LocalTunnelConfig struct {
-	configs hash.SyncMap[string, *ConfigNode]
+	configs *hash.SyncMap[string, *ConfigNode]
 }
 
 // GetConfig retrieves a server tunnel configuration by proxy ID
@@ -26,27 +26,42 @@ func (receiver *LocalTunnelConfig) GetConfig(proxyId string) *ConfigNode {
 	return load
 }
 
+func (receiver *LocalTunnelConfig) UpdateConfig(proxyId string) *ConfigNode {
+	cfg := sql.GetProxyConfigByProxyId(proxyId)
+	if cfg == nil {
+		return nil
+	}
+	config := format(cfg)
+	if config != nil {
+		receiver.configs.Store(proxyId, &ConfigNode{
+			config: config,
+			state:  false,
+		})
+	}
+	return receiver.GetConfig(proxyId)
+}
+
 func NewLocalTunnelConfig() *LocalTunnelConfig {
 	return &LocalTunnelConfig{
-		configs: hash.SyncMap[string, *ConfigNode]{},
+		configs: hash.NewSyncMap[string, *ConfigNode](),
 	}
 }
 
 func InitTunnelConfig(sc *sf.ServerConfig) {
 	var ltc = NewLocalTunnelConfig()
-	for _, item := range GetTunnelConfig(sc) {
+	for _, item := range getTunnelConfig(sc) {
 		ltc.configs.Store(item.Id, &ConfigNode{
 			config: item,
 			state:  false,
 		})
 	}
-	tunnelAPI = ltc
+	CFM.Running(ltc)
 }
 
 // GetTunnelConfig retrieves the server tunnel configuration
 // This function is used to obtain the configuration settings for establishing a server tunnel
 // It returns a ServerTunnelConfig struct which contains all necessary parameters for tunnel setup
-func GetTunnelConfig(sc *sf.ServerConfig) []*sf.ServerTunnelConfig {
+func getTunnelConfig(sc *sf.ServerConfig) []*sf.ServerTunnelConfig {
 	if !sc.EnableWeb {
 		return sc.Tunnel
 	}
@@ -61,22 +76,13 @@ func GetTunnelConfig(sc *sf.ServerConfig) []*sf.ServerTunnelConfig {
 	return list
 }
 
-func GetTunnelConfigByProxy(proxyId string) *sf.ServerTunnelConfig {
-	proxyConfig := sql.GetAllProxyConfigByProxyId(proxyId)
-	if proxyConfig == nil {
-		return nil
-	}
-	return format(proxyConfig)
-
-}
-
 func getTunnelWebConfig(stc *sf.ServerTunnelConfig) bool {
 	config := sql.GetWebProxyConfig(stc.Id)
 	if config != nil {
 		proxy := config.Proxy
 		stc.KeyFile = config.KeyFile
 		stc.CertFile = config.CertFile
-		_ = json.Unmarshal([]byte(proxy), &stc.Proxy)
+		_ = json.Unmarshal([]byte(proxy), &stc.Http)
 		return true
 	}
 	return false

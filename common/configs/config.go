@@ -35,7 +35,7 @@ type ServerTunnelConfig struct {
 	Type     utils.TunnelType  `json:"type"`
 	KeyFile  string            `json:"keyfile"`
 	CertFile string            `json:"certFile"`
-	Proxy    []HttpRunnelProxy `json:"proxy"`
+	Http     []HttpRunnelProxy `json:"http"`
 }
 
 type HttpRunnelProxy struct {
@@ -47,7 +47,8 @@ type HttpRunnelProxy struct {
 type ClientTunnelConfig struct {
 	TunnelType   utils.TunnelType `json:"type"`
 	LocalAddress string           `json:"localAddress"`
-	ProxyId      string           `json:"ProxyId"`
+	ProxyId      string           `json:"proxyId"`
+	HttpId       string           `json:"httpId"`
 	//default 1500
 	UdpSize    int `json:"udpSize"`
 	RemotePort int

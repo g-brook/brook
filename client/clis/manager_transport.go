@@ -51,11 +51,7 @@ func (b *managerTransport) Read(r *exchange.Protocol, cct *ClientControl) error 
 		cli.UpdateSpell(endTime - startTime)
 		return nil
 	}
-	message, ok := b.commands[r.Cmd]
-	if ok {
-		return message(r)
-	}
-	return nil
+	return b.PushMessage(r)
 }
 
 // NewManagerTransport This function creates a new managerTransport object and returns it
@@ -98,6 +94,14 @@ func (b *managerTransport) BindUnId(unId string) {
 	b.UnId = unId
 }
 
-func (b *managerTransport) AddMessage(cmd exchange.Cmd, notify CmdNotify) {
+func (b *managerTransport) AddMessageNotify(cmd exchange.Cmd, notify CmdNotify) {
 	b.commands[cmd] = notify
+}
+
+func (b *managerTransport) PushMessage(r *exchange.Protocol) error {
+	message, ok := b.commands[r.Cmd]
+	if ok {
+		return message(r)
+	}
+	return nil
 }

@@ -16,8 +16,6 @@ import (
 	"github.com/brook/server/tunnel/tcp"
 )
 
-var tunnelAPI TunnelConfigApi
-
 var servers *hash.SyncMap[string, tunnel.TunnelServer]
 
 func init() {
@@ -28,7 +26,7 @@ func init() {
 // OpenTunnelServer open tcp tunnel server
 // This function opens a tunnel server based on the request parameters.
 func OpenTunnelServer(request exchange.OpenTunnelReq, manager Channel) (int, error) {
-	cfgNode := tunnelAPI.GetConfig(request.ProxyId)
+	cfgNode := CFM.ConfigApi.GetConfig(request.ProxyId)
 	if cfgNode == nil {
 		return 0, fmt.Errorf("not found proxy id %v", request.ProxyId)
 	}
@@ -37,16 +35,22 @@ func OpenTunnelServer(request exchange.OpenTunnelReq, manager Channel) (int, err
 		t.PutManager(manager)
 		return cfgNode.config.Port, nil
 	} else {
-		i, err := running(cfgNode.config)
+		baseServer, err := running(cfgNode.config)
+		if err != nil {
+			return 0, err
+		}
 		t, b := servers.Load(cfgNode.config.Id)
 		if b {
+			CFM.AddListen(cfgNode.config.Id, func(cfg *ConfigNode) {
+				baseServer.UpdateConfig(cfg.config)
+			})
 			t.PutManager(manager)
 		}
-		return i, err
+		return baseServer.Port(), err
 	}
 }
 
-func running(config *configs.ServerTunnelConfig) (int, error) {
+func running(config *configs.ServerTunnelConfig) (*tunnel.BaseTunnelServer, error) {
 	baseServer := tunnel.NewBaseTunnelServer(config)
 	var server tunnel.TunnelServer
 	var netWork utils.Network
@@ -60,16 +64,16 @@ func running(config *configs.ServerTunnelConfig) (int, error) {
 		server = http.NewHttpTunnelServer(baseServer)
 		netWork = utils.NetworkTcp
 	} else {
-		return 0, fmt.Errorf("not support tunnel type %v", config.Type)
+		return nil, fmt.Errorf("not support tunnel type %v", config.Type)
 	}
 	//Start the server.
 	err := server.Start(netWork)
 	if err != nil {
 		//Release the port if the server fails to start.
-		return 0, err
+		return nil, err
 	}
 	servers.Store(config.Id, server)
-	return config.Port, nil
+	return baseServer, nil
 }
 
 type PortPool struct {

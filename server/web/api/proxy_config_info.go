@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 
 	"github.com/brook/server/metrics"
+	"github.com/brook/server/tunnel/base"
 	"github.com/brook/server/web/errs"
 	"github.com/brook/server/web/sql"
 )
@@ -74,7 +75,7 @@ func addWebConfigs(req *Request[WebConfigInfo]) *Response {
 		return NewResponseFail(errs.CodeSysErr, "ProxyId is empty")
 	}
 	if body.Proxy == nil || len(body.Proxy) == 0 {
-		return NewResponseFail(errs.CodeSysErr, "Proxy is empty")
+		return NewResponseFail(errs.CodeSysErr, "Http is empty")
 	}
 	config := sql.GetWebProxyConfig(body.RefProxyId)
 	var err error
@@ -86,6 +87,7 @@ func addWebConfigs(req *Request[WebConfigInfo]) *Response {
 	if err != nil {
 		return NewResponseFail(errs.CodeSysErr, "Add web config failed")
 	}
+	base.CFM.Push(body.RefProxyId)
 	return NewResponseSuccess(nil)
 }
 

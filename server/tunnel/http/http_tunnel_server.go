@@ -51,16 +51,20 @@ func NewHttpTunnelServer(server *tunnel.BaseTunnelServer) *HttpTunnelServer {
 		proxyToConn:      make(map[string]map[string]*HttpTracker),
 	}
 	server.DoStart = tunnelServer.startAfter
+	server.UpdateConfigFun = func(cfg *configs.ServerTunnelConfig) {
+		formatCfg(cfg, tunnelServer)
+	}
 	server.AddEvent(tunnel.Unregister, tunnelServer.unRegisterConn)
-	formatCfg(server.Cfg, tunnelServer)
+	server.UpdateConfig(server.Cfg)
 	return tunnelServer
 }
 
 // addRoute is a function that adds route information to the HttpTunnelServer. It
 func formatCfg(cfg *configs.ServerTunnelConfig, this *HttpTunnelServer) {
-	for _, proxy := range cfg.Proxy {
-		AddRouteInfo(proxy.Id, proxy.Domain, proxy.Paths, this.getProxyConnection)
-		this.proxyToConn[proxy.Id] = make(map[string]*HttpTracker, 100)
+	RouteClean()
+	for _, httpJson := range cfg.Http {
+		AddRouteInfo(httpJson.Id, httpJson.Domain, httpJson.Paths, this.getProxyConnection)
+		this.proxyToConn[httpJson.Id] = make(map[string]*HttpTracker, 100)
 	}
 
 	if cfg.Type == utils.Https {
@@ -92,7 +96,7 @@ func loadTls(cfg *configs.ServerTunnelConfig, this *HttpTunnelServer) error {
 // verifyCfg is a function that verifies the configuration of the HttpTunnelServer. It
 // It returns an error if the configuration is invalid.
 func verifyCfg(cfg *configs.ServerTunnelConfig) error {
-	if cfg.Proxy == nil {
+	if cfg.Http == nil {
 		log.Fatal("proxy is nil")
 		return errors.New("proxy is nil")
 	}
@@ -106,7 +110,7 @@ func verifyCfg(cfg *configs.ServerTunnelConfig) error {
 			return errors.New("KeyFile is nil")
 		}
 	}
-	for _, proxy := range cfg.Proxy {
+	for _, proxy := range cfg.Http {
 		if proxy.Id == "" {
 			log.Fatal("proxy.id is nil")
 			return errors.New("proxy.id is nil")
@@ -125,8 +129,8 @@ func verifyCfg(cfg *configs.ServerTunnelConfig) error {
 	return nil
 }
 
-// getProxyConnection is a function that returns a net.Conn object based on the proxyId. It
-// It returns an error if the proxyId is not found.
+// getProxyConnection is a function that returns a net.Conn object based on the httpId. It
+// It returns an error if the httpId is not found.
 func (htl *HttpTunnelServer) getProxyConnection(proxyId string, reqId int64) (workConn net.Conn, err error) {
 	channelIds, ok := htl.proxyToConn[proxyId]
 	if !ok {
@@ -234,14 +238,14 @@ func (htl *HttpTunnelServer) getRoute(req *http.Request) (*RouteInfo, error) {
 
 // RegisterConn is a method of HttpTunnelServer, which is used to register a connection.
 func (htl *HttpTunnelServer) RegisterConn(ch Channel, request exchange.TRegister) {
-	if request.GetProxyId() == "" {
-		log.Warn("Register http tunnel, but It' proxyId is nil")
+	if request.GetProxyId() == "" || request.GetHttpId() == "" {
+		log.Warn("Register http tunnel, but It' httpId or httpId is nil")
 		return
 	}
 	htl.registerLock.Lock()
 	htl.BaseTunnelServer.RegisterConn(ch, request)
-	log.Info("Register http tunnel, proxyId: %s", request.GetProxyId())
-	proxies, ok := htl.proxyToConn[request.GetProxyId()]
+	log.Info("Register http tunnel, httpId: %s,%s", request.GetProxyId(), request.GetHttpId())
+	proxies, ok := htl.proxyToConn[request.GetHttpId()]
 	if ok {
 		tracker := NewHttpTracker(ch)
 		proxies[ch.GetId()] = tracker
@@ -250,13 +254,13 @@ func (htl *HttpTunnelServer) RegisterConn(ch Channel, request exchange.TRegister
 			_ = htl.createConn(ch)
 		}()
 	} else {
-		log.Warn("Register %V not exists by http tunnelServer.", request.GetProxyId())
+		log.Warn("Register %v:%v not exists by http tunnelServer.", request.GetProxyId(), request.GetHttpId())
 	}
 	htl.registerLock.Unlock()
 }
 
 func (htl *HttpTunnelServer) createConn(ch Channel) (err error) {
-	req := &exchange.WorkConnReqByServer{
+	req := &exchange.WorkConnReq{
 		ProxyId:    htl.Cfg.Id,
 		RemotePort: htl.Cfg.Port,
 	}

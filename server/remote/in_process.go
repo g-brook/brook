@@ -97,6 +97,6 @@ func openTunnelProcess(req exchange.OpenTunnelReq, ch transport.Channel) (any, e
 	}
 	return exchange.OpenTunnelResp{
 		UnId:       req.UnId,
-		TunnelPort: openPort,
+		RemotePort: openPort,
 	}, nil
 }

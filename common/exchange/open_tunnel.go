@@ -10,7 +10,7 @@ func (o OpenTunnelReq) Cmd() Cmd {
 }
 
 type OpenTunnelResp struct {
-	TunnelPort int    `json:"port"`
+	RemotePort int    `json:"remotePort"`
 	UnId       string `json:"unId"`
 }
 

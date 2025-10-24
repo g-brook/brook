@@ -9,6 +9,6 @@ import (
 func LoadTunnel() {
 	clients := clis.GetTunnelClients()
 	for k, _ := range clients {
-		log.Info("Loading tunnel  %v client,", k)
+		log.Info("Loading tunnel  %v client", k)
 	}
 }

@@ -128,7 +128,7 @@ func NewHttpProxy(fun RouteFunction) *Proxy {
 				case error:
 					return nil, v
 				case *RouteInfo:
-					return v.getProxyConnection(v.proxyId, id.(int64))
+					return v.getProxyConnection(v.httpId, id.(int64))
 				}
 				return nil, nil
 			},

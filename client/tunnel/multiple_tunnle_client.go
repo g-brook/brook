@@ -46,9 +46,9 @@ func (m *MultipleTunnelClient) GetName() string {
 }
 
 func (m *MultipleTunnelClient) messageLister() {
-	clis.ManagerTransport.AddMessage(exchange.WorkerConnReq, func(r *exchange.Protocol) error {
+	clis.ManagerTransport.AddMessageNotify(exchange.WorkerConnReq, func(r *exchange.Protocol) error {
 		go func() {
-			reqWorder, _ := exchange.Parse[exchange.WorkConnReqByServer](r.Data)
+			reqWorder, _ := exchange.Parse[exchange.WorkConnReq](r.Data)
 			config := clis.ManagerTransport.GetConfig(reqWorder.ProxyId)
 			if config == nil {
 				log.Warn("config is nil %v", reqWorder.ProxyId)
@@ -98,13 +98,27 @@ func (m *MultipleTunnelClient) Open(session *smux.Session) error {
 		log.Error("Open %v tunnel server error %v", m.currentConfig.ProxyId, rsp.RspMsg)
 		return err
 	}
-	parse, _ := exchange.Parse[exchange.OpenTunnelResp](rsp.Data)
+	rspObj, _ := exchange.Parse[exchange.OpenTunnelResp](rsp.Data)
 	clis.ManagerTransport.PutConfig(m.currentConfig)
 	m.sessions.Store(m.currentConfig.ProxyId, session)
-	log.Info("Open %v tunnel client success:%v:%v", m.currentConfig.TunnelType, m.currentConfig.ProxyId, parse.TunnelPort)
+	log.Info("Open %v tunnel client success:%v:%v", m.currentConfig.TunnelType, m.currentConfig.ProxyId, rspObj.RemotePort)
+	//Only http client open session.
+	m.OnlyOpenHttp(req.ProxyId, rspObj.RemotePort)
 	return nil
 }
 
 func (m *MultipleTunnelClient) Close() {
 
+}
+
+func (m *MultipleTunnelClient) OnlyOpenHttp(proxyId string, remotePort int) {
+	if m.currentConfig.TunnelType != utils.Http {
+		return
+	}
+	req := &exchange.WorkConnReq{
+		ProxyId:    proxyId,
+		RemotePort: remotePort,
+	}
+	request, _ := exchange.NewRequest(req)
+	_ = clis.ManagerTransport.PushMessage(request)
 }

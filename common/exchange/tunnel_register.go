@@ -9,6 +9,8 @@ type TRegister interface {
 
 	GetProxyId() string
 
+	GetHttpId() string
+
 	GetTunnelPort() int
 
 	GetBindId() string
@@ -26,7 +28,10 @@ type RegisterReqAndRsp struct {
 	BindId string `json:"bind_id"`
 
 	//proxy id. only http or http.
-	ProxyId string `json:"proxy_id"`
+	HttpId string `json:"http_id"`
+
+	//proxyId.
+	ProxyId string `json:"proxyId"`
 }
 
 func (r RegisterReqAndRsp) GetTunnelPort() int {
@@ -37,12 +42,16 @@ func (r RegisterReqAndRsp) GetBindId() string {
 	return r.BindId
 }
 
-func (r RegisterReqAndRsp) GetProxyId() string {
-	return r.ProxyId
+func (r RegisterReqAndRsp) GetHttpId() string {
+	return r.HttpId
 }
 
 func (r RegisterReqAndRsp) GetTunnelType() utils.TunnelType {
 	return r.TunnelType
+}
+
+func (r RegisterReqAndRsp) GetProxyId() string {
+	return r.ProxyId
 }
 
 type UdpRegisterReqAndRsp struct {

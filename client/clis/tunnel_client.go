@@ -220,6 +220,7 @@ func (b *BaseTunnelClient) GetRegisterReq() exchange.RegisterReqAndRsp {
 		TunnelPort: b.GetCfg().RemotePort, // Set the tunnel port from configuration
 		ProxyId:    b.GetCfg().ProxyId,    // Set the proxy identifier from configuration
 		TunnelType: b.GetCfg().TunnelType, // Set the tunnel type from configuration
+		HttpId:     b.GetCfg().HttpId,
 	}
 }
 

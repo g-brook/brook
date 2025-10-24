@@ -10,7 +10,7 @@ type ProxyConfig struct {
 	State      int    `db:"state" json:"state"`
 	RunState   int    `db:"run_state"`
 	IsRunning  bool   `json:"isRunning"`
-	Runtime    string `json:"defin"`
+	Runtime    string `json:"runtime"`
 }
 
 func AddProxyConfig(p ProxyConfig) error {
@@ -44,7 +44,7 @@ func GetAllProxyConfig() []*ProxyConfig {
 	return list
 }
 
-func GetAllProxyConfigByProxyId(proxyId string) *ProxyConfig {
+func GetProxyConfigByProxyId(proxyId string) *ProxyConfig {
 	res, err := Query("select idx,name, tag, remote_port, proxy_id, protocol,state,run_state from proxy_config where state = 1 and proxy_id = ?", proxyId)
 	if err != nil {
 		return nil

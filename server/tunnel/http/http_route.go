@@ -3,11 +3,14 @@ package http
 import (
 	"net"
 	"net/http"
+	"sync"
 
 	"github.com/brook/common/utils"
 )
 
-var Routes []*RouteInfo
+var routes []*RouteInfo
+
+var lock sync.RWMutex
 
 // ProxyConnectionFunction is a function that returns a net.Conn
 type ProxyConnectionFunction func(proxyId string, reqId int64) (workConn net.Conn, err error)
@@ -17,7 +20,7 @@ type RouteFunction func(request *http.Request) (*RouteInfo, error)
 
 // RouteInfo is a struct that holds information about a route
 type RouteInfo struct {
-	proxyId string
+	httpId string
 
 	matcher *utils.PathMatcher
 
@@ -26,10 +29,12 @@ type RouteInfo struct {
 	getProxyConnection ProxyConnectionFunction
 }
 
-// AddRouteInfo adds a route to the Routes slice
-func AddRouteInfo(proxyId string, domain string, paths []string, fun ProxyConnectionFunction) {
+// AddRouteInfo adds a route to the routes slice
+func AddRouteInfo(httpId string, domain string, paths []string, fun ProxyConnectionFunction) {
+	lock.Lock()
+	defer lock.Unlock()
 	info := &RouteInfo{
-		proxyId:            proxyId,
+		httpId:             httpId,
 		matcher:            utils.NewPathMatcher(),
 		getProxyConnection: fun,
 		domain:             domain,
@@ -37,13 +42,21 @@ func AddRouteInfo(proxyId string, domain string, paths []string, fun ProxyConnec
 	for _, path := range paths {
 		info.matcher.AddPathMatcher(path, info)
 	}
-	Routes = append(Routes, info)
+	routes = append(routes, info)
+}
+
+func RouteClean() {
+	lock.Lock()
+	defer lock.Unlock()
+	routes = routes[:0]
 }
 
 // GetRouteInfo returns the RouteInfo for a given path
 func GetRouteInfo(domain string, path string) *RouteInfo {
+	lock.RLock()
+	defer lock.RUnlock()
 	var infos []*RouteInfo
-	for _, info := range Routes {
+	for _, info := range routes {
 		if !utils.MatchDomain(info.domain, domain) {
 			continue
 		}

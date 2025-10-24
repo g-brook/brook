@@ -28,21 +28,24 @@ var (
 
 type Event func(ch transport.Channel)
 
+type UpdateConfigFunction func(cfg *configs.ServerTunnelConfig)
+
 type BaseTunnelServer struct {
 	srv.BaseServerHandler
-	port           int
-	Cfg            *configs.ServerTunnelConfig
-	Server         *srv.Server
-	DoStart        func() error
-	TunnelChannel  map[string]transport.Channel
-	ManagerChannel *hash.SyncSet[transport.Channel]
-	openCh         chan error
-	openChOnce     sync.Once
-	handlers       map[EventType]Event
-	lock           sync.Mutex
-	closeCtx       context.Context
-	trafficMetrics *metrics.TunnelTraffic
-	runtime        time.Time
+	port            int
+	Cfg             *configs.ServerTunnelConfig
+	Server          *srv.Server
+	DoStart         func() error
+	TunnelChannel   map[string]transport.Channel
+	ManagerChannel  *hash.SyncSet[transport.Channel]
+	openCh          chan error
+	openChOnce      sync.Once
+	handlers        map[EventType]Event
+	lock            sync.Mutex
+	closeCtx        context.Context
+	trafficMetrics  *metrics.TunnelTraffic
+	runtime         time.Time
+	UpdateConfigFun UpdateConfigFunction
 }
 
 func (b *BaseTunnelServer) Id() string {
@@ -126,11 +129,11 @@ func (b *BaseTunnelServer) Start(network utils.Network) error {
 			b.openCh <- err
 		}
 	}()
-	b.runtime = time.Now()
 	if err := <-b.openCh; err != nil {
 		return err
 	}
 	if b.DoStart != nil {
+		b.runtime = time.Now()
 		b.trafficMetrics = metrics.M.PutServer(b)
 		return b.DoStart()
 	}
@@ -167,6 +170,11 @@ func (b *BaseTunnelServer) unRegister(ch transport.Channel) {
 	handler := b.handlers[Unregister]
 	if handler != nil {
 		handler(ch)
+	}
+}
+func (b *BaseTunnelServer) UpdateConfig(config *configs.ServerTunnelConfig) {
+	if b.UpdateConfigFun != nil {
+		b.UpdateConfigFun(config)
 	}
 }
 

@@ -10,9 +10,10 @@
   },
   "tunnels": [
     {
-      "type": "tcp",
-      "localAddress": "172.16.70.107:2222",
-      "ProxyId": "test"
+      "type": "http",
+      "localAddress": "localhost:8080",
+      "proxyId": "test2",
+      "httpId": "aaa3333"
     }
   ]
 }
