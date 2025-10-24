@@ -1,0 +1,53 @@
+<!--
+  - Copyright ©  sixh sixh@apache.org
+  -
+  - Licensed under the Apache License, Version 2.0 (the "License");
+  - you may not use this file except in compliance with the License.
+  - You may obtain a copy of the License at
+  -
+  -     http://www.apache.org/licenses/LICENSE-2.0
+  -
+  - Unless required by applicable law or agreed to in writing, software
+  - distributed under the License is distributed on an "AS IS" BASIS,
+  - WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  - See the License for the specific language governing permissions and
+  - limitations under the License.
+  -->
+
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0,0,360,130" preserveAspectRatio="xMidYMid meet">
+    <defs>
+        <style>
+            .title {
+            font-family: Orbitron, sans-serif;
+            font-weight: 700;
+            font-size: 80px;
+            fill: #000000;
+            /* 黑色主字 */
+            stroke: #cccccc;
+            /* 浅灰描边 */
+            stroke-width: 2px;
+            paint-order: stroke fill;
+            }
+        </style>
+        <!-- 渐变用于装饰线 -->
+        <linearGradient id="lineGrad" x1="0" x2="1" y1="0" y2="0">
+            <stop offset="0" stop-color="#999" />
+            <stop offset="0.5" stop-color="#000" />
+            <stop offset="1" stop-color="#999" />
+        </linearGradient>
+    </defs>
+
+    <!-- 背景透明 -->
+    <rect width="100%" height="100%" fill="transparent" />
+
+    <!-- 左侧图形（你的路径） -->
+    <g transform="translate(0,0)">
+        <path stroke-width="24" stroke="#00c6ff" fill="none"
+            d="m30,30l0,80l40,0q30,0 30,-30q0,-30 -30,-30l-40,0l0,-20z" />
+    </g>
+
+    <!-- 右侧文字 -->
+    <g transform="translate(120,110)">
+        <text class="title" x="0" y="0">Brook</text>
+    </g>
+</svg>

@@ -1,0 +1,131 @@
+/*
+ * Copyright ©  sixh sixh@apache.org
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+@font-face {
+  font-family: "iconfont"; /* Project id 5010444 */
+  src: url('iconfont.woff2?t=1760776984443') format('woff2'),
+       url('iconfont.woff?t=1760776984443') format('woff'),
+       url('iconfont.ttf?t=1760776984443') format('truetype');
+}
+
+.iconfont {
+  font-family: "iconfont" !important;
+  font-size: 16px;
+  font-style: normal;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.brook-token:before {
+  content: "\e602";
+}
+
+.brook-right:before {
+  content: "\e68b";
+}
+
+.brook-edit:before {
+  content: "\e6b3";
+}
+
+.brook-delete1:before {
+  content: "\e614";
+}
+
+.brook-Stop-Button:before {
+  content: "\e801";
+}
+
+.brook-web:before {
+  content: "\e6c8";
+}
+
+.brook-exclamation-circle:before {
+  content: "\e820";
+}
+
+.brook-Right-1:before {
+  content: "\e74e";
+}
+
+.brook-delete:before {
+  content: "\e687";
+}
+
+.brook-Gear-:before {
+  content: "\e643";
+}
+
+.brook-Diagram-:before {
+  content: "\e7a7";
+}
+
+.brook-technology_usb-cable:before {
+  content: "\ef49";
+}
+
+.brook-add:before {
+  content: "\e689";
+}
+
+.brook-Left-:before {
+  content: "\e742";
+}
+
+.brook-Right-:before {
+  content: "\e74c";
+}
+
+.brook-exchange:before {
+  content: "\e81d";
+}
+
+.brook-igw-f-dashboard:before {
+  content: "\e646";
+}
+
+.brook-igw-f-flow:before {
+  content: "\e649";
+}
+
+.brook-igw-f-data-2:before {
+  content: "\e65d";
+}
+
+.brook-setting:before {
+  content: "\e785";
+}
+
+.brook-caidan02:before {
+  content: "\e601";
+}
+
+.brook-arrow:before {
+  content: "\e6e9";
+}
+
+.brook-networkDiagnosis:before {
+  content: "\e834";
+}
+
+.brook-dashboard:before {
+  content: "\e618";
+}
+
+.brook-github:before {
+  content: "\e66f";
+}
+

@@ -1,0 +1,184 @@
+{
+  "id": "5010444",
+  "name": "brook",
+  "font_family": "iconfont",
+  "css_prefix_text": "brook-",
+  "description": "",
+  "glyphs": [
+    {
+      "icon_id": "9386138",
+      "name": "token",
+      "font_class": "token",
+      "unicode": "e602",
+      "unicode_decimal": 58882
+    },
+    {
+      "icon_id": "4448581",
+      "name": "right",
+      "font_class": "right",
+      "unicode": "e68b",
+      "unicode_decimal": 59019
+    },
+    {
+      "icon_id": "6652221",
+      "name": "edit",
+      "font_class": "edit",
+      "unicode": "e6b3",
+      "unicode_decimal": 59059
+    },
+    {
+      "icon_id": "18542393",
+      "name": "delete",
+      "font_class": "delete1",
+      "unicode": "e614",
+      "unicode_decimal": 58900
+    },
+    {
+      "icon_id": "24890375",
+      "name": "Stop-Button",
+      "font_class": "Stop-Button",
+      "unicode": "e801",
+      "unicode_decimal": 59393
+    },
+    {
+      "icon_id": "2142892",
+      "name": "web",
+      "font_class": "web",
+      "unicode": "e6c8",
+      "unicode_decimal": 59080
+    },
+    {
+      "icon_id": "6151282",
+      "name": "exclamation-circle",
+      "font_class": "exclamation-circle",
+      "unicode": "e820",
+      "unicode_decimal": 59424
+    },
+    {
+      "icon_id": "6802219",
+      "name": "Right-6",
+      "font_class": "Right-1",
+      "unicode": "e74e",
+      "unicode_decimal": 59214
+    },
+    {
+      "icon_id": "16615976",
+      "name": "delete",
+      "font_class": "delete",
+      "unicode": "e687",
+      "unicode_decimal": 59015
+    },
+    {
+      "icon_id": "6801516",
+      "name": "Gear-1",
+      "font_class": "Gear-",
+      "unicode": "e643",
+      "unicode_decimal": 58947
+    },
+    {
+      "icon_id": "6803375",
+      "name": "Diagram-4",
+      "font_class": "Diagram-",
+      "unicode": "e7a7",
+      "unicode_decimal": 59303
+    },
+    {
+      "icon_id": "6818254",
+      "name": "technology_usb-cable",
+      "font_class": "technology_usb-cable",
+      "unicode": "ef49",
+      "unicode_decimal": 61257
+    },
+    {
+      "icon_id": "16616101",
+      "name": "add",
+      "font_class": "add",
+      "unicode": "e689",
+      "unicode_decimal": 59017
+    },
+    {
+      "icon_id": "6802197",
+      "name": "Left-3",
+      "font_class": "Left-",
+      "unicode": "e742",
+      "unicode_decimal": 59202
+    },
+    {
+      "icon_id": "6802215",
+      "name": "Right-3",
+      "font_class": "Right-",
+      "unicode": "e74c",
+      "unicode_decimal": 59212
+    },
+    {
+      "icon_id": "6151279",
+      "name": "exchange",
+      "font_class": "exchange",
+      "unicode": "e81d",
+      "unicode_decimal": 59421
+    },
+    {
+      "icon_id": "24536689",
+      "name": "igw-f-dashboard",
+      "font_class": "igw-f-dashboard",
+      "unicode": "e646",
+      "unicode_decimal": 58950
+    },
+    {
+      "icon_id": "24536781",
+      "name": "igw-f-flow",
+      "font_class": "igw-f-flow",
+      "unicode": "e649",
+      "unicode_decimal": 58953
+    },
+    {
+      "icon_id": "27610806",
+      "name": "igw-f-data-2",
+      "font_class": "igw-f-data-2",
+      "unicode": "e65d",
+      "unicode_decimal": 58973
+    },
+    {
+      "icon_id": "10241498",
+      "name": "setting",
+      "font_class": "setting",
+      "unicode": "e785",
+      "unicode_decimal": 59269
+    },
+    {
+      "icon_id": "394269",
+      "name": "list",
+      "font_class": "caidan02",
+      "unicode": "e601",
+      "unicode_decimal": 58881
+    },
+    {
+      "icon_id": "1042279",
+      "name": "arrow",
+      "font_class": "arrow",
+      "unicode": "e6e9",
+      "unicode_decimal": 59113
+    },
+    {
+      "icon_id": "26587076",
+      "name": "networkDiagnosis",
+      "font_class": "networkDiagnosis",
+      "unicode": "e834",
+      "unicode_decimal": 59444
+    },
+    {
+      "icon_id": "6403481",
+      "name": "dashboard",
+      "font_class": "dashboard",
+      "unicode": "e618",
+      "unicode_decimal": 58904
+    },
+    {
+      "icon_id": "14401714",
+      "name": "github",
+      "font_class": "github",
+      "unicode": "e66f",
+      "unicode_decimal": 58991
+    }
+  ]
+}

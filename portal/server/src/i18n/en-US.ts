@@ -1,0 +1,581 @@
+/*
+ * Copyright ©  sixh sixh@apache.org
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+export default {
+  // Common text
+  common: {
+    loading: 'Loading...',
+    submit: 'Submit',
+    cancel: 'Cancel',
+    confirm: 'Confirm.vue',
+    save: 'Save',
+    edit: 'Edit',
+    delete: 'Delete',
+    add: 'Add',
+    create: 'Create',
+    update: 'Update',
+    search: 'Search',
+    reset: 'Reset',
+    back: 'Back',
+    next: 'Next',
+    previous: 'Previous',　
+    close: 'Close',
+    open: 'Open',
+    view: 'View',
+    manage: 'Manage',
+    settings: 'Settings',
+    help: 'Help',
+    about: 'About',
+    version: 'Version',
+    username: 'Username',
+    password: 'Password',
+    email: 'Email',
+    phone: 'Phone',
+    address: 'Address',
+    name: 'Name',
+    description: 'Description',
+    status: 'Status',
+    online: 'Online',
+    offline: 'Offline',
+    active: 'Active',
+    inactive: 'Inactive',
+    enabled: 'Enabled',
+    disabled: 'Disabled',
+    success: 'Success',
+    error: 'Error',
+    warning: 'Warning',
+    info: 'Info',
+    yes: 'Yes',
+    no: 'No',
+    all: 'All',
+    none: 'None',
+    total: 'Total',
+    count: 'Count',
+    time: 'Time',
+    date: 'Date',
+    today: 'Today',
+    yesterday: 'Yesterday',
+    tomorrow: 'Tomorrow',
+    refresh: 'Refresh',
+    export: 'Export',
+    import: 'Import',
+    download: 'Download',
+    upload: 'Upload',
+     running:'Running'
+  },
+
+  // Login page
+  login: {
+    title: 'Login to Brook Server',
+    username: 'Username',
+    password: 'Password',
+    usernamePlaceholder: 'Enter your username',
+    passwordPlaceholder: 'Enter your password',
+    loginButton: 'Login',
+    loginSuccess: 'Login successful',
+    loginFailed: 'Login failed',
+    invalidCredentials: 'Invalid username or password',
+    welcome: 'Welcome back',
+    forgotPassword: 'Forgot password?',
+    rememberMe: 'Remember me',
+    noAccount: 'Don\'t have an account?',
+    register: 'Register now'
+  },
+
+  // Initializer page
+  initializer: {
+    title: 'System Initialization',
+    subtitle: 'Why have you seen this screen?',
+    description: 'First-time setup requires creating an administrator account to initialize the system',
+    submitButton: 'Complete Initialization',
+    initSuccess: 'Initialization successful',
+    initFailed: 'Initialization failed',
+    initInProgress: 'Initializing...',
+    welcomeMessage: 'Welcome to Brook Server Management System',
+    setupInstructions: 'Please follow these steps to complete system initialization:',
+    step1: '1. Configure basic system parameters',
+    step2: '2. Set up administrator account',
+    step3: '3. Initialize database connection',
+    step4: '4. Start core services',
+    confirmPassword: 'Confirm.vue Password',
+    confirmPasswordPlaceholder: 'Please enter password again',
+    passwordRequirements: 'Password Requirements',
+    usernameRequirement: 'Username at least 3 characters',
+    passwordMatch: 'Passwords match',
+    securityNote: 'Security Note',
+    securityDescription: 'Please keep your administrator account information safe, this will be your only credential to access the system'
+  },
+
+  // Main interface
+  main: {
+    title: 'Brook Server Management',
+    welcome: 'Welcome',
+    dashboard: 'Dashboard',
+    overview: 'Overview',
+    statistics: 'Statistics',
+    quickActions: 'Quick Actions',
+    recentActivity: 'Recent Activity',
+    systemStatus: 'System Status',
+    notifications: 'Notifications',
+    profile: 'Profile',
+    logout: 'Logout',
+    switchLanguage: 'Switch Language',
+    darkMode: 'Dark Mode',
+    lightMode: 'Light Mode',
+    fullscreen: 'Fullscreen',
+    minimize: 'Minimize'
+  },
+
+  // Menu items
+  menu: {
+    dashboard: {
+      title: 'Dashboard',
+      description: 'Display the current online tunnel servers and their information'
+    },
+    tunnelConfiguration: {
+      title: 'Tunnel Configuration',
+      description: 'Manage and configure tunnel server settings'
+    },
+    mySetting: {
+      title: 'My Settings',
+      description: 'Manage your account settings and client connection configuration'
+    },
+    serverManagement: {
+      title: 'Server Management',
+      description: 'Manage all server instances'
+    },
+    userManagement: {
+      title: 'User Management',
+      description: 'Manage system users and permissions'
+    },
+    systemLogs: {
+      title: 'System Logs',
+      description: 'View system operation logs'
+    },
+    networkMonitor: {
+      title: 'Network Monitor',
+      description: 'Monitor network traffic and performance'
+    },
+    security: {
+      title: 'Security Settings',
+      description: 'Configure security policies and protection rules'
+    }
+  },
+
+  // Dashboard
+  dashboard: {
+    title: 'System Dashboard',
+    totalServers: 'Total Servers',
+    totalConnections: 'Total Connections',
+    averageResponse: 'Average Response',
+    systemHealth: 'System Health',
+    activeConnections: 'Current active connections',
+    responseTime: 'System response time',
+    healthStatus: 'Running status is good',
+    serverCards: {
+      unnamed: 'Unnamed Server',
+      port: 'Port',
+      online: 'Online',
+      realTimeMonitor: 'Real-time Monitor',
+      realTimeUpdate: 'Real-time Update',
+      connections: 'Connections',
+      responseTime: 'Response Time',
+      bandwidth: 'Bandwidth',
+      users: 'Users',
+      serverAddress: 'Server Address',
+      uptime: 'Uptime',
+      cpuUsage: 'CPU Usage',
+      memoryUsage: 'Memory Usage',
+      detailedStats: 'Detailed Statistics',
+      manage: 'Manage',
+      viewDetails: 'View Details',
+      editConfig: 'Edit Configuration',
+      restartService: 'Restart Service',
+      exportData: 'Export Data',
+      deleteServer: 'Delete Server'
+    },
+    quickActions: {
+      addServer: {
+        title: 'Add Server',
+        description: 'Configure new tunnel server',
+        button: 'Add Now'
+      },
+      systemMonitor: {
+        title: 'System Monitor',
+        description: 'View detailed monitoring reports',
+        button: 'View Report'
+      },
+      systemSettings: {
+        title: 'System Settings',
+        description: 'Configure system parameters',
+        button: 'Enter Settings'
+      }
+    },
+    emptyState: {
+      title: 'Welcome to Tunnel Management System',
+      description: 'Start configuring your first tunnel server and enjoy efficient network proxy services',
+      button: 'Create First Server'
+    },
+    charts: {
+      activeConnections: 'Active Connections',
+      traffic: 'Traffic (MB/s)',
+      connections: 'Connections',
+      serverTypes: 'Server Type Distribution'
+    }
+  },
+
+  // Configuration management
+  configuration: {
+    title: 'Configuration Management',
+    addTunnelConfig: 'Add Tunnel Configuration',
+    editTunnelConfig: 'Edit Tunnel Configuration',
+    totalConfigs: 'Total {count} configurations',
+    enabledConfigs: 'Enabled {count}',
+    serialNumber: 'Serial',
+    nameAndTag: 'Name&Tag',
+    remotePort: 'RemotePort',
+    proxyId: 'ProxyId',
+    protocol: 'Protocol',
+    status: 'Auto Start',
+    actions: 'Actions',
+    enabled: 'Enabled',
+    disabled: 'Disabled',
+    viewDetail: 'View Details',
+    edit: 'Edit',
+    delete: 'Delete',
+    noConfigurations: 'No Configurations',
+    noConfigurationsDesc: 'Click "Add Configuration" button to create your first configuration',
+    addConfiguration: 'Add Configuration'
+  },
+
+  // Server management
+  server: {
+    title: 'Server Management',
+    runtime: 'Start time',
+    list: 'Server List',
+    add: 'Add Server',
+    edit: 'Edit Server',
+    delete: 'Delete Server',
+    details: 'Server Details',
+    configuration: 'Server Configuration',
+    status: 'Server Status',
+    performance: 'Performance Monitor',
+    logs: 'Server Logs',
+    restart: 'Restart Server',
+    stop: 'Not Connected',
+    start: 'Running',
+    backup: 'Backup Configuration',
+    restore: 'Restore Configuration',
+    clone: 'Clone Server',
+    fields: {
+      name: 'Server Name',
+      type: 'Server Type',
+      host: 'Host Address',
+      port: 'Port Number',
+      protocol: 'Protocol Type',
+      status: 'Running Status',
+      uptime: 'Uptime',
+      connections: 'Connections',
+      traffic: 'Traffic Statistics',
+      cpu: 'CPU Usage',
+      memory: 'Memory Usage',
+      disk: 'Disk Usage',
+      network: 'Network Usage'
+    },
+    types: {
+      http: 'HTTP Proxy',
+      https: 'HTTPS Proxy',
+      socks5: 'SOCKS5 Proxy',
+      tcp: 'TCP Tunnel',
+      udp: 'UDP Tunnel',
+      websocket: 'WebSocket Tunnel'
+    },
+    actions: {
+      create: 'Create Server',
+      update: 'Update Configuration',
+      delete: 'Delete Server',
+      restart: 'Restart Service',
+      viewLogs: 'View Logs',
+      exportConfig: 'Export Configuration',
+      importConfig: 'Import Configuration'
+    }
+  },
+
+  // User management
+  user: {
+    title: 'User Management',
+    list: 'User List',
+    add: 'Add User',
+    edit: 'Edit User',
+    delete: 'Delete User',
+    profile: 'User Profile',
+    permissions: 'Permission Management',
+    rolesTitle: 'Role Management',
+    groups: 'User Groups',
+    activity: 'User Activity',
+    sessions: 'Session Management',
+    fields: {
+      username: 'Username',
+      email: 'Email Address',
+      fullName: 'Full Name',
+      role: 'Role',
+      status: 'Status',
+      lastLogin: 'Last Login',
+      createdAt: 'Created At',
+      updatedAt: 'Updated At',
+      permissions: 'Permissions',
+      groups: 'Groups'
+    },
+    roles: {
+      admin: 'Administrator',
+      user: 'User',
+      guest: 'Guest',
+      moderator: 'Moderator',
+      operator: 'Operator'
+    },
+    status: {
+      active: 'Active',
+      inactive: 'Inactive',
+      suspended: 'Suspended',
+      banned: 'Banned'
+    },
+    actions: {
+      createUser: 'Create User',
+      editUser: 'Edit User',
+      deleteUser: 'Delete User',
+      resetPassword: 'Reset Password',
+      changeRole: 'Change Role',
+      viewActivity: 'View Activity',
+      suspendUser: 'Suspend User',
+      activateUser: 'Activate User'
+    }
+  },
+
+  // System settings
+  settings: {
+    title: 'System Settings',
+    general: 'General Settings',
+    security: 'Security Settings',
+    network: 'Network Settings',
+    database: 'Database Settings',
+    logging: 'Logging Settings',
+    backup: 'Backup Settings',
+    notifications: 'Notification Settings',
+    appearance: 'Appearance Settings',
+    language: 'Language Settings',
+    timezone: 'Timezone Settings',
+    fields: {
+      siteName: 'Site Name',
+      siteDescription: 'Site Description',
+      adminEmail: 'Admin Email',
+      timezone: 'Timezone',
+      language: 'Default Language',
+      theme: 'Theme',
+      dateFormat: 'Date Format',
+      timeFormat: 'Time Format',
+      maxConnections: 'Max Connections',
+      connectionTimeout: 'Connection Timeout',
+      sessionTimeout: 'Session Timeout',
+      passwordPolicy: 'Password Policy',
+      twoFactorAuth: 'Two-Factor Authentication',
+      sslEnabled: 'SSL Enabled',
+      backupInterval: 'Backup Interval',
+      logLevel: 'Log Level',
+      logRetention: 'Log Retention'
+    },
+    actions: {
+      save: 'Save Settings',
+      reset: 'Reset Settings',
+      export: 'Export Settings',
+      import: 'Import Settings',
+      testConnection: 'Test Connection',
+      clearCache: 'Clear Cache',
+      restartService: 'Restart Service'
+    }
+  },
+
+  // Monitoring and statistics
+  monitoring: {
+    title: 'System Monitoring',
+    overview: 'Monitor Overview',
+    performance: 'Performance Monitor',
+    network: 'Network Monitor',
+    security: 'Security Monitor',
+    alertsTitle: 'Alert Management',
+    reports: 'Monitor Reports',
+    realTime: 'Real-time Monitor',
+    historical: 'Historical Data',
+    metrics: {
+      cpu: 'CPU Usage',
+      memory: 'Memory Usage',
+      disk: 'Disk Usage',
+      network: 'Network Usage',
+      connections: 'Connections',
+      throughput: 'Throughput',
+      latency: 'Latency',
+      errorRate: 'Error Rate',
+      uptime: 'Uptime',
+      availability: 'Availability'
+    },
+    timeRanges: {
+      realTime: 'Real-time',
+      lastHour: 'Last Hour',
+      last24Hours: 'Last 24 Hours',
+      lastWeek: 'Last Week',
+      lastMonth: 'Last Month',
+      custom: 'Custom Time'
+    },
+    alerts: {
+      high: 'High',
+      medium: 'Medium',
+      low: 'Low',
+      critical: 'Critical',
+      warning: 'Warning',
+      info: 'Info'
+    }
+  },
+
+  // Log management
+  logs: {
+    title: 'Log Management',
+    systemLogs: 'System Logs',
+    accessLogs: 'Access Logs',
+    errorLogs: 'Error Logs',
+    auditLogs: 'Audit Logs',
+    securityLogs: 'Security Logs',
+    search: 'Search Logs',
+    filter: 'Filter Logs',
+    export: 'Export Logs',
+    clear: 'Clear Logs',
+    levels: {
+      debug: 'Debug',
+      info: 'Info',
+      warn: 'Warning',
+      error: 'Error',
+      fatal: 'Fatal'
+    },
+    fields: {
+      timestamp: 'Timestamp',
+      level: 'Level',
+      message: 'Message',
+      source: 'Source',
+      user: 'User',
+      ip: 'IP Address',
+      action: 'Action',
+      result: 'Result'
+    },
+    actions: {
+      view: 'View Details',
+      download: 'Download Log',
+      archive: 'Archive Log',
+      delete: 'Delete Log'
+    }
+  },
+
+  // Error messages
+  errors: {
+    networkError: 'Network connection error',
+    serverError: 'Internal server error',
+    unauthorized: 'Unauthorized access',
+    forbidden: 'Access forbidden',
+    notFound: 'Resource not found',
+    timeout: 'Request timeout',
+    validationError: 'Data validation failed',
+    unknownError: 'Unknown error',
+    connectionFailed: 'Connection failed',
+    authenticationFailed: 'Authentication failed',
+    permissionDenied: 'Permission denied',
+    resourceNotFound: 'Resource not found',
+    operationFailed: 'Operation failed',
+    dataCorrupted: 'Data corrupted',
+    serviceUnavailable: 'Service unavailable'
+  },
+
+  // Success messages
+  success: {
+    operationCompleted: 'Operation completed',
+    dataSaved: 'Data saved',
+    configurationUpdated: 'Configuration updated',
+    userCreated: 'User created successfully',
+    userUpdated: 'User updated successfully',
+    userDeleted: 'User deleted successfully',
+    serverCreated: 'Server created successfully',
+    serverUpdated: 'Server updated successfully',
+    serverDeleted: 'Server deleted successfully',
+    settingsSaved: 'Settings saved',
+    backupCreated: 'Backup created successfully',
+    backupRestored: 'Backup restored successfully',
+    passwordChanged: 'Password changed successfully',
+    emailSent: 'Email sent successfully',
+    fileUploaded: 'File uploaded successfully',
+    dataExported: 'Data exported successfully',
+    dataImported: 'Data imported successfully'
+  },
+
+  // Confirmation dialogs
+  confirmations: {
+    confirmTips: 'Confirm Tips',
+    confirmText: 'Are you sure you want to perform this action?',
+  },
+
+  // Form validation
+  validation: {
+    required: 'This field is required',
+    email: 'Please enter a valid email address',
+    minLength: 'Minimum {min} characters required',
+    maxLength: 'Maximum {max} characters allowed',
+    numeric: 'Please enter a number',
+    alphanumeric: 'Only letters and numbers allowed',
+    passwordMismatch: 'Passwords do not match',
+    invalidFormat: 'Invalid format',
+    duplicateValue: 'Value already exists',
+    invalidRange: 'Value out of valid range',
+    invalidUrl: 'Please enter a valid URL',
+    invalidPort: 'Please enter a valid port number (1-65535)'
+  },
+
+  // Pagination
+  pagination: {
+    first: 'First',
+    last: 'Last',
+    previous: 'Previous',
+    next: 'Next',
+    page: 'Page {current}',
+    of: 'of {total}',
+    showing: 'Showing {start} to {end} of {total} entries',
+    itemsPerPage: 'Items per page',
+    noData: 'No data available',
+    loading: 'Loading...'
+  },
+
+  // Time related
+  time: {
+    now: 'Just now',
+    minutesAgo: '{count} minutes ago',
+    hoursAgo: '{count} hours ago',
+    daysAgo: '{count} days ago',
+    weeksAgo: '{count} weeks ago',
+    monthsAgo: '{count} months ago',
+    yearsAgo: '{count} years ago',
+    seconds: 'seconds',
+    minutes: 'minutes',
+    hours: 'hours',
+    days: 'days',
+    weeks: 'weeks',
+    months: 'months',
+    years: 'years'
+  }
+}
