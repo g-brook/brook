@@ -23,12 +23,12 @@ import (
 	"time"
 
 	"github.com/brook/client/clis"
-	"github.com/brook/common/aio"
 	"github.com/brook/common/configs"
 	"github.com/brook/common/exchange"
+	"github.com/brook/common/iox"
+	"github.com/brook/common/lang"
 	"github.com/brook/common/log"
 	"github.com/brook/common/transport"
-	"github.com/brook/common/utils"
 )
 
 type TcpTunnelClient struct {
@@ -64,7 +64,7 @@ func (t *TcpTunnelClient) initOpen(ch *transport.SChannel) error {
 	err = t.AsyncRegister(t.GetRegisterReq(), func(p *exchange.Protocol, rw io.ReadWriteCloser) error {
 		log.Info("Connection local address success then Client to server register success:%v", t.GetCfg().LocalAddress)
 		if p.IsSuccess() {
-			errors := aio.Pipe(ch, localConnection)
+			errors := iox.Pipe(ch, localConnection)
 			if len(errors) > 0 {
 				log.Error("Pipe error %v", errors)
 			}
@@ -86,7 +86,7 @@ func (t *TcpTunnelClient) initOpen(ch *transport.SChannel) error {
 }
 func (t *TcpTunnelClient) localConnection() (net.Conn, error) {
 	connFunction := func() (net.Conn, error) {
-		dial, err := net.Dial(string(utils.NetworkTcp), t.GetCfg().LocalAddress)
+		dial, err := net.Dial(string(lang.NetworkTcp), t.GetCfg().LocalAddress)
 		if err != nil {
 			return nil, err
 		}

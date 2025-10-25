@@ -26,7 +26,7 @@ import (
 	"net"
 	"time"
 
-	"github.com/brook/common"
+	"github.com/brook/common/lang"
 	"github.com/google/uuid"
 	"github.com/xtaci/smux"
 )
@@ -37,28 +37,28 @@ import (
 // buf is a buffer for storing data temporarily
 // isBindTunnel indicates if the channel is bound to a tunnel
 type SChannel struct {
-	Stream      *smux.Stream
-	IsTunnel    bool
-	buf         bytes.Buffer
-	id          string
-	ctx         context.Context
-	cancel      context.CancelFunc
-	attr        map[common.KeyType]interface{}
-	closeEvents []CloseEvent
+	Stream       *smux.Stream
+	IsOpenTunnel bool
+	buf          bytes.Buffer
+	id           string
+	ctx          context.Context
+	cancel       context.CancelFunc
+	attr         map[lang.KeyType]interface{}
+	closeEvents  []CloseEvent
 }
 
 // NewSChannel creates a new SChannel with the given smux stream
 // It initializes a pipe for reading and writing
-func NewSChannel(stream *smux.Stream, parent context.Context, isTunnel bool) *SChannel {
+func NewSChannel(stream *smux.Stream, parent context.Context, isOpenTunnel bool) *SChannel {
 	ctx, cancelFunc := context.WithCancel(parent)
 	ch := &SChannel{Stream: stream,
-		ctx:         ctx,
-		id:          uuid.NewString(),
-		cancel:      cancelFunc,
-		attr:        map[common.KeyType]interface{}{},
-		IsTunnel:    isTunnel,
-		closeEvents: make([]CloseEvent, 0),
-		buf:         bytes.Buffer{}} // Initialize as pointer
+		ctx:          ctx,
+		id:           uuid.NewString(),
+		cancel:       cancelFunc,
+		attr:         map[lang.KeyType]interface{}{},
+		IsOpenTunnel: isOpenTunnel,
+		closeEvents:  make([]CloseEvent, 0),
+		buf:          bytes.Buffer{}} // Initialize as pointer
 	return ch
 }
 
@@ -109,7 +109,7 @@ func (s *SChannel) LocalAddr() net.Addr {
 	return s.Stream.LocalAddr()
 }
 
-func (s *SChannel) AddAttr(key common.KeyType, value interface{}) {
+func (s *SChannel) AddAttr(key lang.KeyType, value interface{}) {
 	s.attr[key] = value
 }
 
@@ -128,7 +128,7 @@ func (s *SChannel) IsClose() bool {
 	}
 }
 
-func (s *SChannel) GetAttr(key common.KeyType) (interface{}, bool) {
+func (s *SChannel) GetAttr(key lang.KeyType) (interface{}, bool) {
 	value, ok := s.attr[key]
 	return value, ok
 }
@@ -138,7 +138,7 @@ func (s *SChannel) Read(p []byte) (n int, err error) {
 	if s.IsClose() {
 		return 0, io.EOF
 	}
-	if s.IsTunnel {
+	if s.IsOpenTunnel {
 		return s.Stream.Read(p)
 	} else {
 		n, err = s.buf.Read(p)

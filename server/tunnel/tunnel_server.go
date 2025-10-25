@@ -18,8 +18,8 @@ package tunnel
 
 import (
 	"github.com/brook/common/exchange"
+	"github.com/brook/common/lang"
 	"github.com/brook/common/transport"
-	"github.com/brook/common/utils"
 )
 
 // Save all tunnels channel. port: server.
@@ -56,7 +56,7 @@ type TunnelServer interface {
 	Id() string
 
 	// Start is start tunnel server.
-	Start(protocol utils.Network) error
+	Start(protocol lang.Network) error
 
 	//
 	// Port

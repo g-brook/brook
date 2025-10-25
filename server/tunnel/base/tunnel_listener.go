@@ -24,8 +24,8 @@ import (
 	"github.com/brook/common/configs"
 	"github.com/brook/common/exchange"
 	"github.com/brook/common/hash"
+	"github.com/brook/common/lang"
 	. "github.com/brook/common/transport"
-	"github.com/brook/common/utils"
 	"github.com/brook/server/remote"
 	"github.com/brook/server/tunnel"
 	"github.com/brook/server/tunnel/http"
@@ -69,16 +69,16 @@ func OpenTunnelServer(request exchange.OpenTunnelReq, manager Channel) (int, err
 func running(config *configs.ServerTunnelConfig) (*tunnel.BaseTunnelServer, error) {
 	baseServer := tunnel.NewBaseTunnelServer(config)
 	var server tunnel.TunnelServer
-	var netWork utils.Network
-	if config.Type == utils.Tcp {
+	var netWork lang.Network
+	if config.Type == lang.Tcp {
 		server = tcp.NewTcpTunnelServer(baseServer)
-		netWork = utils.NetworkTcp
-	} else if config.Type == utils.Udp {
+		netWork = lang.NetworkTcp
+	} else if config.Type == lang.Udp {
 		server = tcp.NewUdpTunnelServer(baseServer)
-		netWork = utils.NetworkUdp
-	} else if config.Type == utils.Https || config.Type == utils.Http {
+		netWork = lang.NetworkUdp
+	} else if config.Type == lang.Https || config.Type == lang.Http {
 		server = http.NewHttpTunnelServer(baseServer)
-		netWork = utils.NetworkTcp
+		netWork = lang.NetworkTcp
 	} else {
 		return nil, fmt.Errorf("not support tunnel type %v", config.Type)
 	}

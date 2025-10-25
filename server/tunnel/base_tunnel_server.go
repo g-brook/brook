@@ -25,9 +25,9 @@ import (
 	"github.com/brook/common/configs"
 	"github.com/brook/common/exchange"
 	"github.com/brook/common/hash"
+	"github.com/brook/common/lang"
 	"github.com/brook/common/log"
 	"github.com/brook/common/transport"
-	"github.com/brook/common/utils"
 	"github.com/brook/server/metrics"
 	"github.com/brook/server/srv"
 )
@@ -77,7 +77,7 @@ func (b *BaseTunnelServer) Connections() int {
 }
 
 func (b *BaseTunnelServer) Name() string {
-	return "tunnel"
+	return b.Cfg.Id
 }
 
 func (b *BaseTunnelServer) Users() int {
@@ -133,7 +133,7 @@ func (b *BaseTunnelServer) Boot(_ *srv.Server, _ srv.TraverseBy) {
 }
 
 // Start  the tunnel server
-func (b *BaseTunnelServer) Start(network utils.Network) error {
+func (b *BaseTunnelServer) Start(network lang.Network) error {
 	go func() {
 		b.Server = srv.NewServer(b.port)
 		b.Server.AddHandler(b)

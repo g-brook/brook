@@ -20,7 +20,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/brook/common/utils"
+	"github.com/brook/common/jsonx"
+	"github.com/brook/common/lang"
 )
 
 var DefServerPort = 8909
@@ -48,7 +49,7 @@ type LoggerConfig struct {
 type ServerTunnelConfig struct {
 	Id       string            `json:"id"`
 	Port     int               `json:"port"`
-	Type     utils.TunnelType  `json:"type"`
+	Type     lang.TunnelType   `json:"type"`
 	KeyFile  string            `json:"keyfile"`
 	CertFile string            `json:"certFile"`
 	Http     []HttpRunnelProxy `json:"http"`
@@ -61,10 +62,10 @@ type HttpRunnelProxy struct {
 }
 
 type ClientTunnelConfig struct {
-	TunnelType   utils.TunnelType `json:"type"`
-	LocalAddress string           `json:"localAddress"`
-	ProxyId      string           `json:"proxyId"`
-	HttpId       string           `json:"httpId"`
+	TunnelType   lang.TunnelType `json:"type"`
+	LocalAddress string          `json:"localAddress"`
+	ProxyId      string          `json:"proxyId"`
+	HttpId       string          `json:"httpId"`
 	//default 1500
 	UdpSize    int `json:"udpSize"`
 	RemotePort int
@@ -76,7 +77,7 @@ type ClientTunnelConfig struct {
 //	@return ServerConfig
 func GetServerConfig(cfgPath string) (ServerConfig, error) {
 	var cfg ServerConfig
-	err := utils.ReaderJson(cfgPath, &cfg)
+	err := jsonx.ReaderJson(cfgPath, &cfg)
 	if err != nil {
 		fmt.Println(err.Error())
 		return cfg, err
@@ -90,7 +91,7 @@ func GetServerConfig(cfgPath string) (ServerConfig, error) {
 //	@return ServerConfig
 func GetClientConfig(cfgPath string) (ClientConfig, error) {
 	var cfg ClientConfig
-	err := utils.ReaderJson(cfgPath, &cfg)
+	err := jsonx.ReaderJson(cfgPath, &cfg)
 	if err != nil {
 		return cfg, err
 	}

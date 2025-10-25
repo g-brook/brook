@@ -24,13 +24,13 @@ import (
 	"time"
 
 	"github.com/brook/client/clis"
-	"github.com/brook/common/aio"
 	"github.com/brook/common/configs"
 	"github.com/brook/common/exchange"
 	"github.com/brook/common/hash"
+	"github.com/brook/common/iox"
+	"github.com/brook/common/lang"
 	"github.com/brook/common/log"
 	"github.com/brook/common/transport"
-	"github.com/brook/common/utils"
 )
 
 type UdpTunnelClient struct {
@@ -72,9 +72,9 @@ func (t *UdpTunnelClient) initOpen(*transport.SChannel) (err error) {
 
 	stop := make(chan struct{})
 	readLoop := func(updConn *net.UDPConn, remoteAddress *net.UDPAddr, bucket *exchange.TunnelBucket) {
-		pool := aio.GetByteBufPool(t.bufSize)
+		pool := iox.GetByteBufPool(t.bufSize)
 		for {
-			err := aio.WithBuffer(func(buf []byte) error {
+			err := iox.WithBuffer(func(buf []byte) error {
 				_, _, err = updConn.ReadFromUDP(buf)
 				if err != nil {
 					return err
@@ -154,7 +154,7 @@ func (t *UdpTunnelClient) localConn(rAddr *net.UDPAddr) (*net.UDPConn, error, bo
 		return load, nil, true
 	}
 	connFunction := func() (*net.UDPConn, error) {
-		dial, err := net.DialUDP(string(utils.NetworkUdp), nil, t.localAddress)
+		dial, err := net.DialUDP(string(lang.NetworkUdp), nil, t.localAddress)
 		if err != nil {
 			return nil, err
 		}

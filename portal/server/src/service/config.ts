@@ -15,7 +15,7 @@
  */
 
 import Http from "@/components/request";
-import {Response} from "@/types/response";
+import { Response } from "@/types/response";
 
 const getProxyConfigs = <Q>(): Promise<Response<Q>> => {
   return Http.post("/api/getProxyConfigs");
@@ -31,6 +31,16 @@ const delProxyConfig = <Q>(id: number): Promise<Response<Q>> => {
   });
 };
 
+const updateProxyConfig = <Q>(params: any): Promise<Response<Q>> => {
+  return Http.post("/api/updateProxyConfig",params);
+};
+
+
+const updateProxyState = <Q>(params: any): Promise<Response<Q>> => {
+  return Http.post("/api/updateProxyState",params);
+};
+
+
 const addWebConfigs = <Q>(params: any): Promise<Response<Q>> => {
   return Http.post("/api/addWebConfigs", params);
 };
@@ -39,11 +49,12 @@ const getWebConfigs = <Q>(parmas: any): Promise<Response<Q>> => {
   return Http.post("/api/getWebConfigs", parmas);
 };
 
-
 const functions = {
   getProxyConfigs,
   addProxyConfig,
   delProxyConfig,
+  updateProxyConfig,
+  updateProxyState,
   addWebConfigs,
   getWebConfigs,
 };

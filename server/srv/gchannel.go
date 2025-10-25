@@ -23,9 +23,8 @@ import (
 	"net"
 	"time"
 
-	"github.com/brook/common"
+	"github.com/brook/common/lang"
 	"github.com/brook/common/transport"
-	"github.com/brook/common/utils"
 	"github.com/panjf2000/gnet/v2"
 )
 
@@ -48,11 +47,11 @@ type GChannel struct {
 
 	closeEvents []transport.CloseEvent
 
-	protocol utils.Network
+	protocol lang.Network
 }
 
 func (c *GChannel) SendTo(by []byte, addr net.Addr) (int, error) {
-	if c.protocol != utils.NetworkUdp {
+	if c.protocol != lang.NetworkUdp {
 		return 0, nil
 	}
 	return c.Conn.SendTo(by, addr)
@@ -79,7 +78,7 @@ func (c *GChannel) GetConn() net.Conn {
 //
 //	@Description: Get from gnet.conn.
 //	@receiver receiver
-//	@return aio.Reader
+//	@return iox.Reader
 func (c *GChannel) GetReader() io.Reader {
 	return c.Conn
 }
@@ -88,7 +87,7 @@ func (c *GChannel) GetReader() io.Reader {
 //
 //	@Description:
 //	@receiver receiver
-//	@return aio.Writer
+//	@return iox.Writer
 func (c *GChannel) GetWriter() io.Writer {
 	return c.Conn
 }
@@ -196,7 +195,7 @@ func (c *GChannel) isConnection() bool {
 	return !c.Context.IsClosed
 }
 
-func (c *GChannel) GetAttr(key common.KeyType) (interface{}, bool) {
+func (c *GChannel) GetAttr(key lang.KeyType) (interface{}, bool) {
 	i, ok := c.Context.attr[key]
 	return i, ok
 }
@@ -205,7 +204,7 @@ func (c *GChannel) GetAttr(key common.KeyType) (interface{}, bool) {
 //
 //	@Description: Add a attr info on Conn.
 //	@receiver receiver
-func (receiver *ConnContext) AddAttr(key common.KeyType, value interface{}) {
+func (receiver *ConnContext) AddAttr(key lang.KeyType, value interface{}) {
 	receiver.attr[key] = value
 }
 
@@ -216,7 +215,7 @@ func (receiver *ConnContext) AddAttr(key common.KeyType, value interface{}) {
 //	@param key
 //	@return interface{}
 //	@return bool
-func (receiver *ConnContext) GetAttr(key common.KeyType) (interface{}, bool) {
+func (receiver *ConnContext) GetAttr(key lang.KeyType) (interface{}, bool) {
 	i, ok := receiver.attr[key]
 	return i, ok
 }

@@ -19,8 +19,8 @@ package tcp
 import (
 	"sync"
 
-	"github.com/brook/common/aio"
 	"github.com/brook/common/exchange"
+	"github.com/brook/common/iox"
 	"github.com/brook/common/log"
 	trp "github.com/brook/common/transport"
 	"github.com/brook/server/defin"
@@ -64,9 +64,9 @@ func (htl *TunnelTcpServer) Reader(ch trp.Channel, _ srv.TraverseBy) {
 		if ok && chId != "" {
 			dest, ok := htl.TunnelChannel[chId.(string)]
 			if ok {
-				err := aio.Copy(ch, dest)
+				err := iox.Copy(ch, dest)
 				if err != nil {
-					log.Debug("aio.copy error %v", err)
+					log.Debug("iox.copy error %v", err)
 				}
 			}
 		}
@@ -83,8 +83,8 @@ func (htl *TunnelTcpServer) Open(ch trp.Channel, _ srv.TraverseBy) {
 	case srv.GContext:
 		workConn.GetContext().AddAttr(defin.ToSChannelId, userConn.GetId())
 		go func() {
-			err := aio.SinglePipe(userConn, workConn.(trp.Channel))
-			log.Debug("aio.SinglePipe error %v", err)
+			err := iox.SinglePipe(userConn, workConn.(trp.Channel))
+			log.Debug("iox.SinglePipe error %v", err)
 		}()
 	}
 }

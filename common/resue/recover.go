@@ -14,8 +14,31 @@
  * limitations under the License.
  */
 
-package routine
+package resue
 
-func Run(name string, fn func()) {
-	go fn()
+import (
+	"context"
+	"runtime/debug"
+
+	"github.com/brook/common/log"
+)
+
+func Recover(cleanups ...func()) {
+	for _, cleanup := range cleanups {
+		cleanup()
+	}
+
+	if p := recover(); p != nil {
+		log.Error("%v", p)
+	}
+}
+
+// RecoverCtx is used with defer to do cleanup on panics.
+func RecoverCtx(ctx context.Context, cleanups ...func()) {
+	for _, cleanup := range cleanups {
+		cleanup()
+	}
+	if p := recover(); p != nil {
+		log.Error("%+v\n%s", p, debug.Stack())
+	}
 }

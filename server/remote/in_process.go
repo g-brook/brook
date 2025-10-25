@@ -68,8 +68,8 @@ func doRegister(request exchange.TRegister, ch transport.Channel) (any, error) {
 	switch sch := ch.(type) {
 	case *transport.SChannel:
 		// If it's a secure channel, mark it as a tunnel and add the proxy ID attribute
-		sch.IsTunnel = true
-		sch.AddAttr(defin.TunnelProxyId, request.GetProxyId())
+		sch.IsOpenTunnel = true
+		sch.AddAttr(defin.HttpIdKey, request.GetProxyId())
 	default:
 		// Log error and return error for unsupported channel types
 		log.Error("Not support channel type: %T", ch)

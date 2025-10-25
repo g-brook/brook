@@ -14,30 +14,41 @@
  * limitations under the License.
  */
 
-import {defineConfig} from "vite";
+import { defineConfig, loadEnv } from "vite";
 import vue from "@vitejs/plugin-vue";
 import tailwindcss from "@tailwindcss/vite";
 import path from "path";
 
-export default defineConfig({
-  plugins: [tailwindcss(), vue()],
-  resolve: {
-    alias: {
-      "@": path.resolve(__dirname, "src"),
-    },
-    extensions: [".js", ".ts", ".jsx", ".tsx", ".json", ".vue"],
-  },
-  server: {
-    port: 3000,
-    open: true,
-    proxy: {
-      "/remote/": {
-        target: "http://127.0.0.1:8000",
-        changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/remote/, ""),
+export default defineConfig(({ mode }) => {
+  const env = loadEnv(mode, process.cwd());
+  const FE_PORT = parseInt(env.VITE_PORT || "3000");
+  const BE_PORT = parseInt(env.VITE_SERVER_PORT || "8000");
+  const BASE_API = env.VITE_BASE_API;
+  const isDev = mode === "development";
+  console.log("isDev", isDev);
+  console.log("BASE_API", BASE_API);
+  console.log("FE_PORT", FE_PORT);
+  console.log("BE_PORT", BE_PORT);
+  return {
+    plugins: [tailwindcss(), vue()],
+    resolve: {
+      alias: {
+        "@": path.resolve(__dirname, "src"),
       },
+      extensions: [".js", ".ts", ".jsx", ".tsx", ".json", ".vue"],
     },
-  },
+    server: isDev
+      ? {
+          port: FE_PORT,
+          open: true,
+          proxy: {
+            [BASE_API]: {
+              target: `http://127.0.0.1:${BE_PORT}`,
+              changeOrigin: true,
+              rewrite: (path) => path.replace(/^\/remote/, ""),
+            },
+          },
+        }
+      : undefined,
+  };
 });
-
-

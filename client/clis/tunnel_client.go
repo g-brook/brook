@@ -24,9 +24,9 @@ import (
 
 	"github.com/brook/common/configs"
 	"github.com/brook/common/exchange"
+	"github.com/brook/common/lang"
 	"github.com/brook/common/log"
 	"github.com/brook/common/transport"
-	"github.com/brook/common/utils"
 	"github.com/xtaci/smux"
 )
 
@@ -284,7 +284,7 @@ func (b *BaseTunnelClient) AsyncRegister(req exchange.InBound, readCallBack exch
 }
 
 // TunnelsClient at all tunnel tunnel by map.
-var TunnelsClient = make(map[utils.TunnelType]FactoryFun)
+var TunnelsClient = make(map[lang.TunnelType]FactoryFun)
 
 // FactoryFun New tunnel client.
 type FactoryFun func(config *configs.ClientTunnelConfig) TunnelClient
@@ -296,18 +296,18 @@ type FactoryFun func(config *configs.ClientTunnelConfig) TunnelClient
 //
 //	name - the type of tunnel client to register (utils.TunnelType)
 //	factory - the factory function that creates instances of the tunnel client (FactoryFun)
-func RegisterTunnelClient(name utils.TunnelType, factory FactoryFun) {
+func RegisterTunnelClient(name lang.TunnelType, factory FactoryFun) {
 	TunnelsClient[name] = factory // Store the factory function in the map with the tunnel type as the key
 }
 
 // GetTunnelClient creates and returns a tunnel client based on the provided tunnel type and configuration
 // Parameters:
 //   - name: The type of tunnel to create (utils.TunnelType)
-//   - config: Configuration for the tunnel client (configs.ClientTunnelConfig)
+//   - configs: Configuration for the tunnel client (configs.ClientTunnelConfig)
 //
 // Returns:
 //   - TunnelClient: The created tunnel client instance, or nil if the tunnel type is not supported
-func GetTunnelClient(name utils.TunnelType, config *configs.ClientTunnelConfig) TunnelClient {
+func GetTunnelClient(name lang.TunnelType, config *configs.ClientTunnelConfig) TunnelClient {
 	// Retrieve the tunnel client constructor function from the TunnelsClient map
 	fun := TunnelsClient[name]
 	// If a constructor function exists for the specified tunnel type
@@ -321,6 +321,6 @@ func GetTunnelClient(name utils.TunnelType, config *configs.ClientTunnelConfig) 
 
 // GetTunnelClients returns a map of tunnel types to their corresponding factory functions
 // This function provides access to the available tunnel client implementations
-func GetTunnelClients() map[utils.TunnelType]FactoryFun {
+func GetTunnelClients() map[lang.TunnelType]FactoryFun {
 	return TunnelsClient // Return the global map of tunnel clients
 }

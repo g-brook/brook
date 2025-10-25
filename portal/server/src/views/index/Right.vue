@@ -36,8 +36,7 @@ const handleGithubClick = () => {
 </script>
 
 <template>
-    <div class="flex flex-col bg-base-100 m-2 ml-0 rounded-2xl shadow-lg overflow-hidden h-full">
-
+    <div class="flex flex-col m-2 ml-0 rounded-2xl overflow-hidden h-full bg-base-100">
         <div class=" px-3 pt-1 pb-1">
             <div v-if="selected" class="flex items-center">
                 <!-- 图标 -->
@@ -86,17 +85,6 @@ const handleGithubClick = () => {
 
                 </div>
             </div>
-
-            <!-- 默认状态 -->
-            <div v-else class="text-center py-8">
-                <div class="w-16 h-16 bg-base-200 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <Icon icon="brook-github" class="text-base-content/40" style="font-size: 32px;" />
-                </div>
-                <h2 class="text-xl font-semibold text-base-content/60 mb-2">欢迎使用 Brook Portal</h2>
-                <p class="text-sm text-base-content/40">请从左侧菜单选择一个功能开始使用</p>
-            </div>
-
-
         </div>
 
         <!-- 内容区域 - 只有这个区域可以滚动 -->

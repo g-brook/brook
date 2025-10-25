@@ -16,7 +16,7 @@
 
 <script lang="ts" setup>
 import config from "@/service/config";
-import {computed, reactive, ref} from 'vue';
+import { computed, reactive, ref } from 'vue';
 import Icon from "@/components/icon/Index.vue";
 
 
@@ -65,7 +65,7 @@ const form = reactive<ConfigForm>({
   id: props.initialData?.id || null,
   name: props.initialData?.name || '',
   tag: props.initialData?.tag || '',
-  remotePort: props.initialData?.remotePort || 30001,
+  remotePort: props.initialData?.remotePort || 10000,
   proxyId: props.initialData?.proxyId || '',
   protocol: props.initialData?.protocol || ''
 });
@@ -96,8 +96,8 @@ const validateForm = (): boolean => {
   if (!form.remotePort) {
     errors.remotePort = '端口不能为空';
     isValid = false;
-  } else if (form.remotePort < 30001 || form.remotePort > 65535) {
-    errors.remotePort = '端口范围必须在30001-65535之间';
+  } else if (form.remotePort < 10000 || form.remotePort > 65535) {
+    errors.remotePort = '端口范围必须在10000-65535之间';
     isValid = false;
   }
   // ProxyId 验证
@@ -124,7 +124,12 @@ const handleSubmit = async () => {
   loading.value = true;
   try {
     // 发送请求
-    const res = await config.addProxyConfig(form);
+    var res;
+    if (!props.isEdit) {
+      res = await config.addProxyConfig(form);
+    } else {
+      res = await config.updateProxyConfig(form)
+    }
     if (res.success()) {
       return Promise.resolve(true);
     } else {
@@ -141,7 +146,7 @@ const handleSubmit = async () => {
 const resetForm = () => {
   form.name = '';
   form.tag = '';
-  form.remotePort = 30001;
+  form.remotePort = 10000;
   form.proxyId = '';
   form.protocol = '';
   Object.keys(errors).forEach(key => {
@@ -160,81 +165,68 @@ if (props.onRegister) {
 }
 </script>
 <template>
-  <div class="w-[50rem] h-[20rem]">
+  <div class="w-[35rem] h-[20rem]">
     <!-- name of each tab group should be unique -->
-    <div class="tabs tabs-lift">
-      <label class="tab">
-        <input type="radio" name="my_tabs_4" checked=true />
-        基础
-      </label>
-      <div class="tab-content bg-base-100 border-base-300 p-1">
-        <form @submit.prevent="handleSubmit" class="mt-4">
-            <div class="grid grid-cols-7 gap-2">
-              <label class="flex p-2 rounded-full border border-base-300 h-10 cursor-pointer w-fit"
-                v-for="type in protocolTypes" :key="type.value">
-                <input type="radio" name="types" v-model="form.protocol" :value="type.value"
-                  class="radio radio-accent radio-sm checked:bg-red-200 checked:text-red-600 checked:border-red-600" />
-                <p class="px-2 text-sm">{{ type.label }}</p>
-              </label>
-            </div>
-          <div class="flex flex-row gap-2 justify-between">
-            <div class="fieldset border-base-300 w-full p-4">
-              <!-- 代理ID -->
-              <div class="form-control">
-                <label class="label py-1 w-14">
-                  <span class="label-text font-medium">代理ID <span class="text-red-500">*</span></span>
-                </label>
-                <div class="tooltip" data-tip="hello">
-                  <Icon icon="brook-exclamation-circle" style="font-size: 14px;" />
-                </div>
-                <input type="text" v-model="form.proxyId"
-                  :class="['input  focus:input-primary w-full', { 'input-error': errors.proxyId }]"
-                  placeholder="请输入代理ID" />
-                <label v-if="errors.proxyId" class="label py-1">
-                  <span class="label-text-alt text-red-500 text-xs">{{ errors.proxyId }}</span>
-                </label>
-              </div>
-
-              <!-- 名称 -->
-              <div class="form-control">
-                <label class="label py-1 w-14">
-                  <span class="label-text  font-medium">名称 <span class="text-red-500">*</span></span>
-                </label>
-                <input type="text" v-model="form.name"
-                  :class="['input  focus:input-primary w-full', { 'input-error': errors.name }]"
-                  placeholder="请输入配置名称" />
-                <label v-if="errors.name" class="label py-0">
-                  <span class="label-text-alt text-red-500 text-xs">{{ errors.name }}</span>
-                </label>
-              </div>
-              <div class="form-control">
-                <label class="label py-1 w-14">
-                  <span class="label-text  font-medium">标签</span>
-                </label>
-                <input type="text" v-model="form.tag" class="input  focus:input-primary w-full"
-                  placeholder="请输入标签（可选）" />
-              </div>
-            </div>
-            <div class="fieldset border-base-300 rounded-box w-xs p-4">              <!-- 端口 -->
-              <div class="form-control">
-                <label class="label py-1 w-14">
-                  <span class="label-text  font-medium">端口 <span class="text-red-500">*</span></span>
-                </label>
-                <div class="tooltip" data-tip="hello">
-                  <Icon icon="brook-exclamation-circle" style="font-size: 14px;" />
-                </div>
-                <input type="number" v-model.number="form.remotePort"
-                  :class="['input  focus:input-primary w-full', { 'input-error': errors.remotePort }]"
-                  placeholder="请输入端口号" min="30001" max="65535" />
-                <label v-if="errors.remotePort" class="label py-1">
-                  <span class="label-text-alt text-red-500 text-xs">{{ errors.remotePort }}</span>
-                </label>
-              </div>
-            </div>
-          </div>
-        </form>
+    <form @submit.prevent="handleSubmit">
+      <div class="grid grid-cols-7 gap-2 items-center ml-4">
+        <label
+          class="flex justify-center flex-col items-center rounded-full bg-secondary-content h-16 w-16 cursor-pointer"
+          v-for="type in protocolTypes" :key="type.value">
+          <input type="radio" name="types" v-model="form.protocol" :value="type.value"
+            class="radio radio-accent radio-sm checked:bg-red-200 checked:text-red-600 checked:border-red-600" />
+          <p class="text-sm font-mono">{{ type.label }}</p>
+        </label>
       </div>
-    </div>
+      <div class="flex flex-row gap-2 justify-between">
+        <div class="fieldset border-base-300 w-full p-4">
+          <!-- 代理ID -->
+          <div class="form-control">
+            <label class="label py-1 w-14">
+              <span class="label-text font-medium">代理ID <span class="text-red-500">*</span></span>
+            </label>
+            <div class="tooltip" data-tip="用于客户端连接时需要使用">
+              <Icon icon="brook-exclamation-circle" style="font-size: 14px;" />
+            </div>
+            <input type="text" v-model="form.proxyId"
+              :class="['input  focus:input-primary w-full', { 'input-error': errors.proxyId }]" placeholder="请输入代理ID" />
+            <label v-if="errors.proxyId" class="label py-1">
+              <span class="label-text-alt text-red-500 text-xs">{{ errors.proxyId }}</span>
+            </label>
+          </div>
 
+          <!-- 名称 -->
+          <div class="form-control">
+            <label class="label py-1 w-14">
+              <span class="label-text  font-medium">名称 <span class="text-red-500">*</span></span>
+            </label>
+            <input type="text" v-model="form.name"
+              :class="['input  focus:input-primary w-full', { 'input-error': errors.name }]" placeholder="请输入配置名称" />
+            <label v-if="errors.name" class="label py-0">
+              <span class="label-text-alt text-red-500 text-xs">{{ errors.name }}</span>
+            </label>
+          </div>
+          <div class="form-control">
+            <label class="label py-1 w-14">
+              <span class="label-text  font-medium">标签</span>
+            </label>
+            <input type="text" v-model="form.tag" class="input  focus:input-primary w-full" placeholder="请输入标签（可选）" />
+          </div>
+        </div>
+        <div class="fieldset border-base-300 rounded-box w-xs p-4"><!-- 端口 -->
+          <div class="form-control">
+            <label class="label py-1 w-14">
+              <span class="label-text  font-medium">端口(10000~65535) <span class="text-red-500">*</span></span>
+            </label>
+            <input type="number" v-model.number="form.remotePort" :disabled="props.isEdit"
+              :class="['input  focus:input-primary w-full', { 'input-error': errors.remotePort }]" placeholder="请输入端口号"
+              min="10000" max="65535" />
+            <label v-if="errors.remotePort" class="label py-1">
+              <span class="label-text-alt text-red-500 text-xs">{{ errors.remotePort }}</span>
+            </label>
+          </div>
+        </div>
+      </div>
+    </form>
   </div>
+
 </template>

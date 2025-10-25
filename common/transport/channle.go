@@ -22,7 +22,7 @@ import (
 	"io"
 	"net"
 
-	"github.com/brook/common"
+	"github.com/brook/common/lang"
 )
 
 type CloseEvent func(channel Channel)
@@ -79,7 +79,7 @@ type Channel interface {
 	//  @Description: getKey.
 	//  @param key
 	//
-	GetAttr(key common.KeyType) (interface{}, bool)
+	GetAttr(key lang.KeyType) (interface{}, bool)
 
 	// OnClose CloseEvent The Channel Setter CloseEvent
 	OnClose(event CloseEvent)

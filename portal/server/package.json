@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vue-tsc -b && vite build  && cp -r dist ../../server/web",
+    "build": "NODE_ENV=production vite build && cp -r dist ../../server/web",
     "preview": "vite preview"
   },
   "dependencies": {

@@ -27,7 +27,7 @@ import (
 //	@param cmd
 //	@param server
 func RegisterClientFlags(cmd *cobra.Command, config configs.ClientConfig) {
-	cmd.PersistentFlags().IntVarP(&config.ServerPort, "server_port", "", configs.DefServerPort, "help")
+	cmd.PersistentFlags().IntVarP(&config.ServerPort, "server_port", "", config.ServerPort, "help")
 }
 
 // RegisterServerFlags

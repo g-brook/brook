@@ -17,9 +17,11 @@
 package api
 
 import (
+	"fmt"
 	"strconv"
 
 	"github.com/brook/server/metrics"
+	"github.com/brook/server/web/sql"
 )
 
 func init() {
@@ -33,14 +35,19 @@ func getServerInfo(req *Request[QueryServerInfo]) *Response {
 	servers := metrics.M.GetServers()
 	var v []*ServerInfo
 	for _, item := range servers {
+		newItem := sql.GetProxyConfigByProxyId(item.Id())
+		if newItem == nil {
+			return NewResponseSuccess(nil)
+		}
 		v = append(v, &ServerInfo{
-			Name:        item.Name(),
+			Name:        newItem.Name,
 			Port:        strconv.Itoa(item.Port()),
 			TunnelType:  item.Type(),
-			TAG:         "",
+			TAG:         newItem.Tag,
 			Connections: item.Connections(),
 			Users:       item.Users(),
 		})
+		fmt.Println(item.Name())
 	}
 	return NewResponseSuccess(v)
 }

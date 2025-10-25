@@ -28,9 +28,11 @@ import (
 
 	"github.com/brook/common/configs"
 	"github.com/brook/common/exchange"
+	"github.com/brook/common/filex"
+	"github.com/brook/common/hash"
+	"github.com/brook/common/lang"
 	"github.com/brook/common/log"
 	. "github.com/brook/common/transport"
-	"github.com/brook/common/utils"
 	"github.com/brook/server/defin"
 	"github.com/brook/server/srv"
 	"github.com/brook/server/tunnel"
@@ -40,7 +42,7 @@ import (
 type HttpTunnelServer struct {
 	*tunnel.BaseTunnelServer
 
-	proxyToConn map[string]map[string]*HttpTracker
+	proxyToConn *hash.SyncMap[string, *hash.SyncMap[string, *HttpTracker]]
 
 	registerLock sync.Mutex
 
@@ -64,7 +66,7 @@ func NewHttpTunnelServer(server *tunnel.BaseTunnelServer) *HttpTunnelServer {
 	}
 	tunnelServer := &HttpTunnelServer{
 		BaseTunnelServer: server,
-		proxyToConn:      make(map[string]map[string]*HttpTracker),
+		proxyToConn:      hash.NewSyncMap[string, *hash.SyncMap[string, *HttpTracker]](),
 	}
 	server.DoStart = tunnelServer.startAfter
 	server.UpdateConfigFun = func(cfg *configs.ServerTunnelConfig) {
@@ -80,10 +82,10 @@ func formatCfg(cfg *configs.ServerTunnelConfig, this *HttpTunnelServer) {
 	RouteClean()
 	for _, httpJson := range cfg.Http {
 		AddRouteInfo(httpJson.Id, httpJson.Domain, httpJson.Paths, this.getProxyConnection)
-		this.proxyToConn[httpJson.Id] = make(map[string]*HttpTracker, 100)
+		this.proxyToConn.Store(httpJson.Id, hash.NewSyncMap[string, *HttpTracker]())
 	}
 
-	if cfg.Type == utils.Https {
+	if cfg.Type == lang.Https {
 		if loadTls(cfg, this) != nil {
 			panic("loadTls error.")
 		}
@@ -98,7 +100,7 @@ func loadTls(cfg *configs.ServerTunnelConfig, this *HttpTunnelServer) error {
 		log.Fatal("certFile or KeyFile is nil")
 		return errors.New("certFile or KeyFile is nil")
 	}
-	if !utils.FileExists(cf) || !utils.FileExists(kf) {
+	if !filex.FileExists(cf) || !filex.FileExists(kf) {
 		log.Fatal("certFile or KeyFile is not exist")
 		return errors.New("certFile or KeyFile is not exist")
 	}
@@ -116,7 +118,7 @@ func verifyCfg(cfg *configs.ServerTunnelConfig) error {
 		log.Fatal("proxy is nil")
 		return errors.New("proxy is nil")
 	}
-	if cfg.Type == utils.Https {
+	if cfg.Type == lang.Https {
 		if cfg.CertFile == "" {
 			log.Fatal("certFile is nil")
 			return errors.New("certFile is nil")
@@ -148,27 +150,37 @@ func verifyCfg(cfg *configs.ServerTunnelConfig) error {
 // getProxyConnection is a function that returns a net.Conn object based on the httpId. It
 // It returns an error if the httpId is not found.
 func (htl *HttpTunnelServer) getProxyConnection(proxyId string, reqId int64) (workConn net.Conn, err error) {
-	channelIds, ok := htl.proxyToConn[proxyId]
+	err = errors.New("proxy Id not found in proxy connection:" + proxyId)
+	channelIds, ok := htl.proxyToConn.Load(proxyId)
 	if !ok {
-		return nil, errors.New("proxy Id not found in proxy connection:" + proxyId)
+		return nil, err
 	}
-	for s := range channelIds {
-		channel := htl.BaseTunnelServer.TunnelChannel[s]
-		bytes := make([]byte, 0)
-		_, err := channel.Write(bytes)
-		if err != nil {
-			log.Error("Read error:", err)
-			_ = channel.Close()
-			continue
+	var channel Channel
+	var tracker *HttpTracker
+	channelIds.Range(func(key string, value *HttpTracker) (shouldContinue bool) {
+		channel = htl.BaseTunnelServer.TunnelChannel[key]
+		tracker = value
+		if channel != nil {
+			return false
 		}
-		tracker := channelIds[s]
-		_ = tracker.AddRequest(reqId)
-		workConn = NewProxyConnection(channel, reqId, tracker)
-		break
+		return true
+	})
+	if channel == nil || tracker == nil {
+		return nil, err
 	}
+	bytes := make([]byte, 0)
+	_, err = channel.Write(bytes)
+	if err != nil {
+		log.Error("Read error:", err)
+		_ = channel.Close()
+		return nil, errors.New("write error:" + err.Error())
+	}
+	_ = tracker.AddRequest(reqId)
+	workConn = NewProxyConnection(channel, reqId, tracker)
 	if workConn == nil {
-		return nil, errors.New("proxy Id not found in proxy connection:" + proxyId)
+		return nil, err
 	}
+	err = nil
 	return
 }
 
@@ -261,10 +273,10 @@ func (htl *HttpTunnelServer) RegisterConn(ch Channel, request exchange.TRegister
 	htl.registerLock.Lock()
 	htl.BaseTunnelServer.RegisterConn(ch, request)
 	log.Info("Register http tunnel, httpId: %s,%s", request.GetProxyId(), request.GetHttpId())
-	proxies, ok := htl.proxyToConn[request.GetHttpId()]
+	proxies, ok := htl.proxyToConn.Load(request.GetHttpId())
 	if ok {
 		tracker := NewHttpTracker(ch)
-		proxies[ch.GetId()] = tracker
+		proxies.Store(ch.GetId(), tracker)
 		tracker.Run()
 		go func() {
 			_ = htl.createConn(ch)
@@ -287,12 +299,12 @@ func (htl *HttpTunnelServer) createConn(ch Channel) (err error) {
 
 // unRegisterConn is a method of HttpTunnelServer, which is used to unregister a connection.
 func (htl *HttpTunnelServer) unRegisterConn(ch Channel) {
-	proxyId, ok := ch.GetAttr(defin.TunnelProxyId)
+	proxyId, ok := ch.GetAttr(defin.HttpIdKey)
 	if ok {
 		key := proxyId.(string)
-		channels := htl.proxyToConn[key]
-		if channels != nil {
-			delete(channels, ch.GetId())
+		channels, ok := htl.proxyToConn.Load(key)
+		if ok {
+			channels.Delete(ch.GetId())
 		}
 	}
 

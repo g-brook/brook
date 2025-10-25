@@ -19,7 +19,7 @@ package srv
 import (
 	"time"
 
-	"github.com/brook/common"
+	"github.com/brook/common/lang"
 	"github.com/google/uuid"
 )
 
@@ -28,7 +28,7 @@ type ConnContext struct {
 	Id         string
 	lastActive time.Time
 	IsTimeOut  bool
-	attr       map[common.KeyType]interface{}
+	attr       map[lang.KeyType]interface{}
 	isSmux     bool
 }
 
@@ -44,7 +44,7 @@ func NewConnContext(isUdp bool, addr string) *ConnContext {
 		Id:         id,
 		lastActive: time.Now(),
 		IsTimeOut:  false,
-		attr:       make(map[common.KeyType]interface{}),
+		attr:       make(map[lang.KeyType]interface{}),
 		isSmux:     false,
 	}
 }

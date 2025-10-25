@@ -55,7 +55,7 @@ const (
 	// Communication communication　connection.
 	Communication Cmd = 3
 
-	//LoginTunnel Query tunnel config.
+	//LoginTunnel Query tunnel configs.
 	LoginTunnel Cmd = 4
 
 	// OpenTunnel Open Tunnel

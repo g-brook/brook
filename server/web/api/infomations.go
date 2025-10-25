@@ -69,7 +69,7 @@ type InitInfo struct {
 
 type WebConfigInfo struct {
 	Id         string `json:"id"`
-	RefProxyId string `json:"RefProxyId"`
+	RefProxyId int    `json:"RefProxyId"`
 	CertFile   string `json:"certFile"`
 	KeyFile    string `json:"keyFile"`
 	Proxy      []struct {

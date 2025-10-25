@@ -147,7 +147,7 @@ func inProcess(p *exchange.Protocol, conn transport.Channel) {
 //
 //	@Description:  Start In Server. Port is between 4000 and  9000.
 //	@receiver t
-//	@param cf config.
+//	@param cf configs.
 func (t *InServer) Start(cf *configs.ServerConfig) *InServer {
 	//Judgment server port lt 4000 or gt 9000,otherwise setting serve port 7000
 	if cf.ServerPort < 4000 || cf.ServerPort > 9000 {

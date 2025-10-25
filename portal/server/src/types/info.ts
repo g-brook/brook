@@ -1,5 +1,3 @@
-
- 
 /*
  * Copyright ©  sixh sixh@apache.org
  *

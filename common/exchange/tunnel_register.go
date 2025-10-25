@@ -16,12 +16,14 @@
 
 package exchange
 
-import "github.com/brook/common/utils"
+import (
+	"github.com/brook/common/lang"
+)
 
 type TRegister interface {
 	Cmd() Cmd
 
-	GetTunnelType() utils.TunnelType
+	GetTunnelType() lang.TunnelType
 
 	GetProxyId() string
 
@@ -35,7 +37,7 @@ type TRegister interface {
 // RegisterReqAndRsp
 // @Description: Register Info.
 type RegisterReqAndRsp struct {
-	TunnelType utils.TunnelType `json:"tunnel_type"`
+	TunnelType lang.TunnelType `json:"tunnel_type"`
 
 	// TunnelPort is port.
 	TunnelPort int `json:"tunnel_port"`
@@ -43,7 +45,7 @@ type RegisterReqAndRsp struct {
 	//request id.
 	BindId string `json:"bind_id"`
 
-	//proxy id. only http or http.
+	//proxy id. only httpx or httpx.
 	HttpId string `json:"http_id"`
 
 	//proxyId.
@@ -62,7 +64,7 @@ func (r RegisterReqAndRsp) GetHttpId() string {
 	return r.HttpId
 }
 
-func (r RegisterReqAndRsp) GetTunnelType() utils.TunnelType {
+func (r RegisterReqAndRsp) GetTunnelType() lang.TunnelType {
 	return r.TunnelType
 }
 

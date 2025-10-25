@@ -25,8 +25,8 @@ const { t } = useI18n();
 
 const props = defineProps({
   refProxyId: {
-    type: String,
-    default: ""
+    type: Number,
+    default: 0
   },
   protocol: {
     type: String,

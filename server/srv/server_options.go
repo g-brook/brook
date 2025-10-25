@@ -19,8 +19,8 @@ package srv
 import (
 	"time"
 
+	"github.com/brook/common/lang"
 	"github.com/brook/common/transport"
-	"github.com/brook/common/utils"
 )
 
 type ServerOption func(opts *sOptions)
@@ -32,7 +32,7 @@ type NewChannelFunction func(ch *GChannel) transport.Channel
 type sOptions struct {
 	timeout        int64
 	withSmux       *SmuxServerOption
-	network        utils.Network
+	network        lang.Network
 	newChannelFunc NewChannelFunction
 }
 
@@ -55,7 +55,7 @@ func serverOptions(opt ...ServerOption) *sOptions {
 }
 
 func (t *sOptions) Timeout() int64 {
-	return utils.NumberDefault(t.timeout, time.Duration(30000).Milliseconds())
+	return lang.NumberDefault(t.timeout, time.Duration(30000).Milliseconds())
 }
 
 // Smux
@@ -96,7 +96,7 @@ func WithTimeout(timeout time.Duration) ServerOption {
 }
 
 // WithNetwork WithProtocol This function takes a string parameter and returns a ServerOption
-func WithNetwork(pt utils.Network) ServerOption {
+func WithNetwork(pt lang.Network) ServerOption {
 	// This function takes a pointer to a sOptions struct and sets the protocol field to the value of the pt parameter
 	return func(opts *sOptions) {
 		opts.network = pt

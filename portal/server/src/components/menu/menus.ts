@@ -48,7 +48,7 @@ const menus: Menu[] = [
     "brook-Diagram-",
     true,
     [],
-    () => import("@/views/Index/Dashboard.vue"),
+    () => import("@/views/index/Dashboard.vue"),
   ),
    new Menu(
     "Tunnel Configuration",

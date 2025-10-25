@@ -18,7 +18,7 @@ package sql
 
 type WebProxyConfig struct {
 	Id         string `db:"id" json:"id"`
-	RefProxyId string `db:"ref_proxy_id" json:"refProxyId"`
+	RefProxyId int    `db:"ref_proxy_id" json:"refProxyId"`
 	CertFile   string `db:"cert_file" json:"certFile"`
 	KeyFile    string `db:"key_file" json:"keyFile"`
 	Proxy      string `db:"proxy" json:"proxy"`
@@ -38,7 +38,7 @@ func UpdateWebProxyConfig(p WebProxyConfig) error {
 			`, p.CertFile, p.KeyFile, p.Proxy, p.RefProxyId)
 }
 
-func GetWebProxyConfig(refProxyId string) *WebProxyConfig {
+func GetWebProxyConfig(refProxyId int) *WebProxyConfig {
 	res, err := Query("select id,ref_proxy_id,cert_file,key_file,proxy from web_proxy_config where ref_proxy_id=?", refProxyId)
 	if err != nil {
 		return nil

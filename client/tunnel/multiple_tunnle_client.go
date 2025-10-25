@@ -23,8 +23,8 @@ import (
 	"github.com/brook/common/configs"
 	"github.com/brook/common/exchange"
 	"github.com/brook/common/hash"
+	"github.com/brook/common/lang"
 	"github.com/brook/common/log"
-	"github.com/brook/common/utils"
 	"github.com/xtaci/smux"
 )
 
@@ -42,9 +42,9 @@ func init() {
 		}
 		return client
 	}
-	clis.RegisterTunnelClient(utils.Tcp, ft)
-	clis.RegisterTunnelClient(utils.Udp, ft)
-	clis.RegisterTunnelClient(utils.Http, ft)
+	clis.RegisterTunnelClient(lang.Tcp, ft)
+	clis.RegisterTunnelClient(lang.Udp, ft)
+	clis.RegisterTunnelClient(lang.Http, ft)
 }
 
 type MultipleTunnelClient struct {
@@ -67,7 +67,7 @@ func (m *MultipleTunnelClient) messageLister() {
 			reqWorder, _ := exchange.Parse[exchange.WorkConnReq](r.Data)
 			config := clis.ManagerTransport.GetConfig(reqWorder.ProxyId)
 			if config == nil {
-				log.Warn("config is nil %v", reqWorder.ProxyId)
+				log.Warn("configs is nil %v", reqWorder.ProxyId)
 				return
 			}
 			id := config.ProxyId
@@ -88,11 +88,11 @@ func (m *MultipleTunnelClient) messageLister() {
 
 func newTunnelClient(config *configs.ClientTunnelConfig, m *MultipleTunnelClient) clis.TunnelClient {
 	switch config.TunnelType {
-	case utils.Tcp:
+	case lang.Tcp:
 		return NewTcpTunnelClient(config, m)
-	case utils.Udp:
+	case lang.Udp:
 		return NewUdpTunnelClient(config, m)
-	case utils.Http:
+	case lang.Http:
 		return NewHttpTunnelClient(config)
 	}
 	return nil
@@ -118,7 +118,7 @@ func (m *MultipleTunnelClient) Open(session *smux.Session) error {
 	clis.ManagerTransport.PutConfig(m.currentConfig)
 	m.sessions.Store(m.currentConfig.ProxyId, session)
 	log.Info("Open %v tunnel client success:%v:%v", m.currentConfig.TunnelType, m.currentConfig.ProxyId, rspObj.RemotePort)
-	//Only http client open session.
+	//Only httpx client open session.
 	m.OnlyOpenHttp(req.ProxyId, rspObj.RemotePort)
 	return nil
 }
@@ -128,7 +128,7 @@ func (m *MultipleTunnelClient) Close() {
 }
 
 func (m *MultipleTunnelClient) OnlyOpenHttp(proxyId string, remotePort int) {
-	if m.currentConfig.TunnelType != utils.Http {
+	if m.currentConfig.TunnelType != lang.Http {
 		return
 	}
 	req := &exchange.WorkConnReq{

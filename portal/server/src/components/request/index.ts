@@ -25,7 +25,7 @@ import {DefaultResponse, type ResponseData} from "@/types/response";
 export class Request {
   instance: AxiosInstance;
   baseConfig: AxiosRequestConfig = {
-    baseURL: "/remote",
+    baseURL: import.meta.env.VITE_BASE_API,
     timeout: 6000,
     method: "POST",
     headers: { "Content-Type": "application/json;charset=UTF-8" },

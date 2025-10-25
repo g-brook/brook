@@ -22,7 +22,7 @@ import (
 	"errors"
 	"io"
 
-	"github.com/brook/common/aio"
+	"github.com/brook/common/iox"
 	"github.com/brook/common/log"
 )
 
@@ -85,9 +85,9 @@ func (t *TunnelProtocol) Read(r io.Reader) error {
 }
 
 func (t *TunnelProtocol) Encode() []byte {
-	pool := aio.GetBufPool(int(t.Len))
+	pool := iox.GetBufPool(int(t.Len))
 	var bufData []byte
-	_ = aio.WithBuf(func(buf *bytes.Buffer) error {
+	_ = iox.WithBuf(func(buf *bytes.Buffer) error {
 		err := binary.Write(buf, binary.BigEndian, t.Len)
 		_ = binary.Write(buf, binary.BigEndian, t.Ver)
 		_ = binary.Write(buf, binary.BigEndian, t.ReqId)

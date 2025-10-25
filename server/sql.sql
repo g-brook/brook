@@ -14,12 +14,13 @@
  * limitations under the License.
  */
 
-package utils
-
-import "os"
-
-func FileExists(cf string) bool { // check if file exists
-	_, err := os.Stat(cf)
-	return err == nil
-
-}
+CREATE TABLE IF NOT EXISTS proxy_config
+(
+    idx         INTEGER PRIMARY KEY AUTOINCREMENT,
+    name        TEXT        NOT NULL,
+    tag         TEXT,
+    remote_port INTEGER     NOT NULL,
+    proxy_id    TEXT UNIQUE NOT NULL,
+    protocol    TEXT        NOT NULL,
+    state       INTEGER     NOT NULL
+);

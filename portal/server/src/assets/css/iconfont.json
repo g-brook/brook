@@ -6,6 +6,20 @@
   "description": "",
   "glyphs": [
     {
+      "icon_id": "1224250",
+      "name": "refresh",
+      "font_class": "refresh",
+      "unicode": "e6a0",
+      "unicode_decimal": 59040
+    },
+    {
+      "icon_id": "6242364",
+      "name": "empty",
+      "font_class": "empty",
+      "unicode": "e7bb",
+      "unicode_decimal": 59323
+    },
+    {
       "icon_id": "9386138",
       "name": "token",
       "font_class": "token",

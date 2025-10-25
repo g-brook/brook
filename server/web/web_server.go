@@ -43,8 +43,8 @@ type Server struct {
 }
 
 func NewWebServer(port int) {
-	if port <= 0 || port > 30000 {
-		log.Info("port is invalid %d, use default port: 8812", port)
+	if port <= 0 || port > 10000 {
+		log.Info("port is invalid %d, use default port: 8000", port)
 		port = 8000
 	}
 	doRoute()

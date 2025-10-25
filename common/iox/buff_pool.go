@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-// Package aio provides buffer pool implementations for efficient memory management
-package aio
+// Package iox provides buffer pool implementations for efficient memory management
+package iox
 
 import (
 	"bytes"

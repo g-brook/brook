@@ -27,7 +27,7 @@ const isRevoking = ref(false)
 
 const tokenInfo =ref<AuthToken>({
   token:'',
-  createTime:''
+  createTime:null
 })
 
 // 计算属性

@@ -20,12 +20,12 @@ const routes = [
   {
     path: "/",
     name: "Index",
-    component: () => import("@/views/Index/index.vue"),
+    component: () => import("@/views/index/Index.vue"),
   },
   {
     path: "/main",
     name: "Main",
-    component: () => import("@/views/Index/main.vue"),
+    component: () => import("@/views/index/Main.vue"),
     meta: { title: "主页面", requiresAuth: true },
   },
 ];

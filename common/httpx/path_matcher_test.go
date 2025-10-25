@@ -14,16 +14,16 @@
  * limitations under the License.
  */
 
-package utils_test
+package httpx_test
 
 import (
 	"testing"
 
-	"github.com/brook/common/utils"
+	"github.com/brook/common/httpx"
 )
 
 func TestNewPathMatcher(t *testing.T) {
-	matcher := utils.NewPathMatcher()
+	matcher := httpx.NewPathMatcher()
 	if matcher == nil {
 		t.Errorf("Expected non-nil PathMatcher")
 		return
@@ -34,7 +34,7 @@ func TestNewPathMatcher(t *testing.T) {
 }
 
 func TestAddAndGetPathMatcher(t *testing.T) {
-	matcher := utils.NewPathMatcher()
+	matcher := httpx.NewPathMatcher()
 	testCases := []struct {
 		path    string
 		handler interface{}

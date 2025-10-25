@@ -21,8 +21,8 @@ import (
 
 	sf "github.com/brook/common/configs"
 	"github.com/brook/common/hash"
+	"github.com/brook/common/lang"
 	"github.com/brook/common/log"
-	"github.com/brook/common/utils"
 	"github.com/brook/server/web/sql"
 )
 
@@ -92,8 +92,8 @@ func getTunnelConfig(sc *sf.ServerConfig) []*sf.ServerTunnelConfig {
 	return list
 }
 
-func getTunnelWebConfig(stc *sf.ServerTunnelConfig) bool {
-	config := sql.GetWebProxyConfig(stc.Id)
+func getTunnelWebConfig(stc *sf.ServerTunnelConfig, refProxyId int) bool {
+	config := sql.GetWebProxyConfig(refProxyId)
 	if config != nil {
 		proxy := config.Proxy
 		stc.KeyFile = config.KeyFile
@@ -113,8 +113,8 @@ func format(item *sql.ProxyConfig) *sf.ServerTunnelConfig {
 		log.Error("protocol is not support: %s", item.Protocol)
 	} else {
 		st.Type = protocol
-		if st.Type == utils.Http || st.Type == utils.Https {
-			if getTunnelWebConfig(st) {
+		if st.Type == lang.Http || st.Type == lang.Https {
+			if getTunnelWebConfig(st, item.Idx) {
 				return st
 			}
 		} else {
@@ -124,16 +124,16 @@ func format(item *sql.ProxyConfig) *sf.ServerTunnelConfig {
 	return nil
 }
 
-func transformProtocol(protocol string) utils.TunnelType {
+func transformProtocol(protocol string) lang.TunnelType {
 	switch protocol {
 	case "HTTP":
-		return utils.Http
+		return lang.Http
 	case "HTTPS":
-		return utils.Https
+		return lang.Https
 	case "TCP":
-		return utils.Tcp
+		return lang.Tcp
 	case "UDP":
-		return utils.Udp
+		return lang.Udp
 	default:
 		return ""
 	}

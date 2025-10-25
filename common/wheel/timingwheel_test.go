@@ -14,10 +14,28 @@
  * limitations under the License.
  */
 
-package common
+package wheel
 
-type KeyType string
-
-var (
-	EchoTest = "echoTest"
+import (
+	"fmt"
+	"sync"
+	"testing"
+	"time"
 )
+
+func TestNewTimingWheel(t *testing.T) {
+	var wg sync.WaitGroup
+	wg.Add(1)
+	t.Run("test", func(t *testing.T) {
+		wheel, err := NewTimingWheel(100*time.Millisecond, 100, func(k, v any) {
+			t.Log(k, v)
+			wg.Done()
+		})
+		if err != nil {
+			wheel.run()
+		}
+		_ = wheel.SetTimer("firster", 3, 5*time.Second)
+		wg.Wait()
+		fmt.Println("finished")
+	})
+}

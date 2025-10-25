@@ -15,16 +15,17 @@
   -->
 
 <script lang="ts" setup>
-import {computed, markRaw, onMounted, ref} from 'vue';
+import { computed, markRaw, onMounted, ref } from 'vue';
 import Icon from '@/components/icon/Index.vue';
 import Drawer from '@/components/drawer/Index.vue';
 import Modal from '@/components/modal';
 import modal from '@/components/modal';
 import ConfigFormComponent from './ConfigForm.vue';
 import config from '@/service/config';
-import {useI18n} from '@/components/lang/useI18n';
+import { useI18n } from '@/components/lang/useI18n';
 import message from "@/components/message";
 import WebConfiguration from "@/views/proxys/WebConfiguration.vue";
+import Message from '@/components/message';
 
 // 定义配置项的类型
 interface ConfigItem {
@@ -37,6 +38,8 @@ interface ConfigItem {
     state: boolean;
     isRunning: boolean;
     runtime: string;
+    isExistWeb: boolean;
+    clients: number;
 }
 
 const { t } = useI18n();
@@ -48,6 +51,7 @@ const webItem = ref<ConfigItem>(null);
 // 计算统计信息
 const totalConfigs = computed(() => configs.value.length);
 const enabledConfigs = computed(() => configs.value.filter(item => item.state).length);
+const runningConfigs = computed(() => configs.value.filter(item => item.isRunning).length);
 const drawerRef = ref<{ open: () => void } | null>(null);
 
 const getConfigs = async () => {
@@ -116,16 +120,57 @@ const handleDelete = (id: number) => {
     });
 };
 
-const handleToggleStatus = (id: number) => {
-    console.log('切换状态', id);
-    // TODO: 实现状态切换逻辑
+const handleUpdate = (cfg) => {
+    let formApi: { handleSubmit: () => Promise<boolean> } | null = null;
+    Modal.open(ConfigForm, {
+        title: t('configuration.editTunnelConfig'),
+        size: 'auto',
+        closable: true,
+        maskClosable: false,
+        showFooter: true,
+        props: {
+            onRegister: (api) => {
+                formApi = api;
+            },
+            initialData: cfg,
+            isEdit: true,
+        },
+        onConfirm: async () => {
+            if (formApi) {
+                try {
+                    const formData = await formApi.handleSubmit();
+                    if (formData) {
+                        await getConfigs();
+                        return true
+                    }
+                } catch (error) {
+                    console.error('Failed to submit form:', error);
+                }
+                return false
+            }
+        },
+    });
+};
+
+const handleToggleStatus = async (id: number, state: boolean) => {
+    try {
+        const res = await config.updateProxyState({
+            id: id,
+            state: state ? 0 : 1
+        });
+        if (res.success()) {
+            Message.info("更新状态成功")
+            getConfigs()
+        }
+    } catch (error) {
+    }
 };
 </script>
 
 <template>
     <div class="space-y-4">
         <Drawer ref="drawerRef" title="Web信息配置" icon="brook-web" width="50%">
-            <WebConfiguration :refProxyId="webItem?.proxyId" :protocol="webItem?.protocol" />
+            <WebConfiguration :refProxyId="webItem?.id" :protocol="webItem?.protocol" />
         </Drawer>
         <!-- 操作栏 -->
         <div
@@ -138,13 +183,24 @@ const handleToggleStatus = (id: number) => {
                 <div class="text-sm text-base-content/60">
                     {{ t('configuration.enabledConfigs', { count: enabledConfigs }) }}
                 </div>
+                <div class="text-sm text-base-content/60">
+                    {{ t('configuration.runningConfigs', { count: runningConfigs }) }}
+                </div>
             </div>
 
             <!-- 右侧操作按钮 -->
             <div class="flex items-center">
+                <button class="btn  btn-ghost btn-sm">
+                    <Icon icon="brook-empty" style="font-size: 12px;" />
+                    {{ t('common.download') }}
+                </button>
                 <button class="btn  btn-ghost btn-sm" @click="handleAdd">
                     <Icon icon="brook-add" style="font-size: 12px;" />
                     {{ t('common.add') }}
+                </button>
+
+                 <button class="btn btn-circle " @click="getConfigs">
+                    <Icon icon="brook-refresh"/>
                 </button>
             </div>
         </div>
@@ -179,15 +235,23 @@ const handleToggleStatus = (id: number) => {
 
                         </th>
                         <td>
-                            <div class="flex items-center gap-2">
-                                <div class="inline-grid *:[grid-area:1/1]" v-if="config.isRunning">
-                                    <div class="status status-success animate-ping"></div>
-                                    <div class="status status-success"></div>
-                                </div>
-                                <div class="status status-error" v-else />
-                                <div class="text-sm font-bold">{{ config.name }}</div>
-                                <div class="badge badge-ghost badge-sm">{{ config.tag }}</div>
+                            <div class="flex items-center">
 
+                                <div class="text-sm font-bold">
+                                    <div class="inline-grid *:[grid-area:1/1]" v-if="config.isRunning">
+                                        <div class="status status-success animate-ping"></div>
+                                        <div class="status status-success"></div>
+                                    </div>
+                                    <div class="status status-error" v-else />
+                                    {{ config.name }}
+                                </div>
+                                <div class="ml-2">
+                                    <span class="badge badge-xs"
+                                        :class="config.isRunning ? 'badge-success' : 'badge-warning'">{{
+                                        config.tag
+                                        }} </span>
+                                </div>
+                                　
                             </div>
                         </td>
                         <td>{{ config.remotePort }}</td>
@@ -199,7 +263,7 @@ const handleToggleStatus = (id: number) => {
                             <div class="form-control">
                                 <label class="cursor-pointer label gap-2">
                                     <input type="checkbox" class="toggle toggle-primary toggle-sm "
-                                        :checked="config.state" @change="handleToggleStatus(config.id)" />
+                                        :checked="config.state" @change="handleToggleStatus(config.id, config.state)" />
                                     <span class="label-text text-xs">
                                         {{ config.state ? t('configuration.enabled') : t('configuration.disabled') }}
                                     </span>
@@ -212,17 +276,34 @@ const handleToggleStatus = (id: number) => {
                             </span>
                         </td>
                         <td>
-                            <div class="badge text-xs text-base-100" :class="config.isRunning ? 'badge-primary' : 'badge-error'">
-                              <Icon icon="brook-Right-1" style="font-size: 12px;" v-if="config.isRunning"/>
+                            <div class="badge text-xs text-base-100"
+                                :class="config.isRunning ? 'badge-primary' : 'badge-error'">
+                                <Icon icon="brook-Right-1" style="font-size: 12px;" v-if="config.isRunning" />
                                 {{ config.isRunning ? t('server.start') : t('server.stop') }}
                             </div>
+                            <p class="list-col-wrap text-xs">
+                                客户端数:{{ config.clients }}
+                            </p>
                         </td>
                         <td>
                             <div class="flex items-center gap-1">
-                                <button class="btn btn-ghost btn-sm btn-square"
-                                    v-if="config.protocol === `HTTP` || config.protocol === `HTTPS`"
-                                    @click="openWebConfig(config)" :title="t('configuration.delete')">
-                                    <Icon icon="brook-web" />
+
+                                <button class="btn btn-ghost btn-sm btn-square" @click="openWebConfig(config)"
+                                    :title="t('configuration.delete')"
+                                    v-if="config.protocol === `HTTP` || config.protocol === `HTTPS`">
+                                    <div class="tooltip tooltip-open tooltip-warning animate-bounce tooltip-left"
+                                        data-tip="没有设置WEB配置,请设置" v-if="!config.isExistWeb">
+                                        <Icon icon="brook-web" />
+                                    </div>
+                                    <div v-else>
+                                       <Icon icon="brook-web" />
+                                    </div>
+                                </button>
+                                <div v-else>
+                                    <button class="btn btn-ghost btn-sm btn-square btn-disabled"></button>
+                                </div>
+                                <button class="btn btn-ghost btn-sm btn-square" @click="handleUpdate(config)">
+                                    <Icon icon="brook-edit" />
                                 </button>
                                 <button class="btn btn-ghost btn-sm btn-square" @click="handleDelete(config.id)"
                                     :title="t('configuration.delete')">
@@ -237,7 +318,8 @@ const handleToggleStatus = (id: number) => {
                         <td colspan="9" class="text-center py-12">
                             <div
                                 class="w-18 h-18 bg-base-200 rounded-full flex items-center justify-center mx-auto mb-4">
-                                <Icon icon="brook-technology_usb-cable" class="text-base-content/40" style="font-size: 48px;" />
+                                <Icon icon="brook-technology_usb-cable" class="text-base-content/40"
+                                    style="font-size: 48px;" />
                             </div>
                             <h3 class="text-lg font-medium text-base-content/60 mb-2">{{
                                 t('configuration.noConfigurations') }}</h3>

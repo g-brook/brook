@@ -34,7 +34,7 @@ var (
 )
 
 func init() {
-	cmd.PersistentFlags().StringVarP(&cfgPath, "config", "c", "./client.json", "brook client config")
+	cmd.PersistentFlags().StringVarP(&cfgPath, "configs", "c", "./client.json", "brook client configs")
 	command.RegisterClientFlags(cmd, config)
 }
 

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package aio
+package iox
 
 import (
 	"io"

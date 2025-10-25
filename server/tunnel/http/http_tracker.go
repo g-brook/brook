@@ -23,7 +23,7 @@ import (
 	"github.com/brook/common/transport"
 )
 
-// HttpTracker http tracker
+// HttpTracker httpx tracker
 type HttpTracker struct {
 	mu       sync.Mutex
 	channel  transport.Channel

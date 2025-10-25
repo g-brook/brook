@@ -27,10 +27,10 @@ import (
 	"sync/atomic"
 	"time"
 
-	io2 "github.com/brook/common/aio"
 	"github.com/brook/common/exchange"
+	http2 "github.com/brook/common/httpx"
+	io2 "github.com/brook/common/iox"
 	"github.com/brook/common/log"
-	"github.com/brook/common/utils"
 )
 
 var (
@@ -161,7 +161,7 @@ func NewHttpProxy(fun RouteFunction) *Proxy {
 			}
 			log.Error("Not found path %v", err)
 			writer.WriteHeader(state)
-			_, _ = writer.Write(utils.GetPageNotFound(state))
+			_, _ = writer.Write(http2.GetPageNotFound(state))
 		},
 	}
 	return &Proxy{

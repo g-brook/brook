@@ -31,6 +31,8 @@ func init() {
 	RegisterRoute(NewRoute("/delProxyConfigs", "POST"), delProxyConfig)
 	RegisterRoute(NewRoute("/addWebConfigs", "POST"), addWebConfigs)
 	RegisterRoute(NewRoute("/getWebConfigs", "POST"), getWebConfigs)
+	RegisterRoute(NewRoute("/updateProxyConfig", "POST"), updateProxyConfig)
+	RegisterRoute(NewRoute("/updateProxyState", "POST"), updateProxyState)
 }
 
 // getProxyConfigs retrieves configuration information from the database
@@ -51,6 +53,13 @@ func getProxyConfigs(*Request[any]) *Response {
 		if ok {
 			proxyConfig.IsRunning = true
 			proxyConfig.Runtime = server.Runtime().Format("2006-01-02 15:04:05")
+			proxyConfig.Clients = server.Users()
+		}
+	}
+	for _, v := range configMap {
+		if (v.Protocol == "HTTP") || (v.Protocol == "HTTPS") {
+			proxyConfig := sql.GetWebProxyConfig(v.Idx)
+			v.IsExistWeb = proxyConfig != nil
 		}
 	}
 	return NewResponseSuccess(config)
@@ -62,13 +71,35 @@ func delProxyConfig(req *Request[sql.ProxyConfig]) *Response {
 	}
 	err := sql.DelProxyConfig(req.Body.Idx)
 	if err != nil {
-		return NewResponseFail(errs.CodeSysErr, "delete proxy config failed")
+		return NewResponseFail(errs.CodeSysErr, "delete proxy configs failed")
+	}
+	return NewResponseSuccess(nil)
+}
+
+func updateProxyConfig(req *Request[sql.ProxyConfig]) *Response {
+	if req.Body.Idx <= 0 {
+		return NewResponseFail(errs.CodeSysErr, "idx is empty")
+	}
+	err := sql.UpdateProxyConfig(req.Body)
+	if err != nil {
+		return NewResponseFail(errs.CodeSysErr, "update proxy configs failed")
+	}
+	return NewResponseSuccess(nil)
+}
+
+func updateProxyState(req *Request[sql.ProxyConfig]) *Response {
+	if req.Body.Idx <= 0 {
+		return NewResponseFail(errs.CodeSysErr, "idx is empty")
+	}
+	err := sql.UpdateProxyState(req.Body)
+	if err != nil {
+		return NewResponseFail(errs.CodeSysErr, "update proxy configs failed")
 	}
 	return NewResponseSuccess(nil)
 }
 
 func getWebConfigs(req *Request[WebConfigInfo]) *Response {
-	if req.Body.RefProxyId == "" {
+	if req.Body.RefProxyId <= 0 {
 		return NewResponseFail(errs.CodeSysErr, "refProxyId is empty")
 	}
 	item := sql.GetWebProxyConfig(req.Body.RefProxyId)
@@ -87,7 +118,7 @@ func getWebConfigs(req *Request[WebConfigInfo]) *Response {
 
 func addWebConfigs(req *Request[WebConfigInfo]) *Response {
 	body := req.Body
-	if body.RefProxyId == "" {
+	if body.RefProxyId <= 0 {
 		return NewResponseFail(errs.CodeSysErr, "ProxyId is empty")
 	}
 	if body.Proxy == nil || len(body.Proxy) == 0 {
@@ -101,9 +132,12 @@ func addWebConfigs(req *Request[WebConfigInfo]) *Response {
 		err = sql.UpdateWebProxyConfig(body.toDb())
 	}
 	if err != nil {
-		return NewResponseFail(errs.CodeSysErr, "Add web config failed")
+		return NewResponseFail(errs.CodeSysErr, "Add web configs failed")
 	}
-	base.CFM.Push(body.RefProxyId)
+	info := sql.GetProxyConfigById(body.RefProxyId)
+	if info != nil {
+		base.CFM.Push(info.ProxyID)
+	}
 	return NewResponseSuccess(nil)
 }
 
@@ -128,7 +162,7 @@ func addProxyConfigs(req *Request[sql.ProxyConfig]) *Response {
 	}
 	err := sql.AddProxyConfig(body)
 	if err != nil {
-		return NewResponseFail(errs.CodeSysErr, "add config failed")
+		return NewResponseFail(errs.CodeSysErr, "add configs failed")
 	}
 	return NewResponseSuccess(nil)
 }

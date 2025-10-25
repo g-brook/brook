@@ -12,8 +12,8 @@
     {
       "type": "http",
       "localAddress": "localhost:8080",
-      "proxyId": "test2",
-      "httpId": "aaa3333"
+      "proxyId": "HttpLocal-2",
+      "httpId": "local"
     }
   ]
 }

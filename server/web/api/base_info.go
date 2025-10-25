@@ -18,7 +18,7 @@ package api
 
 import (
 	"github.com/brook/common/log"
-	"github.com/brook/common/utils"
+	"github.com/brook/common/stringx"
 	"github.com/brook/server/web/db"
 	"github.com/brook/server/web/errs"
 )
@@ -44,7 +44,7 @@ func login(req *Request[LoginInfo]) *Response {
 	if info.Username != req.Body.Username || info.Password != req.Body.Password {
 		return NewResponseFail(errs.CodeSysErr, "Login in fail. Username or password is wrong.")
 	}
-	token := utils.RandomString(32)
+	token := stringx.RandomString(32)
 	err = db.PutWithTtl(token, info, TokenTtl)
 	if err != nil {
 		return NewResponseFail(errs.CodeSysErr, "Login in fail.")

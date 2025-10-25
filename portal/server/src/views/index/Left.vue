@@ -50,7 +50,7 @@ const toggleSidebar = () => {
         'transition-all duration-300 ease-in-out h-full ',
         isCollapsed ? 'w-16' : 'w-70'
     ]">
-        <div class="flex flex-col h-full">
+        <div class="flex flex-col h-full rounded-2xl shadow-[0_8px_40px_rgba(0,0,0,0.10)] bg-gradient-to-br from-base-300/50 to-base-100">
             <!-- 顶部 Logo 区域 -->
             <div class="navbar sticky top-0 z-20 ">
                 <div class="flex-1 px-1 py-2">
@@ -75,21 +75,19 @@ const toggleSidebar = () => {
                                 </div>
                             </transition>
                         </div>
-
-
                     </div>
                 </div>
                  <!-- 折叠按钮 - 展开状态下在右下角 -->
                     <div class="relative">
                         <button @click="toggleSidebar"
-                            class="btn btn-xs btn-circle border-0  bg-base-100 transition-transform duration-300 absolute -left-1.5 -top-1.5"
+                            class="btn btn-xs btn-circle border-0  bg-base-100 transition-transform duration-300 absolute -left-1.8 -top-1"
                             :class="{ 'rotate-180': isCollapsed }">
                             <Icon icon="brook-Left-" class="text-base-content" style="font-size: 11px;" />
                         </button>
                     </div>
             </div>
 
-            <div class="flex-1 overflow-y-auto bg-base-100 py-4 h-full">
+            <div class="flex-1 overflow-y-auto  py-4 h-full">
                 <ul class="menu px-2 space-y-1 w-full">
                     <li v-for="(item, index) in menuList" :key="index">
                         <a @click="onSelect(item)" :class="[
@@ -118,7 +116,6 @@ const toggleSidebar = () => {
                 </ul>
             </div>
 
-            <!-- 底部状态信息 -->
             <div class="p-4">
                 <div v-show="!isCollapsed" class="space-y-2 text-xs">
                     <div class="flex items-center justify-between">
@@ -130,16 +127,16 @@ const toggleSidebar = () => {
                     </div>
                     <div class="flex items-center justify-between">
                         <span class="text-base-content/60">Version</span>
-                        <span class="font-mono font-medium text-base-content">v1.3.0</span>
+                        <span class="font-mono font-medium text-base-content">v1.0.0</span>
                     </div>
-                   
+
                 </div>
 
                 <!-- 折叠状态下的简化显示 -->
                 <div v-show="isCollapsed" class="flex flex-col items-center space-y-2">
                     <div class="w-2 h-2 bg-success rounded-full animate-pulse" title="Online"></div>
                     <div class="text-xs font-mono text-base-content/60 writing-mode-vertical" title="v1.3.0">v1.3</div>
-                    
+
                 </div>
             </div>
         </div>

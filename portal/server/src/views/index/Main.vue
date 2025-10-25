@@ -55,7 +55,7 @@ onMounted(async () => {
 <template>
     <div class="flex h-screen bg-base-300/50">
         <!-- 左侧导航栏 -->
-        <div class="flex-shrink-0">
+        <div class="flex-shrink-0 p-2">
             <Left @update:select="handleSelect" />
         </div>
         

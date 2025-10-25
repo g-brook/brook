@@ -43,11 +43,11 @@ var (
 // init function is called automatically when the package is initialized
 // It sets up command line flags and registers server-specific flags
 func init() {
-	// Add a persistent string flag for config file path
-	// The flag can be referenced as "--config" or "-c"
+	// Add a persistent string flag for configs file path
+	// The flag can be referenced as "--configs" or "-c"
 	// Default value is "./server.json"
-	// The flag stores the config file path in cfgPath variable
-	cmd.PersistentFlags().StringVarP(&cfgPath, "config", "c", "./server.json", "config file path")
+	// The flag stores the configs file path in cfgPath variable
+	cmd.PersistentFlags().StringVarP(&cfgPath, "configs", "c", "./server.json", "configs file path")
 	// Register server-specific flags with the command
 	// This function likely adds flags related to server configuration
 	command.RegisterServerFlags(cmd, serverConfig)

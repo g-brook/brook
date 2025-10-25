@@ -22,11 +22,11 @@ import (
 	"io"
 	"sync"
 
-	"github.com/brook/common/aio"
 	"github.com/brook/common/hash"
+	"github.com/brook/common/iox"
+	"github.com/brook/common/lang"
 	"github.com/brook/common/log"
 	trp "github.com/brook/common/transport"
-	"github.com/brook/common/utils"
 	"github.com/panjf2000/gnet/v2"
 	"github.com/xtaci/smux"
 )
@@ -238,14 +238,13 @@ func (sever *Server) OnOpen(c gnet.Conn) (out []byte, action gnet.Action) {
 }
 
 func (sever *Server) OnTraffic(c gnet.Conn) gnet.Action {
-	conn2 := NewChannel(c, sever)
-	//Call lastActive.
-	conn2.GetContext().LastActive()
-	defer sever.removeIfConnection(conn2)
+	conn := NewChannel(c, sever)
+	conn.GetContext().LastActive()
+	defer sever.removeIfConnection(conn)
 	if sever.startSmux != nil {
-		if conn2.PipeConn != nil {
-			buf, _ := conn2.Next(-1)
-			_, err := conn2.PipeConn.Copy(buf)
+		if conn.PipeConn != nil {
+			buf, _ := conn.Next(-1)
+			_, err := conn.PipeConn.Copy(buf)
 			if err != nil {
 				log.Error("pipeConn.Copy error: %s", err)
 			}
@@ -257,7 +256,7 @@ func (sever *Server) OnTraffic(c gnet.Conn) gnet.Action {
 				b = false
 			})
 			return b
-		}, conn2)
+		}, conn)
 	}
 	return gnet.None
 }
@@ -281,7 +280,7 @@ func (sever *Server) next(fun func(s ServerHandler, conn trp.Channel) bool, conn
 // isDatagram checks if the server is using UDP protocol and initializes the event engine accordingly
 func (sever *Server) isDatagram() bool {
 	// Check if the server is configured to use UDP network
-	return sever.opts.network == utils.NetworkUdp
+	return sever.opts.network == lang.NetworkUdp
 }
 
 func (sever *Server) GetPort() int {
@@ -303,43 +302,14 @@ func (sever *Server) removeIfConnection(v2 *GChannel) {
 
 // Start is function start tcp server.
 func (sever *Server) Start(opt ...ServerOption) error {
-	//load sOptions config.
+	//load sOptions configs.
 	sever.opts = serverOptions(opt...)
-	if sever.opts.withSmux != nil && sever.opts.withSmux.enable {
-		sever.startSmux = func(conn *trp.SmuxAdapterConn, ctx context.Context, option *SmuxServerOption) error {
-			config := smux.DefaultConfig()
-			session, err := smux.Server(conn, config)
-			if err != nil {
-				log.Error("Start server error. %v", err)
-			}
-			go func() {
-				for {
-					stream, _ := session.AcceptStream()
-					if session.IsClosed() {
-						log.Error("session is close.")
-						return
-					}
-					log.Info("Start server success stream. %s", stream.RemoteAddr())
-					channel := trp.NewSChannel(stream, ctx, false)
-					sever.next(func(s ServerHandler, _ trp.Channel) bool {
-						b := true
-						s.Open(channel, func() {
-							b = false
-						})
-						return b
-					}, nil)
-					go sever.smuxReadLoop(channel)
-				}
-
-			}()
-			return nil
-		}
-	}
 	network := sever.opts.network
 	if network == "" {
-		network = utils.NetworkTcp
+		network = lang.NetworkTcp
 		sever.opts.network = network
 	}
+	sever.streamAssignment()
 	err := gnet.Run(sever, fmt.Sprintf("%s://:%d", network, sever.port),
 		gnet.WithMulticore(true),
 		gnet.WithLogger(&log.GnetLogger{}),
@@ -355,12 +325,47 @@ func (sever *Server) Start(opt ...ServerOption) error {
 	return nil
 }
 
-func (sever *Server) smuxReadLoop(ch *trp.SChannel) {
+func (sever *Server) streamAssignment() {
+	if sever.opts.withSmux != nil && sever.opts.withSmux.enable {
+		sever.startSmux = func(conn *trp.SmuxAdapterConn, ctx context.Context, option *SmuxServerOption) error {
+			config := smux.DefaultConfig()
+			session, err := smux.Server(conn, config)
+			if err != nil {
+				log.Error("Start server error. %v", err)
+			}
+			go func() {
+				for {
+					stream, _ := session.AcceptStream()
+					if session.IsClosed() {
+						log.Error("session is close.")
+						_ = session.Close()
+						return
+					}
+					log.Info("Start server success stream. %s", stream.RemoteAddr())
+					channel := trp.NewSChannel(stream, ctx, false)
+					sever.next(func(s ServerHandler, _ trp.Channel) bool {
+						b := true
+						s.Open(channel, func() {
+							b = false
+						})
+						return b
+					}, nil)
+					go sever.readLoopStream(channel)
+					addHealthyCheckStream(channel)
+				}
+
+			}()
+			return nil
+		}
+	}
+}
+
+func (sever *Server) readLoopStream(ch *trp.SChannel) {
 	for {
-		if ch.IsTunnel {
+		if ch.IsOpenTunnel {
 			return
 		}
-		err := aio.WithBuffer(func(buf []byte) error {
+		err := iox.WithBuffer(func(buf []byte) error {
 			n, err := ch.Stream.Read(buf)
 			if err != nil {
 				if err == io.EOF {
@@ -371,7 +376,7 @@ func (sever *Server) smuxReadLoop(ch *trp.SChannel) {
 				return nil
 			}
 			_, _ = ch.Copy(buf[:n])
-			if !ch.IsTunnel {
+			if !ch.IsOpenTunnel {
 				// If already this channel is bind tunnel,
 				sever.next(func(s ServerHandler, _ trp.Channel) bool {
 					b := true
@@ -382,7 +387,7 @@ func (sever *Server) smuxReadLoop(ch *trp.SChannel) {
 				}, nil)
 			}
 			return nil
-		}, aio.GetBytePool4k())
+		}, iox.GetBytePool4k())
 		if err != nil {
 			return
 		}

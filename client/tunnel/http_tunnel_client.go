@@ -28,12 +28,15 @@ import (
 	"github.com/brook/client/clis"
 	"github.com/brook/common/configs"
 	"github.com/brook/common/exchange"
+	"github.com/brook/common/httpx"
 	"github.com/brook/common/log"
 	"github.com/brook/common/transport"
-	"github.com/brook/common/utils"
 )
 
 func NewHttpTunnelClient(config *configs.ClientTunnelConfig) *HttpTunnelClient {
+	if config.HttpId == "" {
+		panic("httpId is empty")
+	}
 	tunnelClient := clis.NewBaseTunnelClient(config, true)
 	// Create a new HttpTunnelClient embedding the base tunnel client
 	client := HttpTunnelClient{
@@ -192,7 +195,7 @@ func isHTTPRequestCompleteLight(buf *bytes.Buffer) bool {
 // It formats the headers into a byte slice following the HTTP protocol standard
 // Parameters:
 //
-//	r - pointer to the http.Response object containing the response data
+//	r - pointer to the httpx.Response object containing the response data
 //
 // Returns:
 //
@@ -215,6 +218,6 @@ func BuildCustomHTTPHeader(r *http.Response) []byte {
 }
 
 func getErrorResponse() *http.Response {
-	return utils.GetResponse(http.StatusInternalServerError)
+	return httpx.GetResponse(http.StatusInternalServerError)
 
 }

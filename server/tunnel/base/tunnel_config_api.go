@@ -32,7 +32,7 @@ type ConfigNotify func(cfg *ConfigNode)
 
 type TunnelConfigApi interface {
 
-	// GetConfig Get tunnel config by proxy id
+	// GetConfig Get tunnel configs by proxy id
 	GetConfig(proxyId string) *ConfigNode
 
 	UpdateConfig(proxyId string) *ConfigNode
