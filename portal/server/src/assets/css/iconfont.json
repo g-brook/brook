@@ -6,6 +6,20 @@
   "description": "",
   "glyphs": [
     {
+      "icon_id": "5560708",
+      "name": "download",
+      "font_class": "download",
+      "unicode": "e760",
+      "unicode_decimal": 59232
+    },
+    {
+      "icon_id": "12004923",
+      "name": "Copy",
+      "font_class": "Copy",
+      "unicode": "eaa9",
+      "unicode_decimal": 60073
+    },
+    {
       "icon_id": "1224250",
       "name": "refresh",
       "font_class": "refresh",

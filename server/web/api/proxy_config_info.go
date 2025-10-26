@@ -19,6 +19,9 @@ package api
 import (
 	"encoding/json"
 
+	"github.com/brook/common/configs"
+	"github.com/brook/common/lang"
+	"github.com/brook/server/defin"
 	"github.com/brook/server/metrics"
 	"github.com/brook/server/tunnel/base"
 	"github.com/brook/server/web/errs"
@@ -33,6 +36,7 @@ func init() {
 	RegisterRoute(NewRoute("/getWebConfigs", "POST"), getWebConfigs)
 	RegisterRoute(NewRoute("/updateProxyConfig", "POST"), updateProxyConfig)
 	RegisterRoute(NewRoute("/updateProxyState", "POST"), updateProxyState)
+	RegisterRoute(NewRoute("/genClientConfig", "POST"), genClientConfig)
 }
 
 // getProxyConfigs retrieves configuration information from the database
@@ -53,16 +57,53 @@ func getProxyConfigs(*Request[any]) *Response {
 		if ok {
 			proxyConfig.IsRunning = true
 			proxyConfig.Runtime = server.Runtime().Format("2006-01-02 15:04:05")
-			proxyConfig.Clients = server.Users()
+			proxyConfig.Clients = server.Clients()
 		}
 	}
 	for _, v := range configMap {
-		if (v.Protocol == "HTTP") || (v.Protocol == "HTTPS") {
+		if v.IsHttpOrHttps() {
 			proxyConfig := sql.GetWebProxyConfig(v.Idx)
 			v.IsExistWeb = proxyConfig != nil
 		}
 	}
 	return NewResponseSuccess(config)
+}
+
+func genClientConfig(*Request[any]) *Response {
+
+	serverPort := defin.GetServerPort()
+	cfgs := sql.GetAllProxyConfig()
+	var tunnelCfgs = make([]*configs.ClientTunnelConfig, 0)
+	if cfgs != nil {
+		for _, cfg := range cfgs {
+			tcfg := &configs.ClientTunnelConfig{
+				TunnelType:   base.TransformProtocol(cfg.Protocol),
+				ProxyId:      cfg.ProxyID,
+				LocalAddress: "#{localAddress}",
+			}
+			if tcfg.ProxyId == "UDP" {
+				tcfg.UdpSize = 1500
+			}
+			if cfg.IsHttpOrHttps() {
+				webCfg, ok := getWebConfig(cfg.Idx)
+				if ok {
+					for _, proxyInfo := range webCfg.Proxy {
+						tcfg.HttpId = proxyInfo.Id
+					}
+				}
+			}
+			tunnelCfgs = append(tunnelCfgs, tcfg)
+		}
+	}
+	cfg := &configs.ClientConfig{
+		ServerHost: "#{host}",
+		ServerPort: serverPort,
+		Tunnels:    tunnelCfgs,
+		PingTime:   lang.DefaultPingTime,
+		Token:      defin.GetToken(),
+		Logger:     nil,
+	}
+	return NewResponseSuccess(cfg)
 }
 
 func delProxyConfig(req *Request[sql.ProxyConfig]) *Response {
@@ -102,9 +143,14 @@ func getWebConfigs(req *Request[WebConfigInfo]) *Response {
 	if req.Body.RefProxyId <= 0 {
 		return NewResponseFail(errs.CodeSysErr, "refProxyId is empty")
 	}
-	item := sql.GetWebProxyConfig(req.Body.RefProxyId)
+	wf, _ := getWebConfig(req.Body.RefProxyId)
+	return NewResponseSuccess(wf)
+}
+
+func getWebConfig(refProxyId int) (*WebConfigInfo, bool) {
+	item := sql.GetWebProxyConfig(refProxyId)
 	if item == nil {
-		return NewResponseSuccess(nil)
+		return nil, false
 	}
 	wf := &WebConfigInfo{
 		RefProxyId: item.RefProxyId,
@@ -113,7 +159,7 @@ func getWebConfigs(req *Request[WebConfigInfo]) *Response {
 		CertFile:   item.CertFile,
 	}
 	_ = json.Unmarshal([]byte(item.Proxy), &wf.Proxy)
-	return NewResponseSuccess(wf)
+	return wf, true
 }
 
 func addWebConfigs(req *Request[WebConfigInfo]) *Response {
@@ -136,7 +182,7 @@ func addWebConfigs(req *Request[WebConfigInfo]) *Response {
 	}
 	info := sql.GetProxyConfigById(body.RefProxyId)
 	if info != nil {
-		base.CFM.Push(info.ProxyID)
+		base.TunnelCfm.Push(info.ProxyID)
 	}
 	return NewResponseSuccess(nil)
 }
@@ -155,7 +201,7 @@ func addProxyConfigs(req *Request[sql.ProxyConfig]) *Response {
 	if body.ProxyID == "" {
 		return NewResponseFail(errs.CodeSysErr, "proxyId is empty")
 	}
-	if (body.Protocol == "HTTP") || (body.Protocol == "HTTPS") {
+	if body.IsHttpOrHttps() {
 		body.State = 0
 	} else {
 		body.State = 1

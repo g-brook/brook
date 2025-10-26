@@ -17,6 +17,7 @@
 package tunnel
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -123,7 +124,7 @@ func (t *UdpTunnelClient) initOpen(*transport.SChannel) (err error) {
 			}
 		})
 	}
-	err = t.AsyncRegister(t.getReq(), func(p *exchange.Protocol, rw io.ReadWriteCloser) error {
+	err = t.AsyncRegister(t.getReq(), func(p *exchange.Protocol, rw io.ReadWriteCloser, _ context.Context) error {
 		if p.IsSuccess() {
 			log.Info("Connection local address success then Client to server register success:%v", t.GetCfg().LocalAddress)
 			bucket := exchange.NewTunnelBucket(rw, t.TcControl.Context())

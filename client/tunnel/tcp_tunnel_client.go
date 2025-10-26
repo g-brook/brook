@@ -17,6 +17,7 @@
 package tunnel
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"net"
@@ -61,7 +62,7 @@ func (t *TcpTunnelClient) initOpen(ch *transport.SChannel) error {
 		_ = ch.Close()
 		return err
 	}
-	err = t.AsyncRegister(t.GetRegisterReq(), func(p *exchange.Protocol, rw io.ReadWriteCloser) error {
+	err = t.AsyncRegister(t.GetRegisterReq(), func(p *exchange.Protocol, rw io.ReadWriteCloser, _ context.Context) error {
 		log.Info("Connection local address success then Client to server register success:%v", t.GetCfg().LocalAddress)
 		if p.IsSuccess() {
 			errors := iox.Pipe(ch, localConnection)

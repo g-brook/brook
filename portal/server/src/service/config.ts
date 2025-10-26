@@ -21,6 +21,10 @@ const getProxyConfigs = <Q>(): Promise<Response<Q>> => {
   return Http.post("/api/getProxyConfigs");
 };
 
+const genClientConfig = <Q>(): Promise<Response<Q>> => {
+  return Http.post("/api/genClientConfig");
+};
+
 const addProxyConfig = <Q>(params: any): Promise<Response<Q>> => {
   return Http.post("/api/addProxyConfigs", params);
 };
@@ -50,6 +54,7 @@ const getWebConfigs = <Q>(parmas: any): Promise<Response<Q>> => {
 };
 
 const functions = {
+  genClientConfig,
   getProxyConfigs,
   addProxyConfig,
   delProxyConfig,

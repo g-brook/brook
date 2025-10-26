@@ -31,6 +31,10 @@ type ProxyConfig struct {
 	Clients    int    `json:"clients"`
 }
 
+func (r *ProxyConfig) IsHttpOrHttps() bool {
+	return r.Protocol == "HTTP" || r.Protocol == "HTTPS"
+}
+
 func AddProxyConfig(p ProxyConfig) error {
 	err := Exec(`
             INSERT INTO proxy_config(name, tag, remote_port, proxy_id, protocol,state,run_state)

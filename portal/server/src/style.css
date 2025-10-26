@@ -19,7 +19,6 @@
 @plugin "daisyui" {
      themes: light --default, dark --prefersdark;
 }
-
 /* 颜色变量定义 */
 :root {
   /* 主色调 */
@@ -103,6 +102,3 @@ body {
   box-shadow: 0 0 0 3px var(--primary-shadow); /* 使用颜色变量 */
   outline: none;
 } 
-
-
- 

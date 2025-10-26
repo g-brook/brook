@@ -21,7 +21,7 @@ import (
 	"io"
 )
 
-type BytesBucketRead func(heads, bodies []byte, rw io.ReadWriteCloser)
+type BytesBucketRead func(heads, bodies []byte, rw io.ReadWriteCloser, ctx context.Context)
 
 type ReadFunction func(sch io.ReadWriteCloser) error
 
@@ -119,7 +119,7 @@ func (m *BytesBucket) readLoop() {
 			if err != nil {
 				return err
 			}
-			handler(maybeHeader, body, m.rw)
+			handler(maybeHeader, body, m.rw, m.cannelCtx)
 		}
 		return nil
 	}

@@ -26,6 +26,6 @@ type TunnelMetrics interface {
 	Port() int
 	Type() string
 	Connections() int
-	Users() int
+	Clients() int
 	Runtime() time.Time
 }

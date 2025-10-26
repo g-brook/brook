@@ -19,6 +19,7 @@ package base
 import (
 	"github.com/brook/common/configs"
 	"github.com/brook/common/hash"
+	"github.com/brook/common/lang"
 	"github.com/brook/common/queue"
 )
 
@@ -38,9 +39,24 @@ type TunnelConfigApi interface {
 	UpdateConfig(proxyId string) *ConfigNode
 }
 
-var CFM = &ConfigManager{
+var TunnelCfm = &ConfigManager{
 	queue:   queue.NewMemoryQueue[string](100),
 	listens: hash.NewSyncMap[string, ConfigNotify](),
+}
+
+func TransformProtocol(protocol string) lang.TunnelType {
+	switch protocol {
+	case "HTTP":
+		return lang.Http
+	case "HTTPS":
+		return lang.Https
+	case "TCP":
+		return lang.Tcp
+	case "UDP":
+		return lang.Udp
+	default:
+		return ""
+	}
 }
 
 type ConfigManager struct {

@@ -25,7 +25,7 @@ import (
 )
 
 // BucketRead is a function type that takes a pointer to a Protocol struct and an io.ReadWriteCloser as parameters
-type BucketRead func(p *Protocol, rw io.ReadWriteCloser) error
+type BucketRead func(p *Protocol, rw io.ReadWriteCloser, ctx context.Context) error
 
 // MessageBucket is a struct that contains a BytesBucket, a channel for pushing Protocol structs, a map of Cmd to BucketRead functions, and a default BucketRead function
 type MessageBucket struct {
@@ -57,7 +57,7 @@ func (m *MessageBucket) SetDefaultHandler(def BucketRead) {
 }
 
 // read is a function that takes a pointer to a Protocol struct, a byte slice, and an io.ReadWriteCloser as parameters
-func (m *MessageBucket) read(_, bytes []byte, rw io.ReadWriteCloser) {
+func (m *MessageBucket) read(_, bytes []byte, rw io.ReadWriteCloser, ctx context.Context) {
 	body, err := GetBody(bytes)
 	if err != nil {
 		log.Warn("error.")
@@ -70,10 +70,10 @@ func (m *MessageBucket) read(_, bytes []byte, rw io.ReadWriteCloser) {
 	}
 	// Check if the Cmd field of the Protocol struct is in the bucketHandler map
 	if handler, ok := m.bucketHandler[body.Cmd]; ok {
-		handler(body, rw)
+		_ = handler(body, rw, m.bytesBucket.cannelCtx)
 	} else {
 		if m.defaultHandler != nil {
-			m.defaultHandler(body, rw)
+			_ = m.defaultHandler(body, rw, m.bytesBucket.cannelCtx)
 		}
 	}
 }

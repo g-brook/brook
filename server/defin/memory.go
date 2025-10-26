@@ -55,3 +55,7 @@ func Delete(key lang.KeyType) {
 func GetToken() string {
 	return Get[string](TokenKey)
 }
+
+func GetServerPort() int {
+	return Get[int](ServerPort)
+}

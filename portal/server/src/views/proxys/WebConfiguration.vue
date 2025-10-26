@@ -135,8 +135,8 @@ const saveProxyToRemote = () => {
   }
   config.addWebConfigs({
     refProxyId: props.refProxyId,
-    createFile: properties.value.certFile,
-    KeyFile: properties.value.keyFile,
+    certFile: properties.value.certFile,
+    keyFile: properties.value.keyFile,
     proxy: proxyList.value
   }).then((res) => {
     if (res.success()) {
@@ -152,8 +152,8 @@ const getWebConfigs = () => {
   }).then((res) => {
       var rt = res.data;
       proxyList.value = rt.proxy || [];
-      properties.value.certFile = rt.createFile || "";
-      properties.value.keyFile = rt.KeyFile || "";
+      properties.value.certFile = rt.certFile || "";
+      properties.value.keyFile = rt.keyFile || "";
   })
 }
 onMounted(() => {

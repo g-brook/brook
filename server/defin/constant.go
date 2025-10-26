@@ -30,4 +30,6 @@ const (
 	HttpChannel lang.KeyType = "http_channel"
 
 	TokenKey lang.KeyType = "runtime_token"
+
+	ServerPort lang.KeyType = "server_port"
 )

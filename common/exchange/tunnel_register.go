@@ -45,7 +45,7 @@ type RegisterReqAndRsp struct {
 	//request id.
 	BindId string `json:"bind_id"`
 
-	//proxy id. only httpx or httpx.
+	//proxy id. only httpx or http.
 	HttpId string `json:"http_id"`
 
 	//proxyId.

@@ -20,12 +20,12 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"os"
 	"time"
 )
 
 func handler(w http.ResponseWriter, r *http.Request) {
 	now := time.Now()
-	fmt.Println("收到了", now)
 	bodyBytes, err := io.ReadAll(r.Body)
 	if err != nil {
 		// 处理错误
@@ -40,9 +40,8 @@ func handler(w http.ResponseWriter, r *http.Request) {
 }
 
 func mockHandler(w http.ResponseWriter, r *http.Request) {
-	fmt.Println("你好。。。。。。。。。")
 	// 读取mock.html文件内容
-	file, err := http.Dir("/Users/sixh/Documents/open_project/brook/mock/").Open("mock.html")
+	file, err := os.Open("mock.html")
 	if err != nil {
 		http.Error(w, "无法找到mock.html文件", http.StatusNotFound)
 		return

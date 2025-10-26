@@ -19,13 +19,12 @@ import { computed, markRaw, onMounted, ref } from 'vue';
 import Icon from '@/components/icon/Index.vue';
 import Drawer from '@/components/drawer/Index.vue';
 import Modal from '@/components/modal';
-import modal from '@/components/modal';
 import ConfigFormComponent from './ConfigForm.vue';
 import config from '@/service/config';
 import { useI18n } from '@/components/lang/useI18n';
-import message from "@/components/message";
-import WebConfiguration from "@/views/proxys/WebConfiguration.vue";
+import WebConfiguration from "./WebConfiguration.vue";
 import Message from '@/components/message';
+import DownloadConfig from "./DownloadConfig.vue";
 
 // 定义配置项的类型
 interface ConfigItem {
@@ -53,6 +52,7 @@ const totalConfigs = computed(() => configs.value.length);
 const enabledConfigs = computed(() => configs.value.filter(item => item.state).length);
 const runningConfigs = computed(() => configs.value.filter(item => item.isRunning).length);
 const drawerRef = ref<{ open: () => void } | null>(null);
+const downloadDrawerRef = ref<{ open: () => void } | null>(null);
 
 const getConfigs = async () => {
     try {
@@ -165,12 +165,18 @@ const handleToggleStatus = async (id: number, state: boolean) => {
     } catch (error) {
     }
 };
+const handleClickDownload = () => {
+    downloadDrawerRef.value?.open();
+}
 </script>
 
 <template>
     <div class="space-y-4">
         <Drawer ref="drawerRef" title="Web信息配置" icon="brook-web" width="50%">
             <WebConfiguration :refProxyId="webItem?.id" :protocol="webItem?.protocol" />
+        </Drawer>
+        <Drawer ref="downloadDrawerRef" title="配置模板" icon="brook-empty" width="50%">
+            <DownloadConfig />
         </Drawer>
         <!-- 操作栏 -->
         <div
@@ -190,9 +196,9 @@ const handleToggleStatus = async (id: number, state: boolean) => {
 
             <!-- 右侧操作按钮 -->
             <div class="flex items-center">
-                <button class="btn  btn-ghost btn-sm">
-                    <Icon icon="brook-empty" style="font-size: 12px;" />
-                    {{ t('common.download') }}
+                <button class="btn  btn-ghost btn-sm" @click="handleClickDownload">
+                    <Icon icon="brook-empty" style="font-size: 12px;"/>
+                  配置模板
                 </button>
                 <button class="btn  btn-ghost btn-sm" @click="handleAdd">
                     <Icon icon="brook-add" style="font-size: 12px;" />

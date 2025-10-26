@@ -79,7 +79,7 @@ const props = defineProps({
 
 <template>
   <!-- 抽屉容器 -->
-  <div class="drawer-container">
+  <div class="drawer-container overflow-hidden h-full">
     <!-- 抽屉触发器 - 可选使用 -->
     <slot name="trigger" :toggle="toggleDrawer"></slot>
 
@@ -87,26 +87,26 @@ const props = defineProps({
     <div v-if="overlay && isOpen" class="drawer-overlay" @click="isCollapsed ? closeDrawer() : false"></div>
 
     <!-- 抽屉内容 -->
-    <div class="drawer bg-base-100 rounded-l-2xl" :class="[
+    <div class="drawer bg-base-100 h-full flex flex-col rounded-l-2xl" :class="[
       isOpen ? 'drawer-open' : '',
       `drawer-${position}`
     ]" :style="position === 'left' || position === 'right' ?
         { width: width } :
         { height: height }">
       <!-- 关闭按钮 -->
-      <div class="absolute flex flex-row p-4 w-full bg-base-200 items-center justify-between">
+      <div class="sticky top-0 flex flex-row p-3 w-full bg-base-300/80 items-center justify-between">
         <div class="flex flex-row items-center justify-center">
           <Icon :icon="icon" v-if="icon"/>
           <h3 v-if="title" class="font-bold text-lg ml-1">
             {{ title }}
           </h3>
         </div>
-        <button class="btn btn-circle btn-xs btn-soft btn-outline" @click="closeDrawer">
-          <Icon icon="brook-delete" style="font-size: 12px" />
+        <button class="btn btn-circle btn-sm btn-soft btn-outline" @click="closeDrawer">
+          <Icon icon="brook-delete"/>
         </button>
       </div>
       <!-- 抽屉内容 -->
-      <div class="drawer-content mt-12" v-if="isOpen">
+      <div class="drawer-content overflow-hidden h-full" v-if="isOpen">
         <slot></slot>
       </div>
 

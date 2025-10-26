@@ -23,6 +23,7 @@ import (
 	"github.com/brook/client/cli"
 	"github.com/brook/common/command"
 	"github.com/brook/common/configs"
+	"github.com/brook/common/lang"
 	"github.com/brook/common/log"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/spf13/cobra"
@@ -50,7 +51,7 @@ var cmd = &cobra.Command{
 				config = newConfig
 			}
 		}
-		log.NewLogger(&config.Logger)
+		log.NewLogger(config.Logger)
 		LoadTunnel()
 		verilyBaseConfig(&config)
 		run(&config)
@@ -69,6 +70,9 @@ func verilyBaseConfig(c *configs.ClientConfig) {
 		panic("Token is nil, system exit")
 	}
 	cli.Page.RemoteAddress = fmt.Sprintf("%s:%d", c.ServerHost, c.ServerPort)
+	if c.PingTime <= lang.DefaultPingTime {
+		c.PingTime = lang.DefaultPingTime
+	}
 }
 
 func Start() {

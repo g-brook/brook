@@ -20,7 +20,6 @@ import './style.css'
 import '@/assets/css/iconfont.css'
 import router from './components/routes'
 import ModalContainer from '@/components/modal/ModalContainer.vue'
-
 // 初始化国际化系统
 import '@/i18n'
 

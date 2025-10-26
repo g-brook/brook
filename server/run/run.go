@@ -113,6 +113,7 @@ func afterRun(config *configs.ServerConfig) {
 		token = config.Token
 	}
 	defin.Set(defin.TokenKey, token)
+	defin.Set(defin.ServerPort, config.ServerPort)
 }
 
 func shutdown(inServer *remote.InServer) {

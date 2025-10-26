@@ -72,7 +72,7 @@ func (t *TunnelBucket) Run() *TunnelBucket {
 }
 
 // read is a method of TunnelBucket that processes incoming bytes through a tunnel read operation
-func (m *TunnelBucket) read(_, bytes []byte, _ io.ReadWriteCloser) {
+func (m *TunnelBucket) read(_, bytes []byte, _ io.ReadWriteCloser, ctx context.Context) {
 	tp := NewTunnelRead()
 	tp.Decode(bytes)
 	var ok bool

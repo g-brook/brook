@@ -42,7 +42,7 @@ func init() {
 // OpenTunnelServer open tcp tunnel server
 // This function opens a tunnel server based on the request parameters.
 func OpenTunnelServer(request exchange.OpenTunnelReq, manager Channel) (int, error) {
-	cfgNode := CFM.ConfigApi.GetConfig(request.ProxyId)
+	cfgNode := TunnelCfm.ConfigApi.GetConfig(request.ProxyId)
 	if cfgNode == nil {
 		return 0, fmt.Errorf("not found proxy id %v", request.ProxyId)
 	}
@@ -57,7 +57,7 @@ func OpenTunnelServer(request exchange.OpenTunnelReq, manager Channel) (int, err
 		}
 		t, b := servers.Load(cfgNode.config.Id)
 		if b {
-			CFM.AddListen(cfgNode.config.Id, func(cfg *ConfigNode) {
+			TunnelCfm.AddListen(cfgNode.config.Id, func(cfg *ConfigNode) {
 				baseServer.UpdateConfig(cfg.config)
 			})
 			t.PutManager(manager)
@@ -77,7 +77,11 @@ func running(config *configs.ServerTunnelConfig) (*tunnel.BaseTunnelServer, erro
 		server = tcp.NewUdpTunnelServer(baseServer)
 		netWork = lang.NetworkUdp
 	} else if config.Type == lang.Https || config.Type == lang.Http {
-		server = http.NewHttpTunnelServer(baseServer)
+		tunnelServer, err := http.NewHttpTunnelServer(baseServer)
+		if err != nil {
+			return nil, fmt.Errorf("the server %v:%s init error", config.Type, config.Id)
+		}
+		server = tunnelServer
 		netWork = lang.NetworkTcp
 	} else {
 		return nil, fmt.Errorf("not support tunnel type %v", config.Type)

@@ -83,9 +83,12 @@ const tolgenToken =()=>{
   showToken.value=!showToken.value
 }
 
-const copyToken = () => {
-
+const copyToken = ()=> {
+  navigator.clipboard.writeText(tokenInfo.value.token)
+      .then(() => Message.success('复制成功'))
+      .catch(() => Message.error("复制失败"))
 }
+
 onMounted(() => {
   getToken()
 })
@@ -100,10 +103,10 @@ onMounted(() => {
       <div class="space-y-4">
         <div class="flex items-center gap-3">
           <div class="w-8 h-8 bg-base-200 rounded-md flex items-center justify-center">
-            <i class="iconfont brook-token"></i>
+            <i class="iconfont brook-token" style="font-size: 24px"></i>
           </div>
           <div>
-            <h2 class="text-base font-medium text-base-content">访问令牌</h2>
+            <h2 class="text-base-content text-2xl">访问令牌</h2>
             <p class="text-xs text-base-content/60">用于客户端连接的安全令牌</p>
           </div>
         </div>
@@ -114,7 +117,7 @@ onMounted(() => {
             <div class="form-control">
               <label class="label">
                 <span class="label-text font-medium">当前令牌</span>
-                <span class="badge badge-success badge-sm">{{ tokenInfo.createTime }}</span>
+                <span class="badge  badge-sm">{{ tokenInfo.createTime }}</span>
               </label>
               <div class="flex items-center gap-2">
                 <div class="join w-full">
@@ -136,12 +139,8 @@ onMounted(() => {
                     </svg>
                   </button>
                 </div>
-                  <button class="btn btn-secondary " title="复制令牌" @click="copyToken">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24"
-                      stroke="currentColor">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                        d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                    </svg>
+                  <button class="btn btn-primary btn-soft btn-sm " title="复制令牌" @click="copyToken">
+                    复制
                   </button>
               </div>
             </div>

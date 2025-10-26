@@ -16,7 +16,13 @@
 
 package lang
 
+import (
+	"time"
+)
+
 var Placeholder PlaceholderType
+
+var DefaultPingTime time.Duration = 3000
 
 type KeyType string
 

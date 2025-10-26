@@ -170,11 +170,12 @@ if (props.onRegister) {
     <form @submit.prevent="handleSubmit">
       <div class="grid grid-cols-7 gap-2 items-center ml-4">
         <label
-          class="flex justify-center flex-col items-center rounded-full bg-secondary-content h-16 w-16 cursor-pointer"
+          class="flex justify-center flex-col items-center rounded-full bg-primary-content
+          h-16 w-16 cursor-pointer"
           v-for="type in protocolTypes" :key="type.value">
           <input type="radio" name="types" v-model="form.protocol" :value="type.value"
             class="radio radio-accent radio-sm checked:bg-red-200 checked:text-red-600 checked:border-red-600" />
-          <p class="text-sm font-mono">{{ type.label }}</p>
+          <p class="text-sm font-bold text-neutral">{{ type.label }}</p>
         </label>
       </div>
       <div class="flex flex-row gap-2 justify-between">

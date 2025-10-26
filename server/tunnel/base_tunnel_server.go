@@ -80,7 +80,7 @@ func (b *BaseTunnelServer) Name() string {
 	return b.Cfg.Id
 }
 
-func (b *BaseTunnelServer) Users() int {
+func (b *BaseTunnelServer) Clients() int {
 	return len(b.TunnelChannel)
 }
 

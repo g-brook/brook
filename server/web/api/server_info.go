@@ -45,7 +45,7 @@ func getServerInfo(req *Request[QueryServerInfo]) *Response {
 			TunnelType:  item.Type(),
 			TAG:         newItem.Tag,
 			Connections: item.Connections(),
-			Users:       item.Users(),
+			Users:       item.Clients(),
 		})
 		fmt.Println(item.Name())
 	}

@@ -65,10 +65,10 @@ type ClientTunnelConfig struct {
 	TunnelType   lang.TunnelType `json:"type"`
 	LocalAddress string          `json:"localAddress"`
 	ProxyId      string          `json:"proxyId"`
-	HttpId       string          `json:"httpId"`
+	HttpId       string          `json:"httpId,omitempty"`
 	//default 1500
-	UdpSize    int `json:"udpSize"`
-	RemotePort int
+	UdpSize    int `json:"udpSize,omitempty"`
+	RemotePort int `json:"-"`
 }
 
 // GetServerConfig
@@ -103,8 +103,8 @@ func GetClientConfig(cfgPath string) (ClientConfig, error) {
 type ClientConfig struct {
 	ServerPort int                   `json:"serverPort"`
 	ServerHost string                `json:"serverHost"`
+	Token      string                `json:"token"`
 	PingTime   time.Duration         `json:"pingTime"`
 	Tunnels    []*ClientTunnelConfig `json:"tunnels"`
-	Logger     LoggerConfig          `json:"logger"`
-	Token      string                `json:"token"`
+	Logger     *LoggerConfig         `json:"logger,omitempty"`
 }

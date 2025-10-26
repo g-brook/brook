@@ -45,6 +45,7 @@ func init() {
 	clis.RegisterTunnelClient(lang.Tcp, ft)
 	clis.RegisterTunnelClient(lang.Udp, ft)
 	clis.RegisterTunnelClient(lang.Http, ft)
+	clis.RegisterTunnelClient(lang.Https, ft)
 }
 
 type MultipleTunnelClient struct {
@@ -92,7 +93,7 @@ func newTunnelClient(config *configs.ClientTunnelConfig, m *MultipleTunnelClient
 		return NewTcpTunnelClient(config, m)
 	case lang.Udp:
 		return NewUdpTunnelClient(config, m)
-	case lang.Http:
+	case lang.Http, lang.Https:
 		return NewHttpTunnelClient(config)
 	}
 	return nil
@@ -128,7 +129,7 @@ func (m *MultipleTunnelClient) Close() {
 }
 
 func (m *MultipleTunnelClient) OnlyOpenHttp(proxyId string, remotePort int) {
-	if m.currentConfig.TunnelType != lang.Http {
+	if m.currentConfig.TunnelType != lang.Http && m.currentConfig.TunnelType != lang.Https {
 		return
 	}
 	req := &exchange.WorkConnReq{

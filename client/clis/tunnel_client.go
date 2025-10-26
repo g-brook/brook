@@ -72,7 +72,7 @@ func (receiver *TunnelClientControl) retry(f func() error) {
 			default:
 			}
 			if err := f(); err != nil {
-				log.Warn("Active tunnel error...")
+				log.Warn("Active tunnel error...", err)
 			}
 			ticker.Reset(time.Second * 5)
 			select {
@@ -177,28 +177,33 @@ func (b *BaseTunnelClient) OpenStream() error {
 			log.Error("Active session fail %v", err)
 			return err
 		}
-		ctx := b.TcControl.cancelCtx
-		channel := transport.NewSChannel(stream, ctx, true)
-		bucket := exchange.NewMessageBucket(channel, ctx)
+		streamCancelCtx, streamCancel := context.WithCancel(b.TcControl.Context())
+		channel := transport.NewSChannel(stream, streamCancelCtx, true)
+		bucket := exchange.NewMessageBucket(channel, channel.Ctx())
 		b.TcControl.Bucket = bucket
 		bucket.Run()
 		err = b.DoOpen(channel)
 		if err != nil {
 			bucket.Close()
+			streamCancel()
 			return err
 		}
 		b.isOpen = true
-		<-b.Done()
+		<-channel.Done()
 		log.Info("Tunnel stream close exit:%v:%v", stream.RemoteAddr(), stream.ID())
-		b.release(channel)
+		streamCancel()
+		if !b.isRetryOpen {
+			b.release(channel)
+		}
 		return nil
 	}
-	// If auto-open is enabled, use retry mechanism
+	// If is retry open is enabled, use retry mechanism
 	if b.isRetryOpen {
 		b.TcControl.retry(openFunction)
 	} else {
 		return openFunction()
 	}
+
 	return nil
 }
 

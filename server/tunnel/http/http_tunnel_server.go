@@ -57,12 +57,14 @@ type HttpTunnelServer struct {
 // and returns a pointer to HttpTunnelServer. The constructor sets the DoStart field of BaseTunnelServer to the startAfter
 // method of HttpTunnelServer, which is used to perform cleanup or subsequent processing operations startAfter the server
 // processes the request. The constructor also returns a pointer to HttpTunnelServer.
-func NewHttpTunnelServer(server *tunnel.BaseTunnelServer) *HttpTunnelServer {
+func NewHttpTunnelServer(server *tunnel.BaseTunnelServer) (*HttpTunnelServer, error) {
 	if server.Cfg == nil {
-		panic("start http tunnel server error, cfg is nil")
+		log.Error("start http tunnel server error, cfg is nil")
+		return nil, errors.New("cfg is nil")
 	}
 	if err := verifyCfg(server.Cfg); err != nil {
-		panic("http tunnel server cfg verify is false")
+		log.Error("http tunnel server cfg verify is false")
+		return nil, err
 	}
 	tunnelServer := &HttpTunnelServer{
 		BaseTunnelServer: server,
@@ -74,7 +76,7 @@ func NewHttpTunnelServer(server *tunnel.BaseTunnelServer) *HttpTunnelServer {
 	}
 	server.AddEvent(tunnel.Unregister, tunnelServer.unRegisterConn)
 	server.UpdateConfig(server.Cfg)
-	return tunnelServer
+	return tunnelServer, nil
 }
 
 // addRoute is a function that adds route information to the HttpTunnelServer. It
@@ -97,11 +99,11 @@ func loadTls(cfg *configs.ServerTunnelConfig, this *HttpTunnelServer) error {
 	kf := cfg.KeyFile
 	cf := cfg.CertFile
 	if kf == "" || cf == "" {
-		log.Fatal("certFile or KeyFile is nil")
+		log.Error("certFile or KeyFile is nil")
 		return errors.New("certFile or KeyFile is nil")
 	}
 	if !filex.FileExists(cf) || !filex.FileExists(kf) {
-		log.Fatal("certFile or KeyFile is not exist")
+		log.Error("certFile or KeyFile is not exist")
 		return errors.New("certFile or KeyFile is not exist")
 	}
 	pair, _ := tls.LoadX509KeyPair(cf, kf)
@@ -115,31 +117,31 @@ func loadTls(cfg *configs.ServerTunnelConfig, this *HttpTunnelServer) error {
 // It returns an error if the configuration is invalid.
 func verifyCfg(cfg *configs.ServerTunnelConfig) error {
 	if cfg.Http == nil {
-		log.Fatal("proxy is nil")
+		log.Error("proxy is nil")
 		return errors.New("proxy is nil")
 	}
 	if cfg.Type == lang.Https {
 		if cfg.CertFile == "" {
-			log.Fatal("certFile is nil")
+			log.Error("certFile is nil")
 			return errors.New("certFile is nil")
 		}
 		if cfg.KeyFile == "" {
-			log.Fatal("KeyFile is nil")
+			log.Error("KeyFile is nil")
 			return errors.New("KeyFile is nil")
 		}
 	}
 	for _, proxy := range cfg.Http {
 		if proxy.Id == "" {
-			log.Fatal("proxy.id is nil")
+			log.Error("proxy.id is nil")
 			return errors.New("proxy.id is nil")
 		}
 		if proxy.Paths == nil {
-			log.Fatal("proxy.paths is nil")
+			log.Error("proxy.paths is nil")
 			return errors.New("proxy.paths is nil")
 		}
 		for _, path := range proxy.Paths {
 			if path == "" {
-				log.Fatal("proxy.paths is empty")
+				log.Error("proxy.paths is empty")
 				return errors.New("proxy.paths is nil")
 			}
 		}

@@ -240,6 +240,7 @@ export default {
   // 配置管理
   configuration: {
     title: '配置管理',
+    download: '下载配置',
     addTunnelConfig: '新增隧道配置',
     editTunnelConfig: '编辑隧道配置',
     totalConfigs: '共 {count} 个配置',

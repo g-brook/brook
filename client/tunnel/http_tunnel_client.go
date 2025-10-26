@@ -19,6 +19,7 @@ package tunnel
 import (
 	"bufio"
 	"bytes"
+	"context"
 	"fmt"
 	"io"
 	"net"
@@ -77,7 +78,7 @@ func (h *HttpTunnelClient) initOpen(*transport.SChannel) error {
 }
 
 // bindHandler handles the binding of HTTP tunnel client requests
-func (h *HttpTunnelClient) bindHandler(_ *exchange.Protocol, rw io.ReadWriteCloser) error {
+func (h *HttpTunnelClient) bindHandler(_ *exchange.Protocol, rw io.ReadWriteCloser, ctx context.Context) error {
 	// closeConn is a helper function to close network connections
 	closeConn := func(conn net.Conn) {
 		if conn != nil {
@@ -151,14 +152,15 @@ func (h *HttpTunnelClient) bindHandler(_ *exchange.Protocol, rw io.ReadWriteClos
 	for {
 		select {
 		// Check for context cancellation
-		case <-h.TcControl.Context().Done():
+		case <-ctx.Done():
 			return nil
 		default:
 		}
 		// Process next request
 		err := loopRead()
 		if err == io.EOF {
-			h.Close()
+			log.Debug("http stream close.")
+			rw.Close()
 		}
 	}
 

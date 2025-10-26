@@ -71,7 +71,7 @@ func InitTunnelConfig(sc *sf.ServerConfig) {
 			state:  false,
 		})
 	}
-	CFM.Running(ltc)
+	TunnelCfm.Running(ltc)
 }
 
 // GetTunnelConfig retrieves the server tunnel configuration
@@ -108,7 +108,7 @@ func format(item *sql.ProxyConfig) *sf.ServerTunnelConfig {
 	var st = new(sf.ServerTunnelConfig)
 	st.Id = item.ProxyID
 	st.Port = item.RemotePort
-	protocol := transformProtocol(item.Protocol)
+	protocol := TransformProtocol(item.Protocol)
 	if protocol == "" {
 		log.Error("protocol is not support: %s", item.Protocol)
 	} else {
@@ -122,19 +122,4 @@ func format(item *sql.ProxyConfig) *sf.ServerTunnelConfig {
 		}
 	}
 	return nil
-}
-
-func transformProtocol(protocol string) lang.TunnelType {
-	switch protocol {
-	case "HTTP":
-		return lang.Http
-	case "HTTPS":
-		return lang.Https
-	case "TCP":
-		return lang.Tcp
-	case "UDP":
-		return lang.Udp
-	default:
-		return ""
-	}
 }

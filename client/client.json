@@ -1,17 +1,17 @@
 {
   "serverPort": 8909,
   "serverHost": "127.0.0.1",
-  "pingTime": 30000,
   "token": "5852455554506b5a72725724255e6e35434a756f76352a2a4963456d694d4676",
-  "logger": {
-    "logLevel": "debug",
-    "logPath": "./",
-    "outs": "file,stdout"
-  },
+  "pingTime": 30000,
   "tunnels": [
     {
-      "type": "http",
-      "localAddress": "localhost:8080",
+      "type": "tcp",
+      "localAddress": "127.0.0.1:3306",
+      "proxyId": "local_mysql"
+    },
+    {
+      "type": "https",
+      "localAddress": "127.0.0.1:8080",
       "proxyId": "HttpLocal-2",
       "httpId": "local"
     }

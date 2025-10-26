@@ -338,7 +338,6 @@ func (sever *Server) streamAssignment() {
 					stream, _ := session.AcceptStream()
 					if session.IsClosed() {
 						log.Error("session is close.")
-						_ = session.Close()
 						return
 					}
 					log.Info("Start server success stream. %s", stream.RemoteAddr())
