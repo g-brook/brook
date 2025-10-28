@@ -22,6 +22,7 @@ import (
 	"github.com/brook/common/exchange"
 	"github.com/brook/common/iox"
 	"github.com/brook/common/log"
+	"github.com/brook/common/threading"
 	trp "github.com/brook/common/transport"
 	"github.com/brook/server/defin"
 	"github.com/brook/server/srv"
@@ -82,10 +83,10 @@ func (htl *TunnelTcpServer) Open(ch trp.Channel, _ srv.TraverseBy) {
 	switch workConn := ch.(type) {
 	case srv.GContext:
 		workConn.GetContext().AddAttr(defin.ToSChannelId, userConn.GetId())
-		go func() {
+		threading.GoSafe(func() {
 			err := iox.SinglePipe(userConn, workConn.(trp.Channel))
 			log.Debug("iox.SinglePipe error %v", err)
-		}()
+		})
 	}
 }
 

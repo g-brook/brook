@@ -26,6 +26,7 @@ import (
 	"github.com/brook/common/exchange"
 	"github.com/brook/common/lang"
 	"github.com/brook/common/log"
+	"github.com/brook/common/threading"
 	"github.com/brook/common/transport"
 	"github.com/xtaci/smux"
 )
@@ -62,7 +63,7 @@ func (receiver *TunnelClientControl) Cancel() {
 // It is designed to repeatedly execute the function f with a fixed interval
 // until the context associated with the TunnelClientControl is cancelled
 func (receiver *TunnelClientControl) retry(f func() error) {
-	go func() {
+	threading.GoSafe(func() {
 		ticker := time.NewTicker(time.Second * 5)
 		defer ticker.Stop()
 		for {
@@ -81,7 +82,7 @@ func (receiver *TunnelClientControl) retry(f func() error) {
 			case <-ticker.C:
 			}
 		}
-	}()
+	})
 }
 
 // TunnelClient defines the interface for a tunnel client.

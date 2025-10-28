@@ -159,6 +159,14 @@ const initData = async () => {
     list.value = response.data || []
 }
 
+const avatarCss =(tunnelType) => {
+  if (tunnelType === 'https' || tunnelType==="http") {
+    return 'bg-gradient-to-br from-primary to-primary/80'
+  }else {
+    return 'bg-gradient-to-br from-error to-error/80'
+  }
+}
+
 onMounted(() => {
     startRealTimeUpdate()
     initData()
@@ -183,36 +191,34 @@ onUnmounted(() => {
             <div v-for="(server, index) in list" :key="index"
                 class="card bg-base-100 shadow-xl border border-base-200/50 hover:shadow-2xl hover:scale-105 transition-all duration-300 group cursor-pointer">
                 <div class="card-body p-6">
-                    <div class="flex items-center justify-between mb-6">
-                        <div class="flex items-center space-x-4">
+                    <div class="flex items-center mb-6">
                             <div class="avatar avatar-placeholder">
                                 <div
-                                    class="bg-gradient-to-br from-primary to-primary/70 text-primary-content rounded-full w-14 h-14">
+                                    class="text-primary-content rounded-full w-14 h-14" :class="avatarCss(server.tunnelType)">
                                     <span class="text-xl font-bold">{{ server.name?.charAt(0)?.toUpperCase() || 'S'
                                     }}</span>
                                 </div>
                             </div>
-                            <div>
+                            <div class="ml-3 w-full">
+                              <div class="flex items-center justify-between">
                                 <h3 class="text-xl font-bold text-base-content">{{ server.name }}
                                     <div class="badge badge-sm badge-secondary">{{ server.tag }}</div>
                                 </h3>
-                                <div class="flex items-center space-x-3 mt-2">
-                                    <div :class="[
+                              <div class="text-xl font-extralight">{{ server.port || 'N/A' }}
+                              </div>
+                              </div>
+                              <div class="flex items-center space-x-3">
+                                <div :class="[
                                         'badge font-medium',
                                         server.tunnelType === 'HTTPS' ? 'badge-success' :
                                             server.tunnelType === 'HTTP' ? 'badge-info' :
                                                 'badge-warning'
                                     ]">
-                                        {{ server.tunnelType || 'Unknown' }}
-                                    </div>
-                                    <div class="badge badge-outline">端口 {{ server.port || 'N/A' }}</div>
-                                    <div class="flex items-center space-x-1">
-                                        <div class="w-2 h-2 bg-success rounded-full animate-pulse"></div>
-                                        <span class="text-xs text-success font-medium">在线</span>
-                                    </div>
+                                  {{ server.tunnelType || 'Unknown' }}
                                 </div>
+                              </div>
+
                             </div>
-                        </div>
                     </div>
 
                     <!-- 实时监控图表 -->
@@ -242,7 +248,7 @@ onUnmounted(() => {
                             <div class="stat-value">{{ server.bandwidth || '0' }}</div>
                         </div>
                         <div class="stat">
-                            <div class="stat-title">用户数</div>
+                            <div class="stat-title">客户端数</div>
                             <div class="stat-value">{{ server.users || 0 }}</div>
                         </div>
                     </div>

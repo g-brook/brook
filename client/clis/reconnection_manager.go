@@ -21,6 +21,7 @@ import (
 	"time"
 
 	"github.com/brook/common/log"
+	"github.com/brook/common/threading"
 )
 
 type ReconnectFunction func() bool
@@ -47,7 +48,7 @@ func (r *ReconnectManager) TryReconnect(rf ReconnectFunction) {
 	}
 	r.isStart = true
 	r.timer.Reset(r.reconnectInterval)
-	go func() {
+	threading.GoSafe(func() {
 		for {
 			select {
 			case <-r.timer.C:
@@ -63,5 +64,5 @@ func (r *ReconnectManager) TryReconnect(rf ReconnectFunction) {
 			}
 
 		}
-	}()
+	})
 }

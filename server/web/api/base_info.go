@@ -19,6 +19,7 @@ package api
 import (
 	"github.com/brook/common/log"
 	"github.com/brook/common/stringx"
+	"github.com/brook/common/version"
 	"github.com/brook/server/web/db"
 	"github.com/brook/server/web/errs"
 )
@@ -56,7 +57,7 @@ func getBaseInfo(*Request[any]) *Response {
 	bf := new(BaseInfo)
 	get, err := db.Get[UserInfo](userInfoKey)
 	bf.IsRunning = err == nil && get != nil
-	bf.Version = "1.0.0"
+	bf.Version = version.GetBuildVersion()
 	return NewResponseSuccess(bf)
 }
 

@@ -107,7 +107,7 @@ const handleAdd = () => {
 
 
 const handleDelete = (id: number) => {
-    modal.confirm({
+    Modal.confirm({
         onConfirm: async () => {
             config.delProxyConfig(id).then(e => {
                 if (e.success()) {

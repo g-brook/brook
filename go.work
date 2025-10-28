@@ -4,4 +4,5 @@ use (
 	./client
 	./common
 	./server
+	./mock
 )

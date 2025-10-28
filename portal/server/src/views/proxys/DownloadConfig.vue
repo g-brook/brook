@@ -59,8 +59,36 @@ onMounted(() => {
             <JsonEditorVue v-model="code" mode="text"
             :mainMenuBar="false"
             :statusBar="true"
-            class="w-full rounded-lg overflow-hidden h-full"
+            class="w-full rounded-lg overflow-hidden h-full json-editor-minimal"
             />
     </div>
 
 </template>
+
+<style>
+/* ===== 🎨 Minimal Designer Theme for json-editor-vue ===== */
+
+.json-editor-minimal {
+  --jse-font-family: "JetBrains Mono", "Fira Code", monospace;
+  --jse-font-size: 14px;
+  --jse-line-height: 22px;
+  --jse-background-color: var(--color-base-200);
+  --jse-panel-background: var(--color-base-300);
+  --jse-key-color: var(--color-base-content);
+  --jse-value-color-string: var(--color-info);
+  --jse-value-color-number: var(--color-error);
+  --jse-value-color-boolean: var(--color-info);
+  --jse-value-color-null: var(--color-info);
+  --jse-value-color-url: var(--color-base-200);
+  --jse-delimiter-color: var(--color-base-content);
+  transition: all 0.2s ease-in-out;
+  padding: 8px; /* 可选，避免紧贴边缘 */
+}
+
+　
+.json-editor-minimal:hover {
+  box-shadow: 0 3px 12px rgba(0,0,0,0.08);
+}
+
+
+</style>

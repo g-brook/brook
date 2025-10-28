@@ -5,12 +5,7 @@
   "pingTime": 30000,
   "tunnels": [
     {
-      "type": "tcp",
-      "localAddress": "127.0.0.1:3306",
-      "proxyId": "local_mysql"
-    },
-    {
-      "type": "https",
+      "type": "http",
       "localAddress": "127.0.0.1:8080",
       "proxyId": "HttpLocal-2",
       "httpId": "local"

@@ -17,48 +17,52 @@
 @import "tailwindcss";
 @source "../src/**/*.{vue,js,ts,html}";
 @plugin "daisyui" {
-     themes: light --default, dark --prefersdark;
 }
+
+@plugin "daisyui/theme" {
+    name: "light";
+    default:true;
+    prefersdark: false; /* set as default dark mode (prefers-color-scheme:dark) */
+    color-scheme: light; /* color of browser-provided UI */
+    --color-primary: var(--primary-color);
+    --color-primary-content: oklch(98% 0 0);
+    --radius-selector: 1rem;
+    --radius-field: 0.7rem;
+    --radius-box: 1rem;
+    --size-selector: 0.25rem;
+    --size-field: 0.25rem;
+    --border: 1px;
+    --depth: 1;
+    --noise: 0;
+}
+
+@plugin "daisyui/theme" {
+    name: "dark";
+    prefersdark: false; /* set as default dark mode (prefers-color-scheme:dark) */
+    color-scheme: light; /* color of browser-provided UI */
+    --color-primary: var(--primary-color);
+    --color-primary-content: oklch(98% 0 0);
+    --radius-selector: 1rem;
+    --radius-field: 0.7rem;
+    --radius-box: 1rem;
+    --size-selector: 0.25rem;
+    --size-field: 0.25rem;
+    --border: 1px;
+    --depth: 1;
+    --noise: 0;
+}
+
 /* 颜色变量定义 */
 :root {
-  /* 主色调 */
-  --primary-color: #00c6ff;
-  --primary-hover: #0099cc;
-  --primary-light: rgba(0, 198, 255, 0.1);
-  --primary-shadow: rgba(0, 198, 255, 0.3);
-
-  /* 辅助色 */
-  --secondary-color: #6c757d;
-  --accent-color: #28a745;
-  --warning-color: #ffc107;
-  --danger-color: #dc3545;
-  --info-color: #17a2b8;
-
-  /* 中性色 */
-  --text-primary: #212529;
-  --text-secondary: #6c757d;
-  --text-muted: #adb5bd;
-  --text-light: #ffffff;
-
-  /* 背景色 */
-  --bg-primary: #ffffff;
-  --bg-secondary: #f8f9fa;
-  --bg-dark: #343a40;
-  --bg-light: #f1f3f4;
-
-  /* 边框色 */
-  --border-color: #ccc;
-  --border-light: #e9ecef;
-  --border-dark: #495057;
-
-  /* 状态色 */
-  --success-color: #28a745;
-  --error-color: #dc3545;
-  --disabled-color: #6c757d;
+    /* 主色调 */
+    --primary-color: #00c6ff;
+    --primary-hover: #0099cc;
+    --border: 0.5px;
 }
 
+
 .icon_primary {
-  color: var(--primary-color);
+  color: var(--color-primary);
 }
 
 /* 全局字体设置 */
@@ -75,30 +79,14 @@ body {
 }
 
 /* 全局覆盖 daisyUI input 样式 */
-.input {
-  border-width: 1px; /* 保持单线边框 */
-  box-shadow: none !important; /* 去掉双线/阴影 */
-  outline: none; /* 去掉默认蓝色外圈 */
-  transition: box-shadow 0.3s ease, border-color 0.3s ease;
-}
+/*.input {*/
+/*  box-shadow: none !important; !* 去掉双线/阴影 *!*/
+/*  outline: none; !* 去掉默认蓝色外圈 *!*/
+/*  transition: box-shadow 0.3s ease, border-color 0.3s ease;*/
+/*}*/
 
 .input:focus {
-  border-color: var(--primary-color); /* 使用颜色变量 */
-  /*box-shadow: 100px 100px 100px 100px var(--primary-shadow); !* 使用颜色变量 *!*/
-  outline: none;
-    transform: scale(1.00);
+  /*border-color: var(--color-primary); !* 使用颜色变量 *!*/
+  outline: none;transform: scale(1.00);
   transition: transform 0.4s ease;
 }
-
-.select {
-  border-width: 1px; /* 保持单线边框 */
-  box-shadow: none !important; /* 去掉双线/阴影 */
-  outline: none; /* 去掉默认蓝色外圈 */
-  transition: box-shadow 0.3s ease, border-color 0.3s ease;
-}
-
-.select:focus {
-  border-color: var(--primary-color); /* 使用颜色变量 */
-  box-shadow: 0 0 0 3px var(--primary-shadow); /* 使用颜色变量 */
-  outline: none;
-} 

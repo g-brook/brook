@@ -50,7 +50,10 @@ const toggleSidebar = () => {
         'transition-all duration-300 ease-in-out h-full ',
         isCollapsed ? 'w-16' : 'w-70'
     ]">
-        <div class="flex flex-col h-full rounded-2xl shadow-[0_8px_40px_rgba(0,0,0,0.10)] bg-gradient-to-br from-base-300/50 to-base-100">
+        <div class="flex flex-col h-full rounded-2xl shadow-[0_8px_40px_rgba(0,0,0,0.10)]
+            bg-gradient-to-br
+            from-primary/10 from-10%
+            to-base-300/10 to-40%">
             <!-- 顶部 Logo 区域 -->
             <div class="navbar sticky top-0 z-20 ">
                 <div class="flex-1 px-1 py-2">
@@ -127,15 +130,15 @@ const toggleSidebar = () => {
                     </div>
                     <div class="flex items-center justify-between">
                         <span class="text-base-content/60">Version</span>
-                        <span class="font-mono font-medium text-base-content">v1.0.0</span>
+                        <span class="font-mono font-medium text-base-content">{{version}}</span>
                     </div>
 
                 </div>
 
                 <!-- 折叠状态下的简化显示 -->
                 <div v-show="isCollapsed" class="flex flex-col items-center space-y-2">
-                    <div class="w-2 h-2 bg-success rounded-full animate-pulse" title="Online"></div>
-                    <div class="text-xs font-mono text-base-content/60 writing-mode-vertical" title="v1.3.0">v1.3</div>
+                    <div class="w-2 h-2 bg-success rounded-full animate-pulse" title="Online" />
+                    <div class="text-xs font-mono text-base-content/60 writing-mode-vertical" title="v1.3.0">v{{version}}</div>
 
                 </div>
             </div>

@@ -15,44 +15,76 @@
   -->
 
 <script setup lang="ts">
-import {onMounted, ref} from 'vue';
-import baseInfo from '@/service/baseInfo';
-import Login from '@/views/login/Index.vue';
-import Initializer from '@/views/login/Initializer.vue';
+import {onMounted, ref, shallowRef} from 'vue';
+import Left from './Left.vue';
+import Right from './Right.vue';
+import {Menu, menus} from '@/components/menu/menus';
+import baseInfo from "@/service/baseInfo";
 
-// 响应式变量
+const selectedComponent = shallowRef<any>(null)
+const title = ref<string>("")
+const describe = ref<string>("")
+const icon = ref<string>("")
+const isLoading = ref<boolean>(false)
 const version = ref('');
-const isRunning = ref<boolean | null>(null); // null 表示还没加载
-const loadingError = ref(false);
+// 点击菜单动态加载组件
+const handleSelect = async (item: Menu) => {
+    try {
+        isLoading.value = true
+        // 动态 import
+        const module = await item.comp()
+        selectedComponent.value = module.default
+        title.value = item.title || ""
+        describe.value = item.describe || ""
+        icon.value = item.icon
+    } catch (error) {
+        console.error('Failed to load component:', error)
+    } finally {
+        isLoading.value = false
+    }
+}
 
 const loadBaseInfo = async () => {
   try {
     const res = await baseInfo.getBaseInfo();
     version.value = res.data.version;
-    isRunning.value = res.data.isRunning;
   } catch (err) {
-    console.error(err);
-    loadingError.value = true;
   }
 };
 
-onMounted(() => {
-  loadBaseInfo();
-});
+// 默认加载第一个菜单项
+onMounted(async () => {
+    if (menus.length > 0) {
+        menus[0].active = true
+        await handleSelect(menus[0])
+    }
+  loadBaseInfo()
+})
 </script>
 
 <template>
-  <div>
-
-    <!-- 等待加载 -->
-    <div v-if="isRunning === null">
-      Loading...
+    <div class="flex h-screen bg-base-300/50">
+        <!-- 左侧导航栏 -->
+        <div class="flex-shrink-0 p-2">
+            <Left @update:select="handleSelect" :version="version" />
+        </div>
+        
+        <!-- 右侧内容区域 -->
+        <div class="flex-1 flex flex-col min-w-0">
+            <Right 
+                :selected="selectedComponent" 
+                :describe="describe" 
+                :icon="icon" 
+                :title="title"
+                :is-loading="isLoading"
+            />
+        </div>
     </div>
-
-    <!-- 根据配置渲染组件 -->
-    <div v-else>
-      <Login v-if="isRunning" />
-      <Initializer v-else :isInit="!isRunning" />
-    </div>
-  </div>
 </template>
+
+<style scoped>
+/* 添加平滑过渡效果 */
+.flex {
+    transition: all 0.3s ease;
+}
+</style>

@@ -21,6 +21,7 @@ import (
 	"github.com/brook/common/hash"
 	"github.com/brook/common/lang"
 	"github.com/brook/common/queue"
+	"github.com/brook/common/threading"
 )
 
 type ConfigNode struct {
@@ -75,7 +76,7 @@ func (receiver *ConfigManager) Push(proxyId string) {
 
 func (receiver *ConfigManager) Running(api TunnelConfigApi) {
 	receiver.ConfigApi = api
-	go func() {
+	threading.GoSafe(func() {
 		for {
 			proxyId := receiver.queue.Pop()
 			if proxyId != "" {
@@ -88,5 +89,5 @@ func (receiver *ConfigManager) Running(api TunnelConfigApi) {
 				}
 			}
 		}
-	}()
+	})
 }

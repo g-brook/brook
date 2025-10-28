@@ -26,6 +26,7 @@ import (
 	"github.com/brook/common/iox"
 	"github.com/brook/common/lang"
 	"github.com/brook/common/log"
+	"github.com/brook/common/threading"
 	trp "github.com/brook/common/transport"
 	"github.com/panjf2000/gnet/v2"
 	"github.com/xtaci/smux"
@@ -333,7 +334,7 @@ func (sever *Server) streamAssignment() {
 			if err != nil {
 				log.Error("Start server error. %v", err)
 			}
-			go func() {
+			threading.GoSafe(func() {
 				for {
 					stream, _ := session.AcceptStream()
 					if session.IsClosed() {
@@ -349,11 +350,13 @@ func (sever *Server) streamAssignment() {
 						})
 						return b
 					}, nil)
-					go sever.readLoopStream(channel)
+					threading.GoSafe(func() {
+						sever.readLoopStream(channel)
+					})
 					addHealthyCheckStream(channel)
 				}
 
-			}()
+			})
 			return nil
 		}
 	}

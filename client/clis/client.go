@@ -29,6 +29,7 @@ import (
 	"github.com/brook/common/configs"
 	"github.com/brook/common/exchange"
 	"github.com/brook/common/log"
+	"github.com/brook/common/threading"
 	"github.com/xtaci/smux"
 )
 
@@ -208,8 +209,8 @@ func (c *Client) Reconnection() error {
 
 func (c *Client) Connection(network string, option ...ClientOption) error {
 	c.pre(network, option)
-	go c.handleLoop()
-	go c.readLoop()
+	threading.GoSafe(c.handleLoop)
+	threading.GoSafe(c.readLoop)
 	err := c.doConnection()
 	if err != nil {
 		return err
@@ -268,7 +269,7 @@ func (c *Client) doConnection() error {
 		return err
 	}
 	c.session = session
-	go c.sessionLoop()
+	threading.GoSafe(c.sessionLoop)
 	return nil
 }
 

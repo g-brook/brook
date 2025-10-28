@@ -17,6 +17,7 @@
 package http
 
 import (
+	"bufio"
 	"bytes"
 	"errors"
 	"fmt"
@@ -212,6 +213,10 @@ type responseWriter struct {
 	status   int
 	req      *http.Request
 	body     *bytes.Buffer
+}
+
+func (r *responseWriter) Hijack() (net.Conn, *bufio.ReadWriter, error) {
+	return r.httpConn, bufio.NewReadWriter(bufio.NewReader(r.httpConn), bufio.NewWriter(r.httpConn)), nil
 }
 
 func newResponseWriter(conn net.Conn, httpConn *HttpConn, req *http.Request) *responseWriter {

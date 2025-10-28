@@ -25,6 +25,7 @@ import (
 	"github.com/brook/common/hash"
 	"github.com/brook/common/lang"
 	"github.com/brook/common/log"
+	"github.com/brook/common/threading"
 	"github.com/xtaci/smux"
 )
 
@@ -64,7 +65,7 @@ func (m *MultipleTunnelClient) GetName() string {
 
 func (m *MultipleTunnelClient) messageLister() {
 	clis.ManagerTransport.AddMessageNotify(exchange.WorkerConnReq, func(r *exchange.Protocol) error {
-		go func() {
+		threading.GoSafe(func() {
 			reqWorder, _ := exchange.Parse[exchange.WorkConnReq](r.Data)
 			config := clis.ManagerTransport.GetConfig(reqWorder.ProxyId)
 			if config == nil {
@@ -82,7 +83,7 @@ func (m *MultipleTunnelClient) messageLister() {
 			if client != nil {
 				_ = client.Open(session)
 			}
-		}()
+		})
 		return nil
 	})
 }

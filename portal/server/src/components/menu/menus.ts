@@ -44,23 +44,23 @@ class Menu {
 const menus: Menu[] = [
   new Menu(
     "Dashboard",
-    "Display the current online tunnel servers and their information",
+    "显示当前在线的通道信息",
     "brook-Diagram-",
     true,
     [],
     () => import("@/views/index/Dashboard.vue"),
   ),
    new Menu(
-    "Tunnel Configuration",
-    "Display the current online tunnel servers and their information",
+    "通道配置",
+    "管理您的账户设置和客户端连接配置",
     "brook-technology_usb-cable",
     false,
     [],
     () => import("@/views/proxys/Configuration.vue"),
   ),
   new Menu(
-    "My Setting",
-    "管理您的账户设置和客户端连接配置",
+    "我的设置",
+    "系统相关的配置信息，包括客户端连接Token设置",
     "brook-Gear-",
     false,
     [],

@@ -19,6 +19,8 @@ package iox
 import (
 	"io"
 	"sync"
+
+	"github.com/brook/common/threading"
 )
 
 // Pipe establishes a bidirectional data stream between two ReadWriteClosers, enabling data transfer in both directions.
@@ -40,8 +42,12 @@ func Pipe(src io.ReadWriteCloser, dst io.ReadWriteCloser) (errors []error) {
 	}
 	wait.Add(2)
 	// Start bidirectional data transfer
-	go copyData(0, src, dst)
-	go copyData(1, dst, src)
+	threading.GoSafe(func() {
+		copyData(0, src, dst)
+	})
+	threading.GoSafe(func() {
+		copyData(1, dst, src)
+	})
 	wait.Wait()
 	for _, e := range errors2 {
 		if e != nil {
@@ -65,8 +71,9 @@ func SinglePipe(src io.ReadWriteCloser, dst io.ReadWriteCloser) error {
 		}, GetBytePool16k())
 		errCh <- err
 	}
-	// Start bidirectional data transfer
-	go copyData(src, dst)
+	threading.GoSafe(func() {
+		copyData(src, dst)
+	})
 	return <-errCh
 }
 

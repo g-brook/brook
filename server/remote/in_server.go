@@ -24,6 +24,7 @@ import (
 	"github.com/brook/common/configs"
 	"github.com/brook/common/exchange"
 	"github.com/brook/common/log"
+	"github.com/brook/common/threading"
 	"github.com/brook/common/transport"
 	"github.com/brook/server/defin"
 	srv2 "github.com/brook/server/srv"
@@ -154,7 +155,9 @@ func (t *InServer) Start(cf *configs.ServerConfig) *InServer {
 		cf.ServerPort = configs.DefServerPort
 	}
 	//Start local server.
-	go t.onStart(cf)
+	threading.GoSafe(func() {
+		t.onStart(cf)
+	})
 	log.Info("Start the In-Server ,port is : %d ", cf.ServerPort)
 	return t
 }
@@ -162,9 +165,13 @@ func (t *InServer) Start(cf *configs.ServerConfig) *InServer {
 // This function starts the InServer by starting the onStartServer and onStartTunnelServer functions in separate goroutines
 func (t *InServer) onStart(cf *configs.ServerConfig) {
 	// Start the onStartServer function in a separate goroutine
-	go t.onStartServer(cf)
+	threading.GoSafe(func() {
+		t.onStartServer(cf)
+	})
 	// Start the onStartTunnelServer function in a separate goroutine
-	go t.onStartTunnelServer(cf)
+	threading.GoSafe(func() {
+		t.onStartTunnelServer(cf)
+	})
 }
 
 func (t *InServer) onStartServer(cf *configs.ServerConfig) {

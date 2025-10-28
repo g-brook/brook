@@ -20,6 +20,7 @@ import (
 	"sync"
 
 	"github.com/brook/common/exchange"
+	"github.com/brook/common/threading"
 	"github.com/brook/common/transport"
 )
 
@@ -38,7 +39,7 @@ func NewHttpTracker(channel transport.Channel) *HttpTracker {
 }
 
 func (receiver *HttpTracker) Run() {
-	go receiver.readRev()
+	threading.GoSafe(receiver.readRev)
 }
 
 func (receiver *HttpTracker) AddRequest(reqId int64) chan []byte {

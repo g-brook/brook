@@ -31,6 +31,7 @@ import (
 	"github.com/brook/common/iox"
 	"github.com/brook/common/lang"
 	"github.com/brook/common/log"
+	"github.com/brook/common/threading"
 	"github.com/brook/common/transport"
 )
 
@@ -120,7 +121,9 @@ func (t *UdpTunnelClient) initOpen(*transport.SChannel) (err error) {
 				return
 			}
 			if !ok {
-				go readLoop(udpConn, pk.RemoteAddress, bucket)
+				threading.GoSafe(func() {
+					readLoop(udpConn, pk.RemoteAddress, bucket)
+				})
 			}
 		})
 	}

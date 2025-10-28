@@ -32,6 +32,7 @@ import (
 	"github.com/brook/common/hash"
 	"github.com/brook/common/lang"
 	"github.com/brook/common/log"
+	"github.com/brook/common/threading"
 	. "github.com/brook/common/transport"
 	"github.com/brook/server/defin"
 	"github.com/brook/server/srv"
@@ -204,7 +205,7 @@ func (htl *HttpTunnelServer) Open(ch Channel, tb srv.TraverseBy) {
 	channel := ch.(srv.GContext)
 	conn := newHttpConn(ch, htl.isHttps)
 	channel.GetContext().AddAttr(defin.HttpChannel, conn)
-	go func() {
+	threading.GoSafe(func() {
 		var rwConn net.Conn
 		if htl.isHttps {
 			var tlsConn *tls.Conn
@@ -239,7 +240,7 @@ func (htl *HttpTunnelServer) Open(ch Channel, tb srv.TraverseBy) {
 				return
 			}
 		}
-	}()
+	})
 	tb()
 }
 
@@ -280,9 +281,9 @@ func (htl *HttpTunnelServer) RegisterConn(ch Channel, request exchange.TRegister
 		tracker := NewHttpTracker(ch)
 		proxies.Store(ch.GetId(), tracker)
 		tracker.Run()
-		go func() {
+		threading.GoSafe(func() {
 			_ = htl.createConn(ch)
-		}()
+		})
 	} else {
 		log.Warn("Register %v:%v not exists by http tunnelServer.", request.GetProxyId(), request.GetHttpId())
 	}

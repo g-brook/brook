@@ -19,6 +19,8 @@ package exchange
 import (
 	"context"
 	"io"
+
+	"github.com/brook/common/threading"
 )
 
 type BytesBucketRead func(heads, bodies []byte, rw io.ReadWriteCloser, ctx context.Context)
@@ -60,9 +62,9 @@ func NewBytesBucket(rw io.ReadWriteCloser,
 
 func (m *BytesBucket) doRunning(fun func(revLoop, readLoop func())) {
 	fun(func() {
-		go m.revLoop()
+		threading.GoSafe(m.revLoop)
 	}, func() {
-		go m.readLoop()
+		threading.GoSafe(m.readLoop)
 	})
 }
 

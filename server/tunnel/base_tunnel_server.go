@@ -27,6 +27,7 @@ import (
 	"github.com/brook/common/hash"
 	"github.com/brook/common/lang"
 	"github.com/brook/common/log"
+	"github.com/brook/common/threading"
 	"github.com/brook/common/transport"
 	"github.com/brook/server/metrics"
 	"github.com/brook/server/srv"
@@ -134,7 +135,7 @@ func (b *BaseTunnelServer) Boot(_ *srv.Server, _ srv.TraverseBy) {
 
 // Start  the tunnel server
 func (b *BaseTunnelServer) Start(network lang.Network) error {
-	go func() {
+	threading.GoSafe(func() {
 		b.Server = srv.NewServer(b.port)
 		b.Server.AddHandler(b)
 		err := b.Server.Start(srv.WithNetwork(network), srv.WithNewChannelFunc(func(ch *srv.GChannel) transport.Channel {
@@ -144,7 +145,7 @@ func (b *BaseTunnelServer) Start(network lang.Network) error {
 			log.Error("Start tunnel server port: error, %v:%v", err, b.Port())
 			b.openCh <- err
 		}
-	}()
+	})
 	if err := <-b.openCh; err != nil {
 		return err
 	}

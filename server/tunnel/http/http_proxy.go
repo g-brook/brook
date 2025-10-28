@@ -23,14 +23,16 @@ import (
 	"net/http"
 	"net/http/httputil"
 	"net/url"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
 
 	"github.com/brook/common/exchange"
-	http2 "github.com/brook/common/httpx"
-	io2 "github.com/brook/common/iox"
+	"github.com/brook/common/httpx"
+	"github.com/brook/common/iox"
 	"github.com/brook/common/log"
+	"golang.org/x/net/websocket"
 )
 
 var (
@@ -100,8 +102,9 @@ func (proxy *ProxyConnection) Close() error {
 }
 
 type Proxy struct {
-	proxy    http.Handler
-	routeFun RouteFunction
+	httpProxy http.Handler
+	websocket func(ctx context.Context) websocket.Handler
+	routeFun  RouteFunction
 }
 
 func (h *Proxy) ServeHTTP(writer http.ResponseWriter, request *http.Request) {
@@ -115,12 +118,52 @@ func (h *Proxy) ServeHTTP(writer http.ResponseWriter, request *http.Request) {
 		newCtx = context.WithValue(newCtx, RouteInfoKey, info)
 	}
 	newReq := request.Clone(newCtx)
-	h.proxy.ServeHTTP(writer, newReq)
+	if isWebSocket(request) {
+		h.websocket(newCtx).ServeHTTP(writer, request)
+	} else {
+		h.httpProxy.ServeHTTP(writer, newReq)
+	}
+}
+
+func isWebSocket(r *http.Request) bool {
+	return strings.ToLower(r.Header.Get("Connection")) == "upgrade" &&
+		strings.ToLower(r.Header.Get("Upgrade")) == "websocket"
 }
 
 func NewHttpProxy(fun RouteFunction) *Proxy {
+	return &Proxy{
+		httpProxy: httpProxy(),
+		websocket: websocketProxy,
+		routeFun:  fun,
+	}
+}
+
+func websocketProxy(ctx context.Context) websocket.Handler {
+	workFunction := func(conn, workConn net.Conn) {
+		errors := iox.Pipe(conn, workConn)
+		if len(errors) > 0 {
+			log.Warn("copy error %v", errors)
+		}
+	}
+	return func(conn *websocket.Conn) {
+		value := ctx.Value(RouteInfoKey)
+		id := ctx.Value(RequestInfoKey)
+		switch v := value.(type) {
+		case error:
+			return
+		case *RouteInfo:
+			targert, err := v.getProxyConnection(v.httpId, id.(int64))
+			if err != nil {
+				return
+			}
+			workFunction(conn, targert)
+		}
+	}
+}
+
+func httpProxy() *httputil.ReverseProxy {
 	reverseProxy := &httputil.ReverseProxy{
-		BufferPool: io2.GetBytePool32k(),
+		BufferPool: iox.GetBytePool32k(),
 		Rewrite: func(request *httputil.ProxyRequest) {
 			out := request.Out
 			in := request.In
@@ -161,11 +204,8 @@ func NewHttpProxy(fun RouteFunction) *Proxy {
 			}
 			log.Error("Not found path %v", err)
 			writer.WriteHeader(state)
-			_, _ = writer.Write(http2.GetPageNotFound(state))
+			_, _ = writer.Write(httpx.GetPageNotFound(state))
 		},
 	}
-	return &Proxy{
-		proxy:    reverseProxy,
-		routeFun: fun,
-	}
+	return reverseProxy
 }

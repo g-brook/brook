@@ -74,7 +74,9 @@ const revokeToken = async () => {
 const getToken = () => {
   ms.getAuthToken<AuthToken>().then(res => {
     if (res.success()) {
-      tokenInfo.value = res.data
+      tokenInfo.value = res.data ||{
+        token:""
+      }
     }
   })
 }

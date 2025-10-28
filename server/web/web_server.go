@@ -20,11 +20,10 @@ import (
 	"embed"
 	"fmt"
 	"io/fs"
-	"math/rand"
 	"net/http"
-	"time"
 
 	"github.com/brook/common/log"
+	"github.com/brook/common/threading"
 	"github.com/brook/server/web/api"
 	"github.com/brook/server/web/db"
 	"github.com/brook/server/web/sql"
@@ -34,9 +33,7 @@ import (
 //go:embed dist/*
 var embeddedFiles embed.FS
 var (
-	root    = "dist"
-	charset = "abcdefghijklmnopqrstuvwxyz" +
-		"ABCDEFGHIJKLMNPQRSTUVWXYZ123456789!@#$%^&*()"
+	root = "dist"
 )
 
 type Server struct {
@@ -54,13 +51,13 @@ func NewWebServer(port int) {
 		log.Error("init sql db err %v", err)
 		return
 	}
-	go func() {
+	threading.GoSafe(func() {
 		log.Info("start web server on port %d", port)
 		err = http.ListenAndServe(fmt.Sprintf(":%d", port), nil)
 		if err != nil {
 			panic("start web server err: " + err.Error())
 		}
-	}()
+	})
 }
 
 func doRoute() {
@@ -74,15 +71,17 @@ func doRoute() {
 		log.Debug("register route: %s %s", item.Method, "/api"+item.Url)
 	}
 	//static source
-	r.PathPrefix("/").Handler(http.FileServer(http.FS(staticFs)))
+	r.PathPrefix("/assets/").Handler(http.FileServer(http.FS(staticFs)))
+	r.NotFoundHandler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		//http.ServeFile(w, r, filepath.Join(root, "index.html"))
+		// 直接从 embed 中读取
+		file, err := fs.ReadFile(staticFs, "index.html")
+		if err != nil {
+			http.Error(w, "index not found", http.StatusInternalServerError)
+			return
+		}
+		w.Header().Set("Content-Type", "text/html; charset=utf-8")
+		_, _ = w.Write(file)
+	})
 	http.Handle("/", r)
-}
-
-func randomPassword(length int) string {
-	rand.Seed(time.Now().UnixNano())
-	password := make([]byte, length)
-	for i := range password {
-		password[i] = charset[rand.Intn(len(charset))]
-	}
-	return string(password)
 }

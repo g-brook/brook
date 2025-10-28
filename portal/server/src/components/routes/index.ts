@@ -18,15 +18,20 @@ import {createRouter, createWebHistory} from "vue-router";
 
 const routes = [
   {
-    path: "/",
+    path: "/index",
     name: "Index",
     component: () => import("@/views/index/Index.vue"),
+      meta: { title: "登录界面", requiresAuth: true },
   },
+    {
+        path: "/",
+        redirect: "/index",
+    },
   {
-    path: "/main",
-    name: "Main",
-    component: () => import("@/views/index/Main.vue"),
-    meta: { title: "主页面", requiresAuth: true },
+    path: "/login",
+    name: "Login",
+    component: () => import("@/views/login/Index.vue"),
+    meta: { title: "登录界面", requiresAuth: false },
   },
 ];
 
@@ -42,7 +47,7 @@ router.beforeEach((to, from, next) => {
   if (to.meta.requiresAuth) {
     const token = localStorage.getItem("token");
     if (!token) {
-      next({ name: "Index" });
+      next({ name: "Login" });
     } else {
       next();
     }
