@@ -171,10 +171,10 @@ if (props.onRegister) {
       <div class="grid grid-cols-7 gap-2 items-center ml-4">
         <label
           class="flex justify-center flex-col items-center rounded-full bg-primary-content
-          h-16 w-16 cursor-pointer"
+          h-16 w-16 cursor-pointer hover:bg-primary hover:cursor-pointer duration-300  hover:-translate-y-1 hover:scale-100 group"
           v-for="type in protocolTypes" :key="type.value">
           <input type="radio" name="types" v-model="form.protocol" :value="type.value"
-            class="radio radio-accent radio-sm checked:bg-red-200 checked:text-red-600 checked:border-red-600" />
+            class="radio radio-accent radio-sm checked:bg-red-200 checked:text-red-600 checked:border-red-600  group-hover:border-base-100"  />
           <p class="text-sm font-bold text-neutral">{{ type.label }}</p>
         </label>
       </div>
@@ -206,8 +206,7 @@ if (props.onRegister) {
               <span class="label-text-alt text-red-500 text-xs">{{ errors.name }}</span>
             </label>
           </div>
-          <div class="form-control">
-            <label class="label py-1 w-14">
+          <div class="form-control"><label class="label py-1 w-14">
               <span class="label-text  font-medium">标签</span>
             </label>
             <input type="text" v-model="form.tag" class="input  focus:input-primary w-full" placeholder="请输入标签（可选）" />

@@ -41,7 +41,7 @@ func handler(w http.ResponseWriter, r *http.Request) {
 
 func mockHandler(w http.ResponseWriter, r *http.Request) {
 	// 读取mock.html文件内容
-	file, err := os.Open("mock.html")
+	file, err := os.Open("/Users/sixh/Documents/open_project/brook/mock/http/mock.html")
 	if err != nil {
 		http.Error(w, "无法找到mock.html文件", http.StatusNotFound)
 		return

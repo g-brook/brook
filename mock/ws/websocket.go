@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"time"
 
 	"github.com/gorilla/websocket"
 )
@@ -33,29 +34,37 @@ var upgrader = websocket.Upgrader{
 }
 
 func echoHandler(w http.ResponseWriter, r *http.Request) {
+	fmt.Println("ws echo handler")
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		log.Println("upgrade:", err)
 		return
 	}
 	defer conn.Close()
+	go func() {
+		for {
+			_, msg, err := conn.ReadMessage()
+			log.Println(string(msg))
+			if err != nil {
+				fmt.Println("read:", err)
+				break
+			}
 
-	for {
-		mt, msg, err := conn.ReadMessage()
-		if err != nil {
-			fmt.Println("read:", err)
-			break
 		}
+	}()
+	for {
 		// 直接原样发送回去
-		if err := conn.WriteMessage(mt, msg); err != nil {
+		if err := conn.WriteMessage(1, []byte("PONG:"+time.Now().Format("2006-01-02 15:04:05"))); err != nil {
 			fmt.Println("write:", err)
 			break
 		}
+		<-time.After(2. * time.Second)
 	}
 }
 
 func main() {
 	http.HandleFunc("/ws", echoHandler)
+	http.HandleFunc("/ws2", echoHandler)
 	log.Println("listening :8080")
 	log.Fatal(http.ListenAndServe(":8080", nil))
 }

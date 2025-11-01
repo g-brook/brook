@@ -17,7 +17,6 @@
 package exchange
 
 import (
-	bytes2 "bytes"
 	"encoding/binary"
 	"errors"
 	"io"
@@ -43,19 +42,28 @@ const headerSize = totalPacketSize + cmdSize + ptypeSize + reqIdSize + rspCode
 //	@param data
 //	@return []byte
 func Encoder(data *Protocol) []byte {
-	b := new(bytes2.Buffer)
 	if !data.IsSuccess() && data.PType == RESPONSE {
 		bytes := []byte(data.RspMsg)
 		data.Data = bytes
 	}
 	totalLen := len(data.Data) + headerSize
-	_ = binary.Write(b, binary.BigEndian, int32(totalLen))
-	_ = binary.Write(b, binary.BigEndian, int8(data.Cmd))
-	_ = binary.Write(b, binary.BigEndian, int8(data.PType))
-	_ = binary.Write(b, binary.BigEndian, data.ReqId)
-	_ = binary.Write(b, binary.BigEndian, data.RspCode)
-	_ = binary.Write(b, binary.BigEndian, data.Data)
-	return b.Bytes()
+
+	bytes := make([]byte, totalLen)
+	binary.BigEndian.PutUint32(bytes[0:4], uint32(totalLen))
+	bytes[4] = byte(data.Cmd)
+	bytes[5] = byte(data.PType)
+	binary.BigEndian.PutUint64(bytes[6:14], uint64(data.ReqId))
+	binary.BigEndian.PutUint16(bytes[14:16], uint16(data.RspCode))
+	copy(bytes[16:], data.Data)
+	//binary.BigEndian.PutUint32(bytes[4:4], uint32(totalLen))
+	//
+	//_ = binary.Write(b, binary.BigEndian, int32(totalLen))
+	//_ = binary.Write(b, binary.BigEndian, int8(data.Cmd))
+	//_ = binary.Write(b, binary.BigEndian, int8(data.PType))
+	//_ = binary.Write(b, binary.BigEndian, data.ReqId)
+	//_ = binary.Write(b, binary.BigEndian, data.RspCode)
+	//_ = binary.Write(b, binary.BigEndian, data.Data)
+	return bytes
 }
 
 func GetByteLen(lenByte []byte) int {

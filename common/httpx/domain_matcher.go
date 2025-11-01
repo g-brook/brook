@@ -16,7 +16,10 @@
 
 package httpx
 
-import "strings"
+import (
+	"net/http"
+	"strings"
+)
 
 // MatchDomain match domain.
 func MatchDomain(routeDomain, reqDomain string) bool {
@@ -60,5 +63,30 @@ func MatchDomain(routeDomain, reqDomain string) bool {
 		// Simple case: directly compare domain names or check wildcard
 		return routeDomain == reqDomain || (strings.HasPrefix(routeDomain, "*.") && reqLabels[len(reqLabels)-1] == routeLabels[0])
 	}
+	return true
+}
+
+func IsWebSocketRequest(r *http.Request) bool {
+	return strings.ToLower(r.Header.Get("Connection")) == "upgrade" &&
+		strings.ToLower(r.Header.Get("Upgrade")) == "websocket"
+}
+
+func IsWebSocketResponse(resp *http.Response) bool {
+	if resp == nil {
+		return false
+	}
+
+	if resp.StatusCode != http.StatusSwitchingProtocols {
+		return false
+	}
+
+	if resp.Header.Get("Upgrade") != "websocket" {
+		return false
+	}
+
+	if resp.Header.Get("Connection") != "Upgrade" {
+		return false
+	}
+
 	return true
 }

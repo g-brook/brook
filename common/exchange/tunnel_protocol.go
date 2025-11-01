@@ -17,38 +17,67 @@
 package exchange
 
 import (
-	"bytes"
 	"encoding/binary"
 	"errors"
 	"io"
 
-	"github.com/brook/common/iox"
 	"github.com/brook/common/log"
 )
 
 var (
-	v1        int8  = 1
-	lenLen    int32 = 4
-	reqIdLen  int32 = 8
-	verLen    int32 = 1
-	headerLen       = lenLen + reqIdLen + verLen
+	V1          int8 = 1
+	WebsocketV1 int8 = 2
+	WebsocketV2 int8 = 3
+
+	//protocol defined.
+	lenSize    int32 = 4
+	_reqIdSize int32 = 8
+	verSize    int32 = 1
+	attrSize   int32 = 4
+	headerLen        = lenSize + _reqIdSize + verSize + attrSize
 )
 
 type TunnelProtocol struct {
-	Len   int32
-	ReqId int64
-	Ver   int8
-	Data  []byte
+	Len     int32
+	ReqId   int64
+	Ver     int8
+	AttrLen int32
+	Attr    []byte
+	Data    []byte
 }
 
 // NewTunnelWriter   creates a new instance of TunnelProtocol with the provided data
 // It initializes the protocol version to v1 and increments the request ID counter
 func NewTunnelWriter(data []byte, reqId int64) *TunnelProtocol {
 	return &TunnelProtocol{
-		Len:   headerLen + int32(len(data)),
-		ReqId: reqId,
-		Ver:   v1, // Set the protocol version to v1
-		Data:  data,
+		Len:     headerLen + int32(len(data)),
+		ReqId:   reqId,
+		Ver:     V1, // Set the protocol version to v1
+		Data:    data,
+		Attr:    []byte{},
+		AttrLen: 0,
+	}
+}
+
+func NewTunnelWebsocketWriterV1(data []byte, attr []byte, reqId int64) *TunnelProtocol {
+	return &TunnelProtocol{
+		Len:     headerLen + int32(len(attr)) + int32(len(data)),
+		ReqId:   reqId,
+		Ver:     WebsocketV1,
+		Data:    data,
+		AttrLen: int32(len(attr)),
+		Attr:    attr,
+	}
+}
+
+func NewTunnelWebsocketWriterV2(data []byte, attr []byte, reqId int64) *TunnelProtocol {
+	return &TunnelProtocol{
+		Len:     headerLen + int32(len(attr)) + int32(len(data)),
+		ReqId:   reqId,
+		Ver:     WebsocketV2,
+		AttrLen: int32(len(attr)),
+		Attr:    attr,
+		Data:    data,
 	}
 }
 
@@ -65,7 +94,7 @@ func (t *TunnelProtocol) Writer(w io.Writer) error {
 }
 
 func (t *TunnelProtocol) Read(r io.Reader) error {
-	lens := make([]byte, lenLen)
+	lens := make([]byte, lenSize)
 	_, err := io.ReadFull(r, lens)
 	if err != nil {
 		return err
@@ -75,7 +104,7 @@ func (t *TunnelProtocol) Read(r io.Reader) error {
 		log.Error("packet size error")
 		return errors.New("invalid packet size")
 	}
-	data := make([]byte, t.Len-lenLen)
+	data := make([]byte, t.Len-lenSize)
 	if _, err := io.ReadFull(r, data); err != nil {
 		log.Error(err.Error())
 		return err
@@ -85,21 +114,26 @@ func (t *TunnelProtocol) Read(r io.Reader) error {
 }
 
 func (t *TunnelProtocol) Encode() []byte {
-	pool := iox.GetBufPool(int(t.Len))
-	var bufData []byte
-	_ = iox.WithBuf(func(buf *bytes.Buffer) error {
-		err := binary.Write(buf, binary.BigEndian, t.Len)
-		_ = binary.Write(buf, binary.BigEndian, t.Ver)
-		_ = binary.Write(buf, binary.BigEndian, t.ReqId)
-		_, _ = buf.Write(t.Data)
-		bufData = buf.Bytes()
-		return err
-	}, pool)
-	return bufData
+	buf := make([]byte, t.Len)
+	binary.BigEndian.PutUint32(buf[0:4], uint32(t.Len))
+	buf[4] = byte(t.Ver)
+	binary.BigEndian.PutUint64(buf[5:13], uint64(t.ReqId))
+	binary.BigEndian.PutUint32(buf[13:17], uint32(t.AttrLen))
+	attrLen := 17 + t.AttrLen
+	if t.AttrLen > 0 {
+		copy(buf[17:attrLen], t.Attr)
+	}
+	copy(buf[attrLen:], t.Data)
+	return buf
 }
 
 func (t *TunnelProtocol) Decode(data []byte) {
 	t.Ver = int8(data[0])
 	t.ReqId = int64(binary.BigEndian.Uint64(data[1:9]))
-	t.Data = data[9:]
+	t.AttrLen = int32(binary.BigEndian.Uint32(data[9:13]))
+	dataLen := t.AttrLen + 13
+	if t.AttrLen > 0 {
+		t.Attr = data[13:dataLen]
+	}
+	t.Data = data[dataLen:]
 }

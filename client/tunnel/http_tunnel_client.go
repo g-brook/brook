@@ -32,6 +32,7 @@ import (
 	"github.com/brook/common/httpx"
 	"github.com/brook/common/log"
 	"github.com/brook/common/transport"
+	"github.com/gobwas/ws"
 )
 
 func NewHttpTunnelClient(config *configs.ClientTunnelConfig) *HttpTunnelClient {
@@ -39,12 +40,9 @@ func NewHttpTunnelClient(config *configs.ClientTunnelConfig) *HttpTunnelClient {
 		panic("httpId is empty")
 	}
 	tunnelClient := clis.NewBaseTunnelClient(config, true)
-	// Create a new HttpTunnelClient embedding the base tunnel client
 	client := HttpTunnelClient{
 		BaseTunnelClient: tunnelClient,
 	}
-	// Assign the initOpen method to the DoOpen function pointer of the base tunnel client
-	// This method will be called when the tunnel is opened
 	tunnelClient.DoOpen = client.initOpen
 	return &client
 }
@@ -85,68 +83,55 @@ func (h *HttpTunnelClient) bindHandler(_ *exchange.Protocol, rw io.ReadWriteClos
 			_ = conn.Close()
 		}
 	}
-	// call processes the HTTP request and returns the response and connection
-	call := func(request []byte, err error) (rsp *http.Response, dial net.Conn) {
-		if err != nil {
-			return
-		}
-		// Establish TCP connection to local address
-		dial, err = net.Dial("tcp", h.GetCfg().LocalAddress)
-		if err != nil {
-			rsp = getErrorResponse()
-			return
-		}
-		// Write request to the local connection
-		_, err = dial.Write(request)
-		if err != nil {
-			fmt.Println(err.Error())
-			rsp = getErrorResponse()
-			return
-		}
-		// Read HTTP response from the local connection
-		rsp, err = http.ReadResponse(bufio.NewReader(dial), nil)
-		if err != nil {
-			rsp = getErrorResponse()
-			return
-		}
-		return
-	}
-	// Create a new buffer to store request data
-	buf := new(bytes.Buffer)
-	// loopRead continuously reads and processes incoming requests
 	loopRead := func() error {
-		// Create a new tunnel reader for each request
 		pt := exchange.NewTunnelRead()
 		err := pt.Read(rw)
 		if err != nil {
 			return err
 		}
-		// Append received data to buffer
-		buf.Write(pt.Data)
-		// Check if HTTP request is complete
-		if !isHTTPRequestCompleteLight(buf) {
-			return nil
+		// If the pt.Ver is v1, that it is a http request
+		if pt.Ver == exchange.V1 || pt.Ver == exchange.WebsocketV1 {
+			buf := new(bytes.Buffer)
+			buf.Write(pt.Data)
+			if !isHTTPRequestCompleteLight(buf) {
+				return nil
+			}
+			response, dial, err := httpCall(h.GetCfg().LocalAddress, pt.Data)
+			fmt.Println("接收成功，建立连接........")
+			//to websocket ss.
+			if pt.Ver == exchange.WebsocketV1 {
+				if err != nil {
+					CloseWebsocketLeft(rw, pt.ReqId)
+					return nil
+				}
+				path := string(pt.Attr)
+				NewWebsocketClient(ctx, path, dial, rw, pt.ReqId).toAdd()
+				log.Debug("Connect to %v websocket success.")
+				return nil
+			} else {
+				//to http ss.
+				if err != nil {
+					return err
+				}
+				defer closeConn(dial)
+				defer buf.Reset()
+				if response != nil {
+					bodyBytes, _ := io.ReadAll(response.Body)
+					response.Body.Close()
+					response.Header.Set("Content-Length", strconv.Itoa(len(bodyBytes)))
+					headerBytes := BuildCustomHTTPHeader(response)
+					merged := append(headerBytes, bodyBytes...)
+					return exchange.NewTunnelWriter(merged, pt.ReqId).Writer(rw)
+				} else {
+					log.Warn("Read request fail", err)
+					return err
+				}
+			}
+		} else if pt.Ver == exchange.WebsocketV2 {
+			websocketCall(pt, rw)
 		}
-		// Process the complete request
-		response, dial := call(buf.Bytes(), err)
-		defer closeConn(dial)
-		defer buf.Reset()
-		if response != nil {
-			// Read response body
-			bodyBytes, _ := io.ReadAll(response.Body)
-			response.Body.Close()
-			// Update content length header
-			response.Header.Set("Content-Length", strconv.Itoa(len(bodyBytes)))
-			// Build custom HTTP headers
-			headerBytes := BuildCustomHTTPHeader(response)
-			// Merge headers and body
-			merged := append(headerBytes, bodyBytes...)
-			// Write response back through tunnel
-			return exchange.NewTunnelWriter(merged, pt.ReqId).Writer(rw)
-		} else {
-			log.Warn("Read request fail", err)
-			return err
-		}
+		return nil
+
 	}
 	// Main loop to handle incoming requests
 	for {
@@ -166,30 +151,57 @@ func (h *HttpTunnelClient) bindHandler(_ *exchange.Protocol, rw io.ReadWriteClos
 
 }
 
+func websocketCall(protocol *exchange.TunnelProtocol, left io.ReadWriteCloser) {
+	if len(protocol.Attr) <= 1 {
+		return
+	}
+	opCode := ws.OpCode(protocol.Attr[0])
+	path := string(protocol.Attr[1:])
+	conn, b := GetWebsocketClient(path)
+	if !b {
+		CloseWebsocketLeft(left, protocol.ReqId)
+		return
+	}
+	conn.WriteToRight(opCode, protocol.Data)
+}
+
+func httpCall(address string, request []byte) (rsp *http.Response, dial net.Conn, err error) {
+	dial, err = net.Dial("tcp", address)
+	if err != nil {
+		rsp = getErrorResponse()
+		return
+	}
+	_, err = dial.Write(request)
+	if err != nil {
+		fmt.Println(err.Error())
+		rsp = getErrorResponse()
+		return
+	}
+	rsp, err = http.ReadResponse(bufio.NewReader(dial), nil)
+	if err != nil {
+		rsp = getErrorResponse()
+		return
+	}
+	return
+}
+
 // isHTTPRequestCompleteLight checks if an HTTP request is complete by examining the buffer
 // It determines completeness by checking if headers are present and if the body length matches Content-Length
 // This is a lightweight version that doesn't fully parse the request
 func isHTTPRequestCompleteLight(buf *bytes.Buffer) bool {
-	// Read all data from the buffer
 	data := buf.Bytes()
-	// Find the end of headers marker (\r\n\r\n)
 	idx := bytes.Index(data, []byte("\r\n\r\n"))
 	if idx == -1 {
 		return false
 	}
-	// Extract the header part of the request
 	headerPart := data[:idx+4]
-	// Try to parse the headers from the buffer
 	req, err := http.ReadRequest(bufio.NewReader(bytes.NewReader(headerPart)))
 	if err != nil {
 		return false
 	}
-
-	// If there's a Content-Length specified, check if we've received all the body data
 	if req.ContentLength > 0 {
 		return int64(len(data)-(idx+4)) >= req.ContentLength
 	}
-	// If no Content-Length is specified, assume the request is complete after headers
 	return true
 }
 
@@ -203,9 +215,7 @@ func isHTTPRequestCompleteLight(buf *bytes.Buffer) bool {
 //
 //	[]byte - formatted HTTP header as a byte slice
 func BuildCustomHTTPHeader(r *http.Response) []byte {
-	// Create a buffer to build the HTTP header
 	var buf bytes.Buffer
-
 	// Format and write the status line (e.g., HTTP/1.1 200 OK)
 	// Includes protocol version, status code, and status text
 	st := fmt.Sprintf("HTTP/%d.%d %03d %s\r\n", r.ProtoMajor, r.ProtoMinor, r.StatusCode, r.Status)

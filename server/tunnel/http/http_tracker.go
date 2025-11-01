@@ -17,37 +17,165 @@
 package http
 
 import (
+	"io"
 	"sync"
+	"time"
 
 	"github.com/brook/common/exchange"
+	"github.com/brook/common/hash"
+	"github.com/brook/common/iox"
 	"github.com/brook/common/threading"
 	"github.com/brook/common/transport"
+	"github.com/gobwas/ws"
 )
+
+type Future interface {
+	Done(data []byte)
+	ReqId() int64
+	Close()
+}
+
+type WsFuture struct {
+	buffer  *iox.RingBuffer
+	reqId   int64
+	tracker *HttpTracker
+	isClose bool
+}
+
+func (f *WsFuture) Read(bytes []byte) (int, error) {
+	if f.isClose {
+		return 0, io.EOF
+	}
+	return f.buffer.Read(bytes)
+}
+
+func (f *WsFuture) ReqId() int64 {
+	return f.reqId
+}
+
+func (f *WsFuture) Close() {
+	f.isClose = true
+}
+
+func newWsFuture(tracker *HttpTracker, reqId int64) *WsFuture {
+	buffer := iox.NewRingBuffer(1024)
+	future := &WsFuture{
+		buffer:  buffer,
+		reqId:   reqId,
+		tracker: tracker,
+	}
+	tracker.PutRequest(future)
+	return future
+}
+
+func (f *WsFuture) Done(data []byte) {
+	_, _ = f.buffer.Write(data)
+}
+
+type ResponseFuture struct {
+	done    chan struct{}
+	data    []byte
+	err     error
+	mu      sync.Mutex
+	reqId   int64
+	tracker *HttpTracker
+}
+
+func newResponseFuture(tracker *HttpTracker) *ResponseFuture {
+	future := &ResponseFuture{
+		done:    make(chan struct{}),
+		reqId:   newReqId(),
+		tracker: tracker,
+	}
+	tracker.PutRequest(future)
+	return future
+}
+
+func (f *ResponseFuture) ReqId() int64 {
+	return f.reqId
+}
+
+func (f *ResponseFuture) Done(data []byte) {
+	f.mu.Lock()
+	already := f.isDoneLocked()
+	if !already {
+		f.data = data
+		f.Close()
+	}
+	f.mu.Unlock()
+}
+
+func (f *ResponseFuture) Error(err error) {
+	f.mu.Lock()
+	already := f.isDoneLocked()
+	if !already {
+		f.err = err
+		f.Close()
+	}
+	f.mu.Unlock()
+}
+
+func (f *ResponseFuture) Close() {
+	select {
+	case <-f.done:
+		return
+	default:
+		close(f.done)
+	}
+}
+
+func (f *ResponseFuture) Wait() ([]byte, error) {
+	<-f.done
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	return f.data, f.err
+}
+
+// WaitTimeout waits with timeout
+func (f *ResponseFuture) WaitTimeout(d time.Duration) ([]byte, error) {
+	select {
+	case <-f.done:
+		f.mu.Lock()
+		defer f.mu.Unlock()
+		return f.data, f.err
+	case <-time.After(d):
+		return nil, timeoutErr
+	}
+}
+
+func (f *ResponseFuture) isDoneLocked() bool {
+	select {
+	case <-f.done:
+		return true
+	default:
+		return false
+	}
+}
 
 // HttpTracker httpx tracker
 type HttpTracker struct {
 	mu       sync.Mutex
 	channel  transport.Channel
-	trackers map[int64]chan []byte
+	trackers *hash.SyncMap[int64, Future]
 }
 
 func NewHttpTracker(channel transport.Channel) *HttpTracker {
 	return &HttpTracker{
-		trackers: make(map[int64]chan []byte),
+		trackers: hash.NewSyncMap[int64, Future](),
 		channel:  channel,
 	}
+}
+
+func (receiver *HttpTracker) GetFuture(reqId int64) (Future, bool) {
+	return receiver.trackers.Load(reqId)
 }
 
 func (receiver *HttpTracker) Run() {
 	threading.GoSafe(receiver.readRev)
 }
 
-func (receiver *HttpTracker) AddRequest(reqId int64) chan []byte {
-	ch := make(chan []byte, 1)
-	receiver.mu.Lock()
-	defer receiver.mu.Unlock()
-	receiver.trackers[reqId] = ch
-	return ch
+func (receiver *HttpTracker) PutRequest(future Future) {
+	receiver.trackers.Store(future.ReqId(), future)
 }
 
 func (receiver *HttpTracker) readRev() {
@@ -57,8 +185,7 @@ func (receiver *HttpTracker) readRev() {
 		if err != nil {
 			return
 		}
-		reqId := pt.ReqId
-		receiver.send(reqId, pt.Data)
+		receiver.send(pt)
 	}
 	for {
 		select {
@@ -70,23 +197,30 @@ func (receiver *HttpTracker) readRev() {
 	}
 }
 
-func (receiver *HttpTracker) send(reqId int64, buffer []byte) {
-	receiver.mu.Lock()
-	defer receiver.mu.Unlock()
-	ch := receiver.trackers[reqId]
-	if ch != nil {
-		ch <- buffer
+func (receiver *HttpTracker) send(pt *exchange.TunnelProtocol) {
+	ch, ok := receiver.trackers.Load(pt.ReqId)
+	if ok {
+		if pt.Ver == exchange.WebsocketV2 {
+			if pt.AttrLen > 0 {
+				b := pt.Attr[0]
+				if b == byte(ws.OpClose) {
+					receiver.Close(pt.ReqId)
+					return
+				}
+			}
+		}
+		ch.Done(pt.Data)
 	}
-	delete(receiver.trackers, reqId)
+	if pt.Ver == exchange.V1 || pt.Ver == exchange.WebsocketV1 {
+		receiver.Close(pt.ReqId)
+	}
 
 }
 
 func (receiver *HttpTracker) Close(reqId int64) {
-	receiver.mu.Lock()
-	defer receiver.mu.Unlock()
-	c := receiver.trackers[reqId]
-	if c != nil {
-		close(c)
+	ch, ok := receiver.trackers.Load(reqId)
+	if ok {
+		ch.Close()
 	}
-	delete(receiver.trackers, reqId)
+	receiver.trackers.Delete(reqId)
 }

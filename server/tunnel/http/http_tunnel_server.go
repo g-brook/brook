@@ -20,9 +20,11 @@ import (
 	"bufio"
 	"crypto/tls"
 	"errors"
+	"fmt"
 	"io"
 	"net"
 	"net/http"
+	"runtime"
 	"strings"
 	"sync"
 
@@ -47,7 +49,9 @@ type HttpTunnelServer struct {
 
 	registerLock sync.Mutex
 
-	proxy *Proxy
+	httpProxy *HttpProxy
+
+	websocketProxy *WebsocketProxy
 
 	tlsConfig *tls.Config
 
@@ -118,8 +122,8 @@ func loadTls(cfg *configs.ServerTunnelConfig, this *HttpTunnelServer) error {
 // It returns an error if the configuration is invalid.
 func verifyCfg(cfg *configs.ServerTunnelConfig) error {
 	if cfg.Http == nil {
-		log.Error("proxy is nil")
-		return errors.New("proxy is nil")
+		log.Error("http is nil")
+		return errors.New("http is nil")
 	}
 	if cfg.Type == lang.Https {
 		if cfg.CertFile == "" {
@@ -131,19 +135,19 @@ func verifyCfg(cfg *configs.ServerTunnelConfig) error {
 			return errors.New("KeyFile is nil")
 		}
 	}
-	for _, proxy := range cfg.Http {
-		if proxy.Id == "" {
-			log.Error("proxy.id is nil")
-			return errors.New("proxy.id is nil")
+	for _, hcfg := range cfg.Http {
+		if hcfg.Id == "" {
+			log.Error("http.id is nil")
+			return errors.New("http.id is nil")
 		}
-		if proxy.Paths == nil {
-			log.Error("proxy.paths is nil")
-			return errors.New("proxy.paths is nil")
+		if hcfg.Paths == nil {
+			log.Error("http.paths is nil")
+			return errors.New("http.paths is nil")
 		}
-		for _, path := range proxy.Paths {
+		for _, path := range hcfg.Paths {
 			if path == "" {
-				log.Error("proxy.paths is empty")
-				return errors.New("proxy.paths is nil")
+				log.Error("http.paths is empty")
+				return errors.New("http.paths is nil")
 			}
 		}
 	}
@@ -152,9 +156,9 @@ func verifyCfg(cfg *configs.ServerTunnelConfig) error {
 
 // getProxyConnection is a function that returns a net.Conn object based on the httpId. It
 // It returns an error if the httpId is not found.
-func (htl *HttpTunnelServer) getProxyConnection(proxyId string, reqId int64) (workConn net.Conn, err error) {
-	err = errors.New("proxy Id not found in proxy connection:" + proxyId)
-	channelIds, ok := htl.proxyToConn.Load(proxyId)
+func (htl *HttpTunnelServer) getProxyConnection(httpId string, reqId int64) (workConn net.Conn, err error) {
+	err = errors.New("http Id not found in http connection:" + httpId)
+	channelIds, ok := htl.proxyToConn.Load(httpId)
 	if !ok {
 		return nil, err
 	}
@@ -163,10 +167,7 @@ func (htl *HttpTunnelServer) getProxyConnection(proxyId string, reqId int64) (wo
 	channelIds.Range(func(key string, value *HttpTracker) (shouldContinue bool) {
 		channel = htl.BaseTunnelServer.TunnelChannel[key]
 		tracker = value
-		if channel != nil {
-			return false
-		}
-		return true
+		return !(channel != nil)
 	})
 	if channel == nil || tracker == nil {
 		return nil, err
@@ -178,8 +179,8 @@ func (htl *HttpTunnelServer) getProxyConnection(proxyId string, reqId int64) (wo
 		_ = channel.Close()
 		return nil, errors.New("write error:" + err.Error())
 	}
-	_ = tracker.AddRequest(reqId)
-	workConn = NewProxyConnection(channel, reqId, tracker)
+	workConn = NewProxyConnection(channel,
+		tracker)
 	if workConn == nil {
 		return nil, err
 	}
@@ -189,6 +190,7 @@ func (htl *HttpTunnelServer) getProxyConnection(proxyId string, reqId int64) (wo
 
 // Reader    is a method of HttpTunnelServer, which is used to process incoming requests. It
 func (htl *HttpTunnelServer) Reader(ch Channel, tb srv.TraverseBy) {
+	fmt.Println("写入数据1.....................................", runtime.NumGoroutine())
 	channel := ch.(srv.GContext)
 	bt, err := channel.Next(-1)
 	if err != nil {
@@ -202,10 +204,12 @@ func (htl *HttpTunnelServer) Reader(ch Channel, tb srv.TraverseBy) {
 	tb()
 }
 func (htl *HttpTunnelServer) Open(ch Channel, tb srv.TraverseBy) {
+	fmt.Println("打开通道.....................................", runtime.NumGoroutine())
 	channel := ch.(srv.GContext)
 	conn := newHttpConn(ch, htl.isHttps)
 	channel.GetContext().AddAttr(defin.HttpChannel, conn)
 	threading.GoSafe(func() {
+		fmt.Println("打开通道2.....................................", runtime.NumGoroutine())
 		var rwConn net.Conn
 		if htl.isHttps {
 			var tlsConn *tls.Conn
@@ -221,6 +225,7 @@ func (htl *HttpTunnelServer) Open(ch Channel, tb srv.TraverseBy) {
 		} else {
 			rwConn = conn
 		}
+		fmt.Println("打开通道1.....................................", runtime.NumGoroutine())
 		reader := bufio.NewReader(rwConn)
 		for {
 			req, err := http.ReadRequest(reader)
@@ -231,13 +236,18 @@ func (htl *HttpTunnelServer) Open(ch Channel, tb srv.TraverseBy) {
 				_ = rwConn.Close()
 				return
 			}
-			htl.proxy.ServeHTTP(rc, req)
-			_, _ = io.Copy(io.Discard, req.Body)
-			req.Body.Close()
-			rc.finish(nil)
-			if req.Close || req.Header.Get("Connection") == "close" {
-				_ = rwConn.Close()
-				return
+			fmt.Println("打开通道3.....................................", runtime.NumGoroutine())
+			if isWebSocket(req) {
+				htl.websocketProxy.ServeHTTP(rc, req)
+			} else {
+				htl.httpProxy.ServeHTTP(rc, req)
+				_, _ = io.Copy(io.Discard, req.Body)
+				req.Body.Close()
+				rc.finish(nil)
+				if req.Close || req.Header.Get("Connection") == "close" {
+					_ = rwConn.Close()
+					return
+				}
 			}
 		}
 	})
@@ -251,8 +261,9 @@ func (htl *HttpTunnelServer) Open(ch Channel, tb srv.TraverseBy) {
 func (htl *HttpTunnelServer) startAfter() error {
 	tunnel.AddTunnel(htl)
 	htl.Server.AddHandler(htl)
-	htl.proxy = NewHttpProxy(htl.getRoute)
-	log.Info("HTTP tunnel server started:%v", htl.Cfg.Port)
+	htl.httpProxy = NewHttpProxy(htl.getRoute)
+	htl.websocketProxy = NewWebsocketProxy(htl.getRoute)
+	log.Info("Http tunnel server started:%v", htl.Cfg.Port)
 	return nil
 }
 

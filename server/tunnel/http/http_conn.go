@@ -25,9 +25,9 @@ import (
 	"net"
 	"net/http"
 	"strconv"
-	"sync"
 	"time"
 
+	"github.com/brook/common/iox"
 	. "github.com/brook/common/transport"
 )
 
@@ -51,13 +51,13 @@ var (
 )
 
 type HttpConn struct {
-	ch        Channel
-	buf       bytes.Buffer
-	dataCh    chan struct{}
-	mu        sync.Mutex
-	https     bool
-	handshake bool
-	closed    chan struct{}
+	ch          Channel
+	buffer      *iox.RingBuffer
+	https       bool
+	handshake   bool
+	closed      chan struct{}
+	dataCh      chan struct{}
+	isWebSocket bool
 }
 
 /**
@@ -70,10 +70,11 @@ func newHttpConn(ch Channel, https bool) *HttpConn {
 	// Create a new HttpConn instance with the provided channel and HTTPS flag
 	// Initialize dataCh and closed channels for synchronization
 	conn := &HttpConn{
-		ch:     ch,                  // Channel for the connection
-		dataCh: make(chan struct{}), // Channel for data synchronization
-		closed: make(chan struct{}), // Channel to track connection closure
-		https:  https,               // HTTPS flag indicating whether to use HTTPS
+		ch:     ch,                       // Channel for the connection
+		buffer: iox.NewRingBuffer(65535), // Buffer for incoming data
+		dataCh: make(chan struct{}, 1),   // Channel for data synchronization
+		closed: make(chan struct{}),      // Channel to track connection closure
+		https:  https,                    // HTTPS flag indicating whether to use HTTPS
 	}
 	return conn // Return the newly created HttpConn instance
 }
@@ -94,9 +95,9 @@ func isTLSHandshake(data []byte) bool {
 	return len(data) >= 3 && data[0] == 0x16 && data[1] == 0x03
 }
 
-// isHTTPRequest checks if the given data represents an HTTP request
+// isHttpRequest checks if the given data represents an HTTP request
 // by verifying if the first three characters are uppercase letters
-func isHTTPRequest(data []byte) bool {
+func isHttpRequest(data []byte) bool {
 	//  Check if the data length is less than 3 bytes
 	// If so, it can't be a valid HTTP request
 	if len(data) < 3 {
@@ -114,55 +115,43 @@ func isHTTPRequest(data []byte) bool {
 // OnData handles incoming data for the HTTP connection
 // It writes the data to an internal buffer and signals that new data is available
 func (h *HttpConn) OnData(b []byte) {
-	h.mu.Lock()    // Acquire lock to ensure thread-safe buffer writing
-	h.buf.Write(b) // Append received data to the internal buffer
-	h.mu.Unlock()  // Release the lock
-	// Non-blocking signal that new data is available
-	// If the channel is already full, this does nothing (default case)
+	n, err := h.buffer.Write(b)
+	if err != nil {
+		return
+	}
+	if n < len(b) {
+		return
+	}
 	select {
-	case h.dataCh <- struct{}{}: // Send empty struct to signal new data
-	default: // If channel is full, do nothing
+	case h.dataCh <- struct{}{}:
+	default:
 	}
 }
 
 // Read implements the io.Reader interface for HttpConn.
 // It reads data from the connection buffer with proper synchronization and protocol validation.
 func (h *HttpConn) Read(b []byte) (n int, err error) {
-	// Infinite loop to continuously attempt reading data
 	for {
-		// Lock the mutex to ensure thread-safe access to shared resources
-		h.mu.Lock()
-		// Check if there's data available in the internal buffer
-		if h.buf.Len() > 0 {
-			// Read available data into the provided byte slice
-			read, _ := h.buf.Read(b)
-			// Unlock the mutex after reading from buffer
-			h.mu.Unlock()
-			// Protocol validation for HTTPS connection
+		if !h.buffer.IsEmpty() {
+			read, _ := h.buffer.Read(b)
+			if h.isWebSocket {
+				return read, nil
+			}
 			if h.https && !h.handshake {
-				// Verify if the data is part of TLS handshake
 				if !isTLSHandshake(b[:read]) {
 					return 0, PHttpsErr
 				}
-				// Mark handshake as completed after successful validation
 				h.handshake = true
-			} else if !h.https && !isHTTPRequest(b) {
+			} else if !h.https && !isHttpRequest(b) {
 				// Validate for HTTP protocol if not HTTPS
 				return 0, PHttpErr
 			}
-			// Return the number of bytes read and no error
 			return read, nil
 		}
-		// Unlock the mutex if no data was available in buffer
-		h.mu.Unlock()
-		// Wait for data with multiple exit conditions
 		select {
-		// Case when new data arrives through the data channel
 		case <-h.dataCh:
-			// Case when timeout occurs after 30 seconds
 		case <-time.After(30 * time.Second):
 			return 0, PTimeout
-			// Case when the connection is closed
 		case <-h.closed:
 			return 0, io.EOF
 		}
@@ -216,10 +205,13 @@ type responseWriter struct {
 }
 
 func (r *responseWriter) Hijack() (net.Conn, *bufio.ReadWriter, error) {
+	r.httpConn.isWebSocket = true
 	return r.httpConn, bufio.NewReadWriter(bufio.NewReader(r.httpConn), bufio.NewWriter(r.httpConn)), nil
 }
 
-func newResponseWriter(conn net.Conn, httpConn *HttpConn, req *http.Request) *responseWriter {
+func newResponseWriter(conn net.Conn,
+	httpConn *HttpConn,
+	req *http.Request) *responseWriter {
 	return &responseWriter{
 		conn: conn, httpConn: httpConn, header: make(http.Header), req: req, body: bytes.NewBuffer(make([]byte, 0)),
 	}
