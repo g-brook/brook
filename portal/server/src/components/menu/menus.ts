@@ -48,7 +48,7 @@ const menus: Menu[] = [
     "brook-Diagram-",
     true,
     [],
-    () => import("@/views/index/Dashboard.vue"),
+    () => import("@/views/dashboard/Dashboard.vue"),
   ),
    new Menu(
     "通道配置",

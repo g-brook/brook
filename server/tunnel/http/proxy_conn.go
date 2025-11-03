@@ -127,30 +127,26 @@ func (proxy *ProxyConnection) Write(b []byte) (n int, err error) {
 }
 
 func (proxy *ProxyConnection) Read(p []byte) (n int, err error) {
+	// 先从缓存里读
 	if len(proxy.readBuf) > 0 {
-		n := copy(p, proxy.readBuf)
+		n = copy(p, proxy.readBuf)
 		proxy.readBuf = proxy.readBuf[n:]
 		return n, nil
 	}
+	// 从 future 等待数据
 	bytes, err := proxy.future.WaitTimeout(5 * time.Second)
 	if err != nil {
 		return 0, err
 	}
+	// 拷贝尽可能多的数据到 p
 	n = copy(p, bytes)
+
+	// 如果还有剩余，放到 readBuf 里，下次 Read 时读出
+	if n < len(bytes) {
+		proxy.readBuf = append(proxy.readBuf, bytes[n:]...)
+	}
+
 	return n, nil
-	//select {
-	//case data, ok := <-proxy.future.Wait():
-	//	if !ok {
-	//		return 0, io.EOF
-	//	}
-	//	n = copy(p, data)
-	//	if n < len(data) {
-	//		proxy.readBuf = append(proxy.readBuf, data[n:]...)
-	//	}
-	//	return n, nil
-	//case <-time.After(time.Second * 5):
-	//	return 0, timeoutError{}
-	//}
 }
 
 func (proxy *ProxyConnection) websocket(payloadType byte) net.Conn {

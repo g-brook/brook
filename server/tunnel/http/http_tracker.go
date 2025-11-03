@@ -23,7 +23,7 @@ import (
 
 	"github.com/brook/common/exchange"
 	"github.com/brook/common/hash"
-	"github.com/brook/common/iox"
+	"github.com/brook/common/ringbuffer"
 	"github.com/brook/common/threading"
 	"github.com/brook/common/transport"
 	"github.com/gobwas/ws"
@@ -36,7 +36,7 @@ type Future interface {
 }
 
 type WsFuture struct {
-	buffer  *iox.RingBuffer
+	buffer  *ringbuffer.RingBuffer
 	reqId   int64
 	tracker *HttpTracker
 	isClose bool
@@ -58,7 +58,7 @@ func (f *WsFuture) Close() {
 }
 
 func newWsFuture(tracker *HttpTracker, reqId int64) *WsFuture {
-	buffer := iox.NewRingBuffer(1024)
+	buffer := ringbuffer.NewRingBuffer(1024)
 	future := &WsFuture{
 		buffer:  buffer,
 		reqId:   reqId,

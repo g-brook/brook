@@ -27,7 +27,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/brook/common/iox"
+	"github.com/brook/common/ringbuffer"
 	. "github.com/brook/common/transport"
 )
 
@@ -52,7 +52,7 @@ var (
 
 type HttpConn struct {
 	ch          Channel
-	buffer      *iox.RingBuffer
+	buffer      *ringbuffer.RingBuffer
 	https       bool
 	handshake   bool
 	closed      chan struct{}
@@ -70,11 +70,11 @@ func newHttpConn(ch Channel, https bool) *HttpConn {
 	// Create a new HttpConn instance with the provided channel and HTTPS flag
 	// Initialize dataCh and closed channels for synchronization
 	conn := &HttpConn{
-		ch:     ch,                       // Channel for the connection
-		buffer: iox.NewRingBuffer(65535), // Buffer for incoming data
-		dataCh: make(chan struct{}, 1),   // Channel for data synchronization
-		closed: make(chan struct{}),      // Channel to track connection closure
-		https:  https,                    // HTTPS flag indicating whether to use HTTPS
+		ch:     ch,                              // Channel for the connection
+		buffer: ringbuffer.NewRingBuffer(65535), // Buffer for incoming data
+		dataCh: make(chan struct{}, 1),          // Channel for data synchronization
+		closed: make(chan struct{}),             // Channel to track connection closure
+		https:  https,                           // HTTPS flag indicating whether to use HTTPS
 	}
 	return conn // Return the newly created HttpConn instance
 }

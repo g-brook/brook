@@ -18,6 +18,7 @@ package http
 
 import (
 	"context"
+	"fmt"
 	"net"
 	"net/http"
 	"net/http/httputil"
@@ -58,6 +59,7 @@ func httpProxy() *httputil.ReverseProxy {
 	reverseProxy := &httputil.ReverseProxy{
 		BufferPool: iox.GetBytePool32k(),
 		Rewrite: func(request *httputil.ProxyRequest) {
+			fmt.Println(request.In.URL)
 			out := request.Out
 			in := request.In
 			out.Header[ForwardedKey] = in.Header[ForwardedKey]

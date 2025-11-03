@@ -20,11 +20,9 @@ import (
 	"bufio"
 	"crypto/tls"
 	"errors"
-	"fmt"
 	"io"
 	"net"
 	"net/http"
-	"runtime"
 	"strings"
 	"sync"
 
@@ -190,7 +188,6 @@ func (htl *HttpTunnelServer) getProxyConnection(httpId string, reqId int64) (wor
 
 // Reader    is a method of HttpTunnelServer, which is used to process incoming requests. It
 func (htl *HttpTunnelServer) Reader(ch Channel, tb srv.TraverseBy) {
-	fmt.Println("写入数据1.....................................", runtime.NumGoroutine())
 	channel := ch.(srv.GContext)
 	bt, err := channel.Next(-1)
 	if err != nil {
@@ -204,12 +201,10 @@ func (htl *HttpTunnelServer) Reader(ch Channel, tb srv.TraverseBy) {
 	tb()
 }
 func (htl *HttpTunnelServer) Open(ch Channel, tb srv.TraverseBy) {
-	fmt.Println("打开通道.....................................", runtime.NumGoroutine())
 	channel := ch.(srv.GContext)
 	conn := newHttpConn(ch, htl.isHttps)
 	channel.GetContext().AddAttr(defin.HttpChannel, conn)
 	threading.GoSafe(func() {
-		fmt.Println("打开通道2.....................................", runtime.NumGoroutine())
 		var rwConn net.Conn
 		if htl.isHttps {
 			var tlsConn *tls.Conn
@@ -225,7 +220,6 @@ func (htl *HttpTunnelServer) Open(ch Channel, tb srv.TraverseBy) {
 		} else {
 			rwConn = conn
 		}
-		fmt.Println("打开通道1.....................................", runtime.NumGoroutine())
 		reader := bufio.NewReader(rwConn)
 		for {
 			req, err := http.ReadRequest(reader)
@@ -236,7 +230,6 @@ func (htl *HttpTunnelServer) Open(ch Channel, tb srv.TraverseBy) {
 				_ = rwConn.Close()
 				return
 			}
-			fmt.Println("打开通道3.....................................", runtime.NumGoroutine())
 			if isWebSocket(req) {
 				htl.websocketProxy.ServeHTTP(rc, req)
 			} else {

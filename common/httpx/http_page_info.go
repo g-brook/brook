@@ -64,6 +64,7 @@ var html = `<!DOCTYPE html>
     <div class="container">
         <h1>404</h1>
         <p>The requested route path could not be found.</p>
+		<a href="https://github.com/g-brook/brook">https://github.com/g-brook/brook</a>
     </div>
 </body>
 </html>`

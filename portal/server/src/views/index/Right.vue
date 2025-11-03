@@ -30,7 +30,7 @@ defineProps<{
 const { isDark, toggleTheme } = getGlobalTheme();
 
 const handleGithubClick = () => {
-    window.open('https://github.com/txthinking/brook', '_blank');
+    window.open('https://github.com/g-brook/brook', '_blank');
 }
 
 </script>

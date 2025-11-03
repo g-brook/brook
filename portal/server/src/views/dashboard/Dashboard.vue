@@ -17,6 +17,7 @@
 <script lang="ts" setup>
 import baseInfo from '@/service/baseInfo';
 import { Line } from 'vue-chartjs'
+import Drawer from '@/components/drawer/Index.vue';
 import {
     ArcElement,
     BarElement,
@@ -32,17 +33,14 @@ import {
 } from 'chart.js'
 import { computed, onMounted, onUnmounted, ref } from 'vue';
 import Icon from '@/components/icon/Index.vue'
+import DetailInfo from "@/views/dashboard/DetailInfo.vue";
 // 注册所需的 Chart.js 元件
 Chart.register(LineElement, PointElement, CategoryScale, LinearScale, Title, Tooltip, Legend, Filler, ArcElement, BarElement)
 
 const list = ref<any[]>([])
 const realTimeData = ref<any[]>([])
+const drawerRef = ref(null)
 let dataUpdateInterval: any = null
-
-// 计算总连接数
-const totalConnections = computed(() => {
-    return list.value.reduce((total, server) => total + (server.connections || 0), 0)
-})
 
 // 为每个服务器生成独立的图表数据
 const getServerChartData = (server: any, index: number) => {
@@ -167,6 +165,10 @@ const avatarCss =(tunnelType) => {
   }
 }
 
+const openDetails = () => {
+  drawerRef.value.open()
+}
+
 onMounted(() => {
     startRealTimeUpdate()
     initData()
@@ -179,6 +181,9 @@ onUnmounted(() => {
 })
 </script>
 <template>
+  <Drawer ref="drawerRef" title="隧道详情展示" icon="brook-caidan02" width="40%">
+    <DetailInfo />
+  </Drawer>
     <div class="space-y-8 p-6">
         <div v-if="list.length === 0" class="justify-center flex flex-col items-center">
             <div class="w-18 h-18 bg-base-300/59 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -205,6 +210,9 @@ onUnmounted(() => {
                                     <div class="badge badge-sm badge-secondary">{{ server.tag }}</div>
                                 </h3>
                               <div class="text-xl font-extralight">{{ server.port || 'N/A' }}
+                                <button class="btn btn-sm btn-circle" @click="openDetails">
+                                  <Icon icon="brook-caidan02"/>
+                                </button>
                               </div>
                               </div>
                               <div class="flex items-center space-x-3">

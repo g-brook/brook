@@ -30,17 +30,25 @@ import (
 	"github.com/gobwas/ws/wsutil"
 )
 
-var wssClients = hash.NewSyncMap[string, *WebsocketBridge]()
+type WebsocketClientManager struct {
+	clients *hash.SyncMap[string, *WebsocketBridge]
+}
 
-func GetWebsocketClient(path string) (*WebsocketBridge, bool) {
-	client, b := wssClients.Load(path)
+func newWebsocketClientManager() *WebsocketClientManager {
+	return &WebsocketClientManager{
+		clients: hash.NewSyncMap[string, *WebsocketBridge](),
+	}
+}
+
+func (r *WebsocketClientManager) getWebsocketBridge(path string) (*WebsocketBridge, bool) {
+	client, b := r.clients.Load(path)
 	if b {
 		return client, true
 	}
 	return nil, false
 }
 
-func CloseWebsocketLeft(left io.ReadWriteCloser, reqId int64) {
+func (r *WebsocketClientManager) closeWebsocketLeft(left io.ReadWriteCloser, reqId int64) {
 	if left == nil {
 		return
 	}
@@ -50,15 +58,33 @@ func CloseWebsocketLeft(left io.ReadWriteCloser, reqId int64) {
 	_ = writer.Writer(left)
 }
 
-func AddWebsocketConn(client *WebsocketBridge) {
-	if oldClient, b := wssClients.LoadOrStore(client.path, client); b {
+func (r *WebsocketClientManager) addWebsocketConn(client *WebsocketBridge) {
+	if oldClient, b := r.clients.LoadOrStore(client.path, client); b {
 		oldClient.Close(false)
 	}
-	wssClients.Store(client.path, client)
+	r.clients.Store(client.path, client)
 }
 
-func DelWebsocketConn(path string) {
-	wssClients.Delete(path)
+func (r *WebsocketClientManager) delWebsocketConn(path string) {
+	r.clients.Delete(path)
+}
+
+func (r *WebsocketClientManager) newWebsocketBridge(
+	ctx context.Context,
+	path string,
+	left io.ReadWriteCloser,
+	right net.Conn,
+	reqId int64) *WebsocketBridge {
+	cancelCtx, cancelFunc := context.WithCancel(ctx)
+	return &WebsocketBridge{
+		path:      path,
+		left:      left,
+		right:     right,
+		reqId:     reqId,
+		cancelCtx: cancelCtx,
+		cancel:    cancelFunc,
+		manager:   r,
+	}
 }
 
 type WebsocketBridge struct {
@@ -69,6 +95,7 @@ type WebsocketBridge struct {
 	cancelCtx context.Context
 	cancel    context.CancelFunc
 	closeOnce sync.Once
+	manager   *WebsocketClientManager
 }
 
 func (c *WebsocketBridge) Write(p []byte) (n int, err error) {
@@ -104,17 +131,17 @@ func (c *WebsocketBridge) loop() {
 func (c *WebsocketBridge) Close(isCloseLeft bool) {
 	c.closeOnce.Do(func() {
 		_ = c.right.Close()
-		DelWebsocketConn(c.path)
+		c.manager.delWebsocketConn(c.path)
 		c.right = nil
 		c.cancel()
 		if isCloseLeft {
-			CloseWebsocketLeft(c.left, c.reqId)
+			c.manager.closeWebsocketLeft(c.left, c.reqId)
 		}
 	})
 }
 
-func (c *WebsocketBridge) toAdd() {
-	AddWebsocketConn(c)
+func (c *WebsocketBridge) toRunning() {
+	c.manager.addWebsocketConn(c)
 	//开启.
 	c.loop()
 }
@@ -130,22 +157,5 @@ func (c *WebsocketBridge) WriteToRight(code ws.OpCode, data []byte) {
 	}
 	if code == ws.OpClose {
 		c.Close(false)
-	}
-}
-
-func NewWebsocketClient(
-	ctx context.Context,
-	path string,
-	right net.Conn,
-	left io.ReadWriteCloser,
-	reqId int64) *WebsocketBridge {
-	cancelCtx, cancelFunc := context.WithCancel(ctx)
-	return &WebsocketBridge{
-		path:      path,
-		right:     right,
-		left:      left,
-		reqId:     reqId,
-		cancelCtx: cancelCtx,
-		cancel:    cancelFunc,
 	}
 }

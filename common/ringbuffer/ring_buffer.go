@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package iox
+package ringbuffer
 
 import (
 	"github.com/panjf2000/gnet/v2/pkg/buffer/ring"

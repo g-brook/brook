@@ -19,6 +19,7 @@ package main
 
 import (
 	"fmt"
+	"io"
 	"log"
 	"net/http"
 	"time"
@@ -62,9 +63,23 @@ func echoHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func echoHandler2(w http.ResponseWriter, r *http.Request) {
+	now := time.Now()
+	bodyBytes, err := io.ReadAll(r.Body)
+	if err != nil {
+		// 处理错误
+	}
+	bodyString := string(bodyBytes)
+	fmt.Println(bodyString)
+	_, err = fmt.Fprintf(w, "OK:%v", now)
+	if err != nil {
+		return
+	}
+}
+
 func main() {
 	http.HandleFunc("/ws", echoHandler)
-	http.HandleFunc("/ws2", echoHandler)
+	http.HandleFunc("/proxy1", echoHandler2)
 	log.Println("listening :8080")
 	log.Fatal(http.ListenAndServe(":8080", nil))
 }
