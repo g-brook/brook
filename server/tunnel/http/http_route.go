@@ -21,7 +21,7 @@ import (
 	"net/http"
 	"sync"
 
-	http2 "github.com/brook/common/httpx"
+	"github.com/brook/common/httpx"
 )
 
 var routes []*RouteInfo
@@ -38,7 +38,7 @@ type RouteFunction func(request *http.Request) (*RouteInfo, error)
 type RouteInfo struct {
 	httpId string
 
-	matcher *http2.PathMatcher
+	matcher *httpx.PathMatcher
 
 	domain string
 
@@ -51,7 +51,7 @@ func AddRouteInfo(httpId string, domain string, paths []string, fun ProxyConnect
 	defer lock.Unlock()
 	info := &RouteInfo{
 		httpId:             httpId,
-		matcher:            http2.NewPathMatcher(),
+		matcher:            httpx.NewPathMatcher(),
 		getProxyConnection: fun,
 		domain:             domain,
 	}
@@ -73,7 +73,7 @@ func GetRouteInfo(domain string, path string) *RouteInfo {
 	defer lock.RUnlock()
 	var infos []*RouteInfo
 	for _, info := range routes {
-		if !http2.MatchDomain(info.domain, domain) {
+		if !httpx.MatchDomain(info.domain, domain) {
 			continue
 		}
 		if info.matcher.Match(path).Matched {

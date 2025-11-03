@@ -17,6 +17,7 @@
 package http
 
 import (
+	"errors"
 	"io"
 	"net"
 	"runtime"
@@ -35,6 +36,7 @@ var (
 	ForwardedKey   = "X-Forwarded-For"
 	index          atomic.Int64
 	timeoutErr     = &timeoutError{}
+	readDone       = errors.New("read done")
 )
 
 func newReqId() int64 {
@@ -49,7 +51,7 @@ func (timeoutError) Timeout() bool   { return true }
 func (timeoutError) Temporary() bool { return true } // optional
 type WebsocketConnection struct {
 	net.Conn
-	tracker     *HttpTracker
+	tracker     *Tracker
 	future      *WsFuture
 	path        string
 	payloadType byte
@@ -93,7 +95,7 @@ func (wc *WebsocketConnection) Read(p []byte) (n int, err error) {
 
 type ProxyConnection struct {
 	net.Conn
-	tracker     *HttpTracker
+	tracker     *Tracker
 	readBuf     []byte
 	future      *ResponseFuture
 	mu          sync.Mutex
@@ -102,7 +104,7 @@ type ProxyConnection struct {
 }
 
 func NewProxyConnection(conn net.Conn,
-	tracker *HttpTracker) *ProxyConnection {
+	tracker *Tracker) *ProxyConnection {
 	return &ProxyConnection{
 		Conn:    conn,
 		tracker: tracker,
@@ -145,7 +147,9 @@ func (proxy *ProxyConnection) Read(p []byte) (n int, err error) {
 	if n < len(bytes) {
 		proxy.readBuf = append(proxy.readBuf, bytes[n:]...)
 	}
-
+	if len(bytes) <= 0 {
+		return 0, readDone
+	}
 	return n, nil
 }
 

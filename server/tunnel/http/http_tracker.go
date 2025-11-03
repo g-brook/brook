@@ -38,7 +38,7 @@ type Future interface {
 type WsFuture struct {
 	buffer  *ringbuffer.RingBuffer
 	reqId   int64
-	tracker *HttpTracker
+	tracker *Tracker
 	isClose bool
 }
 
@@ -57,7 +57,7 @@ func (f *WsFuture) Close() {
 	f.isClose = true
 }
 
-func newWsFuture(tracker *HttpTracker, reqId int64) *WsFuture {
+func newWsFuture(tracker *Tracker, reqId int64) *WsFuture {
 	buffer := ringbuffer.NewRingBuffer(1024)
 	future := &WsFuture{
 		buffer:  buffer,
@@ -78,10 +78,10 @@ type ResponseFuture struct {
 	err     error
 	mu      sync.Mutex
 	reqId   int64
-	tracker *HttpTracker
+	tracker *Tracker
 }
 
-func newResponseFuture(tracker *HttpTracker) *ResponseFuture {
+func newResponseFuture(tracker *Tracker) *ResponseFuture {
 	future := &ResponseFuture{
 		done:    make(chan struct{}),
 		reqId:   newReqId(),
@@ -152,33 +152,33 @@ func (f *ResponseFuture) isDoneLocked() bool {
 	}
 }
 
-// HttpTracker httpx tracker
-type HttpTracker struct {
+// Tracker HttpTracker httpx tracker
+type Tracker struct {
 	mu       sync.Mutex
 	channel  transport.Channel
 	trackers *hash.SyncMap[int64, Future]
 }
 
-func NewHttpTracker(channel transport.Channel) *HttpTracker {
-	return &HttpTracker{
+func NewHttpTracker(channel transport.Channel) *Tracker {
+	return &Tracker{
 		trackers: hash.NewSyncMap[int64, Future](),
 		channel:  channel,
 	}
 }
 
-func (receiver *HttpTracker) GetFuture(reqId int64) (Future, bool) {
+func (receiver *Tracker) GetFuture(reqId int64) (Future, bool) {
 	return receiver.trackers.Load(reqId)
 }
 
-func (receiver *HttpTracker) Run() {
+func (receiver *Tracker) Run() {
 	threading.GoSafe(receiver.readRev)
 }
 
-func (receiver *HttpTracker) PutRequest(future Future) {
+func (receiver *Tracker) PutRequest(future Future) {
 	receiver.trackers.Store(future.ReqId(), future)
 }
 
-func (receiver *HttpTracker) readRev() {
+func (receiver *Tracker) readRev() {
 	readResponse := func() {
 		pt := exchange.NewTunnelRead()
 		err := pt.Read(receiver.channel)
@@ -197,7 +197,7 @@ func (receiver *HttpTracker) readRev() {
 	}
 }
 
-func (receiver *HttpTracker) send(pt *exchange.TunnelProtocol) {
+func (receiver *Tracker) send(pt *exchange.TunnelProtocol) {
 	ch, ok := receiver.trackers.Load(pt.ReqId)
 	if ok {
 		if pt.Ver == exchange.WebsocketV2 {
@@ -217,7 +217,7 @@ func (receiver *HttpTracker) send(pt *exchange.TunnelProtocol) {
 
 }
 
-func (receiver *HttpTracker) Close(reqId int64) {
+func (receiver *Tracker) Close(reqId int64) {
 	ch, ok := receiver.trackers.Load(reqId)
 	if ok {
 		ch.Close()

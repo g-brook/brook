@@ -43,7 +43,7 @@ import (
 type HttpTunnelServer struct {
 	*tunnel.BaseTunnelServer
 
-	proxyToConn *hash.SyncMap[string, *hash.SyncMap[string, *HttpTracker]]
+	proxyToConn *hash.SyncMap[string, *hash.SyncMap[string, *Tracker]]
 
 	registerLock sync.Mutex
 
@@ -71,7 +71,7 @@ func NewHttpTunnelServer(server *tunnel.BaseTunnelServer) (*HttpTunnelServer, er
 	}
 	tunnelServer := &HttpTunnelServer{
 		BaseTunnelServer: server,
-		proxyToConn:      hash.NewSyncMap[string, *hash.SyncMap[string, *HttpTracker]](),
+		proxyToConn:      hash.NewSyncMap[string, *hash.SyncMap[string, *Tracker]](),
 	}
 	server.DoStart = tunnelServer.startAfter
 	server.UpdateConfigFun = func(cfg *configs.ServerTunnelConfig) {
@@ -87,7 +87,7 @@ func formatCfg(cfg *configs.ServerTunnelConfig, this *HttpTunnelServer) {
 	RouteClean()
 	for _, httpJson := range cfg.Http {
 		AddRouteInfo(httpJson.Id, httpJson.Domain, httpJson.Paths, this.getProxyConnection)
-		this.proxyToConn.Store(httpJson.Id, hash.NewSyncMap[string, *HttpTracker]())
+		this.proxyToConn.Store(httpJson.Id, hash.NewSyncMap[string, *Tracker]())
 	}
 
 	if cfg.Type == lang.Https {
@@ -161,8 +161,8 @@ func (htl *HttpTunnelServer) getProxyConnection(httpId string, reqId int64) (wor
 		return nil, err
 	}
 	var channel Channel
-	var tracker *HttpTracker
-	channelIds.Range(func(key string, value *HttpTracker) (shouldContinue bool) {
+	var tracker *Tracker
+	channelIds.Range(func(key string, value *Tracker) (shouldContinue bool) {
 		channel = htl.BaseTunnelServer.TunnelChannel[key]
 		tracker = value
 		return !(channel != nil)

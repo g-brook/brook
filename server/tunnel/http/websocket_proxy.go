@@ -44,7 +44,6 @@ func websocketProxy(info *RouteInfo, writer http.ResponseWriter, request *http.R
 		targetConn.path = request.URL.Path
 		err := request.Write(targetConn)
 		if err != nil {
-			log.Error("write error %v", err)
 			writer.WriteHeader(http.StatusBadGateway)
 			_, _ = writer.Write([]byte("error"))
 			_ = websocketConnection.Close()

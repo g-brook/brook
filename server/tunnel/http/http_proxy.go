@@ -18,6 +18,7 @@ package http
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net"
 	"net/http"
@@ -97,6 +98,9 @@ func httpProxy() *httputil.ReverseProxy {
 			},
 		},
 		ErrorHandler: func(writer http.ResponseWriter, request *http.Request, err error) {
+			if errors.Is(err, readDone) {
+				return
+			}
 			state := http.StatusOK
 			if err, ok := err.(interface{ Timeout() bool }); ok && err.Timeout() {
 				state = http.StatusGatewayTimeout

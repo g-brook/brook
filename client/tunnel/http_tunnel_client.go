@@ -86,9 +86,8 @@ func (h *HttpTunnelClient) bindHandler(_ *exchange.Protocol, rw io.ReadWriteClos
 			httpBridge, err := h.http.GetHttpBridge(ctx, rw, h.GetCfg().LocalAddress, pt.ReqId, isWs)
 			if err != nil {
 				log.Warn("GetHttpBridge fail %v", err)
-				response := getErrorResponse()
-				headerBytes := BuildCustomHTTPHeader(response)
-				return exchange.NewTunnelWriter(headerBytes, pt.ReqId).Writer(rw)
+				response := getErrorResponse(httpError)
+				return exchange.NewTunnelWriter(response, pt.ReqId).Writer(rw)
 			}
 			//to websocket ss.
 			if isWs {

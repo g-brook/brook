@@ -20,6 +20,7 @@ import (
 	"bufio"
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"net"
@@ -36,6 +37,8 @@ import (
 	"github.com/brook/common/threading"
 	"github.com/brook/common/wheel"
 )
+
+var httpError = errors.New("error: Agent connect to server failed")
 
 type HttpClientManager struct {
 	clients *hash.SyncMap[int64, *HttpBridge]
@@ -152,23 +155,21 @@ func (b *HttpBridge) toRunning() {
 			reader := bufio.NewReader(b.right)
 			response, err := http.ReadResponse(reader, nil)
 			if err != nil {
-				errorResponse := getErrorResponse()
-				headerBytes := BuildCustomHTTPHeader(errorResponse)
-				_, err = b.Write(headerBytes)
+				errorResponse := getErrorResponse(httpError)
+				_, err = b.Write(errorResponse)
 				return
 			}
 			defer response.Body.Close()
 			if b.isWs && b.hp != nil {
-				b.hp()
-			} else {
-				bodyBytes, _ := io.ReadAll(response.Body)
-				response.Header.Del("Transfer-Encoding")
-				response.Header.Set("Content-Length", strconv.Itoa(len(bodyBytes)))
-				response.Header.Set("Connection", "close") // 非 keep-alive
-				headerBytes := BuildCustomHTTPHeader(response)
-				merged := append(headerBytes, bodyBytes...)
-				_, err = b.Write(merged)
+				if response.StatusCode == http.StatusSwitchingProtocols {
+					b.hp()
+					return
+				}
 			}
+			bodyBytes, _ := io.ReadAll(response.Body)
+			headerBytes := BuildCustomHTTPHeader(response, len(bodyBytes))
+			merged := append(headerBytes, bodyBytes...)
+			_, err = b.Write(merged)
 		}
 	})
 }
@@ -205,9 +206,14 @@ func (b *HttpBridge) upgrader(upd upgraderDo) {
 	b.hp = upd
 }
 
-func getErrorResponse() *http.Response {
-	return httpx.GetResponse(http.StatusInternalServerError)
-
+func getErrorResponse(err error) []byte {
+	response := httpx.GetResponse(http.StatusInternalServerError)
+	errMsg := []byte(err.Error())
+	header := BuildCustomHTTPHeader(response, len(errMsg))
+	result := make([]byte, 0, len(header)+len(errMsg))
+	result = append(result, header...)
+	result = append(result, errMsg...)
+	return result
 }
 
 // BuildCustomHTTPHeader constructs a custom HTTP header from an HTTP response
@@ -219,15 +225,19 @@ func getErrorResponse() *http.Response {
 // Returns:
 //
 //	[]byte - formatted HTTP header as a byte slice
-func BuildCustomHTTPHeader(r *http.Response) []byte {
+func BuildCustomHTTPHeader(r *http.Response, size int) []byte {
 	var buf bytes.Buffer
 	// Format and write the status line (e.g., HTTP/1.1 200 OK)
 	// Includes protocol version, status code, and status text
 	st := fmt.Sprintf("HTTP/%d.%d %03d %s\r\n", r.ProtoMajor, r.ProtoMinor, r.StatusCode, r.Status)
 	buf.WriteString(st)
-	for key, value := range r.Header {
-		if key != "Transfer-Encoding" {
-			buf.WriteString(fmt.Sprintf("%s: %s\r\n", key, value[0]))
+	r.Header.Del("Transfer-Encoding")
+	r.Header.Set("Content-Length", strconv.Itoa(size))
+	r.Header.Set("Connection", "close") // 非 keep-alive
+	// 写入所有 header 字段
+	for k, vv := range r.Header {
+		for _, v := range vv {
+			_, _ = fmt.Fprintf(&buf, "%s: %s\r\n", k, v)
 		}
 	}
 	buf.WriteString("\r\n")
