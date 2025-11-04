@@ -17,10 +17,12 @@
 package main
 
 import (
+	"encoding/base64"
 	"fmt"
 	"io"
 	"net/http"
 	"os"
+	"strings"
 	"time"
 )
 
@@ -58,8 +60,47 @@ func mockHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+const (
+	username = "admin"
+	password = "123456"
+)
+
+func handlerAdmin(w http.ResponseWriter, r *http.Request) {
+	auth := r.Header.Get("Authorization")
+
+	// 如果没有认证信息或错误，返回 401 并提示浏览器弹出认证框
+	if auth == "" || !checkAuth(auth) {
+		w.Header().Set("WWW-Authenticate", `Basic realm="Restricted Area"`)
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+	// 验证通过后返回内容
+	_, _ = fmt.Fprintln(w, "✅ Authenticated successfully!")
+}
+
+func checkAuth(authHeader string) bool {
+	// 例如 "Basic YWRtaW46MTIzNDU2"
+	parts := strings.SplitN(authHeader, " ", 2)
+	if len(parts) != 2 || parts[0] != "Basic" {
+		return false
+	}
+
+	data, err := base64.StdEncoding.DecodeString(parts[1])
+	if err != nil {
+		return false
+	}
+
+	pair := strings.SplitN(string(data), ":", 2)
+	if len(pair) != 2 {
+		return false
+	}
+
+	return pair[0] == username && pair[1] == password
+}
+
 func main() {
 	http.HandleFunc("/proxy1", mockHandler)
+	http.HandleFunc("/base", handlerAdmin)
 	http.HandleFunc("/proxy2", handler)
 	// 启动服务器，监听 8080 端口
 	fmt.Println("服务器已启动：http://localhost:8080")

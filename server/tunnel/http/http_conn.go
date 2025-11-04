@@ -25,6 +25,7 @@ import (
 	"net"
 	"net/http"
 	"strconv"
+	"sync"
 	"time"
 
 	"github.com/brook/common/ringbuffer"
@@ -36,7 +37,7 @@ var (
 
 	PHttpsErr = errors.New("the server requested https, but the request was http")
 
-	PTimeout = errors.New("read timeout")
+	PTimeout = errors.New("read client timeout, connect close")
 
 	httpMethods = [][]byte{
 		[]byte(http.MethodGet),
@@ -50,7 +51,11 @@ var (
 		[]byte(http.MethodTrace)}
 )
 
-type HttpConn struct {
+const (
+	timeout = 30 * time.Second
+)
+
+type Conn struct {
 	ch          Channel
 	buffer      *ringbuffer.RingBuffer
 	https       bool
@@ -58,6 +63,8 @@ type HttpConn struct {
 	closed      chan struct{}
 	dataCh      chan struct{}
 	isWebSocket bool
+	timeStop    *time.Timer
+	closeOnce   sync.Once
 }
 
 /**
@@ -66,15 +73,16 @@ type HttpConn struct {
  * @param https Whether to use HTTPS or not
  * @return A new HttpConn instance
  */
-func newHttpConn(ch Channel, https bool) *HttpConn {
+func newHttpConn(ch Channel, https bool) *Conn {
 	// Create a new HttpConn instance with the provided channel and HTTPS flag
 	// Initialize dataCh and closed channels for synchronization
-	conn := &HttpConn{
-		ch:     ch,                              // Channel for the connection
-		buffer: ringbuffer.NewRingBuffer(65535), // Buffer for incoming data
-		dataCh: make(chan struct{}, 1),          // Channel for data synchronization
-		closed: make(chan struct{}),             // Channel to track connection closure
-		https:  https,                           // HTTPS flag indicating whether to use HTTPS
+	conn := &Conn{
+		ch:       ch,                              // Channel for the connection
+		buffer:   ringbuffer.NewRingBuffer(65535), // Buffer for incoming data
+		dataCh:   make(chan struct{}, 1),          // Channel for data synchronization
+		closed:   make(chan struct{}),             // Channel to track connection closure
+		https:    https,                           // HTTPS flag indicating whether to use HTTPS
+		timeStop: time.NewTimer(timeout),
 	}
 	return conn // Return the newly created HttpConn instance
 }
@@ -114,7 +122,7 @@ func isHttpRequest(data []byte) bool {
 
 // OnData handles incoming data for the HTTP connection
 // It writes the data to an internal buffer and signals that new data is available
-func (h *HttpConn) OnData(b []byte) {
+func (h *Conn) OnData(b []byte) {
 	n, err := h.buffer.Write(b)
 	if err != nil {
 		return
@@ -130,7 +138,7 @@ func (h *HttpConn) OnData(b []byte) {
 
 // Read implements the io.Reader interface for HttpConn.
 // It reads data from the connection buffer with proper synchronization and protocol validation.
-func (h *HttpConn) Read(b []byte) (n int, err error) {
+func (h *Conn) Read(b []byte) (n int, err error) {
 	for {
 		if !h.buffer.IsEmpty() {
 			read, _ := h.buffer.Read(b)
@@ -146,11 +154,18 @@ func (h *HttpConn) Read(b []byte) (n int, err error) {
 				// Validate for HTTP protocol if not HTTPS
 				return 0, PHttpErr
 			}
+			if !h.timeStop.Stop() {
+				<-h.timeStop.C
+			}
+			h.timeStop.Reset(timeout)
 			return read, nil
 		}
 		select {
 		case <-h.dataCh:
-		case <-time.After(30 * time.Second):
+		case <-h.timeStop.C:
+			if h.isWebSocket {
+				return 0, nil
+			}
 			return 0, PTimeout
 		case <-h.closed:
 			return 0, io.EOF
@@ -158,50 +173,55 @@ func (h *HttpConn) Read(b []byte) (n int, err error) {
 	}
 }
 
-func (h *HttpConn) Write(b []byte) (n int, err error) {
+func (h *Conn) Write(b []byte) (n int, err error) {
 	//That's a hack, but we don't want to write to the underlying connection
 	//Do not use the Write method of the connection
 	//return h.ch.GetWriter().Write(b)
 	return h.ch.Write(b)
 }
 
-func (h *HttpConn) Close() error {
-	select {
-	case <-h.closed:
-	default:
-		close(h.closed)
-	}
-	return h.ch.Close()
+func (h *Conn) Close() error {
+	h.closeOnce.Do(func() {
+		select {
+		case <-h.closed:
+		default:
+			close(h.closed)
+		}
+		h.timeStop.Stop()
+		_ = h.ch.Close()
+	})
+	return nil
 }
 
-func (h *HttpConn) LocalAddr() net.Addr {
+func (h *Conn) LocalAddr() net.Addr {
 	return h.ch.LocalAddr()
 }
 
-func (h *HttpConn) RemoteAddr() net.Addr {
+func (h *Conn) RemoteAddr() net.Addr {
 	return h.ch.RemoteAddr()
 }
 
-func (h *HttpConn) SetDeadline(t time.Time) error {
+func (h *Conn) SetDeadline(t time.Time) error {
 	return h.ch.SetDeadline(t)
 }
 
-func (h *HttpConn) SetReadDeadline(t time.Time) error {
+func (h *Conn) SetReadDeadline(t time.Time) error {
 	return h.ch.SetReadDeadline(t)
 }
 
-func (h *HttpConn) SetWriteDeadline(t time.Time) error {
+func (h *Conn) SetWriteDeadline(t time.Time) error {
 	return h.ch.SetWriteDeadline(t)
 }
 
 type responseWriter struct {
 	conn     net.Conn
-	httpConn *HttpConn
+	httpConn *Conn
 	header   http.Header
 	wrote    bool
 	status   int
 	req      *http.Request
 	body     *bytes.Buffer
+	timeStop time.Time
 }
 
 func (r *responseWriter) Hijack() (net.Conn, *bufio.ReadWriter, error) {
@@ -210,7 +230,7 @@ func (r *responseWriter) Hijack() (net.Conn, *bufio.ReadWriter, error) {
 }
 
 func newResponseWriter(conn net.Conn,
-	httpConn *HttpConn,
+	httpConn *Conn,
 	req *http.Request) *responseWriter {
 	return &responseWriter{
 		conn: conn, httpConn: httpConn, header: make(http.Header), req: req, body: bytes.NewBuffer(make([]byte, 0)),
@@ -234,13 +254,19 @@ func (r *responseWriter) WriteHeader(statusCode int) {
 
 // finish completes the response writing process
 // It ensures proper header setup and writes the complete response to the connection
-func (r *responseWriter) finish(err error) {
+func (r *responseWriter) finish(err error, req *http.Request) error {
 	// Check if headers have been written, if not write default status 200
 	if !r.wrote {
 		if err != nil {
 			r.WriteHeader(http.StatusBadRequest)
+			r.header.Set("Connection", "close")
 		} else {
 			r.WriteHeader(http.StatusOK)
+			if req != nil {
+				r.header.Set("Connection", req.Header.Get("Connection"))
+			} else {
+				r.header.Set("Connection", "keep-alive")
+			}
 		}
 
 	}
@@ -267,10 +293,11 @@ func (r *responseWriter) finish(err error) {
 	r.body.Reset()
 	if err != nil && r.httpConn != nil {
 		_, _ = r.httpConn.Write(resp.Bytes())
-		return
+		return err
 	}
 	// Write the complete response to the connection
-	_, _ = r.conn.Write(resp.Bytes())
+	_, err = r.conn.Write(resp.Bytes())
+	return err
 }
 
 func (r *responseWriter) Header() http.Header {
@@ -287,7 +314,7 @@ func (r *responseWriter) error(err error) {
 	r.req = &http.Request{}
 	r.WriteHeader(http.StatusBadRequest)
 	_, _ = r.Write([]byte(err.Error()))
-	r.finish(err)
+	_ = r.finish(err, nil)
 }
 
 func writeHeaderLine(rw *bytes.Buffer, is11 bool, code int) {

@@ -17,7 +17,6 @@
 package http
 
 import (
-	"fmt"
 	"net/http"
 
 	"github.com/brook/common/httpx"
@@ -49,7 +48,6 @@ func websocketProxy(info *RouteInfo, writer http.ResponseWriter, request *http.R
 			_ = websocketConnection.Close()
 			return
 		}
-		fmt.Println("发送数据成功........")
 		errors := iox.Pipe(websocketConnection, targetConn.websocket(websocketConnection.PayloadType))
 		if len(errors) > 0 {
 			log.Warn("copy error %v", errors)

@@ -172,6 +172,8 @@ func (b *BaseTunnelClient) OpenStream() error {
 		stream, err := b.session.OpenStream()
 		if b.session.IsClosed() {
 			_ = b.session.Close()
+			log.Debug("session is close, exit")
+			b.TcControl.Cancel()
 			return nil
 		}
 		if err != nil {

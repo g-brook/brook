@@ -112,22 +112,35 @@ func NewProxyConnection(conn net.Conn,
 	}
 }
 
+// Write implements the io.Writer interface for ProxyConnection.
+// It encodes the provided byte slice into a tunnel protocol format and writes it to the connection.
+// The encoding method differs based on whether the connection is a WebSocket or regular connection.
 func (proxy *ProxyConnection) Write(b []byte) (n int, err error) {
 	//encode to tunnel.
+	// Create a tunnel protocol writer based on connection type
 	var writer *exchange.TunnelProtocol
-	id := proxy.future.ReqId()
+	id := proxy.future.ReqId() // Get the request ID from the future
+	// Check if connection is WebSocket to determine writer type
 	if proxy.isWebsocket {
+		// For WebSocket connections, create a WebSocket tunnel writer with path information
 		writer = exchange.NewTunnelWebsocketWriterV1(b, []byte(proxy.path), id)
 	} else {
+		// For regular connections, create a standard tunnel writer
 		writer = exchange.NewTunnelWriter(b, id)
 	}
+	// Write the encoded data to the connection
 	err = writer.Writer(proxy.Conn)
 	if err != nil {
+		// If writing fails, close the tracker associated with this request ID
 		proxy.tracker.Close(id)
 	}
+	// Return the length of bytes written and any error that occurred
 	return len(b), err
 }
 
+// Read implements the io.Reader interface for ProxyConnection
+// It reads data from the connection, first checking any cached data,
+// then waiting for new data if necessary
 func (proxy *ProxyConnection) Read(p []byte) (n int, err error) {
 	// 先从缓存里读
 	if len(proxy.readBuf) > 0 {
@@ -140,14 +153,15 @@ func (proxy *ProxyConnection) Read(p []byte) (n int, err error) {
 	if err != nil {
 		return 0, err
 	}
-	// 拷贝尽可能多的数据到 p
 	n = copy(p, bytes)
 
+	b := len(bytes)
 	// 如果还有剩余，放到 readBuf 里，下次 Read 时读出
-	if n < len(bytes) {
+	if n < b {
 		proxy.readBuf = append(proxy.readBuf, bytes[n:]...)
 	}
-	if len(bytes) <= 0 {
+	// If response returning bytes is empty, then return readDone
+	if b <= 0 {
 		return 0, readDone
 	}
 	return n, nil

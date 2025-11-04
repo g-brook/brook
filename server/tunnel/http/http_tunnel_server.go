@@ -195,7 +195,7 @@ func (htl *HttpTunnelServer) Reader(ch Channel, tb srv.TraverseBy) {
 	}
 	conn, ok := ch.GetAttr(defin.HttpChannel)
 	if ok {
-		conn.(*HttpConn).OnData(bt)
+		conn.(*Conn).OnData(bt)
 	}
 	//skip next loop.
 	tb()
@@ -236,8 +236,8 @@ func (htl *HttpTunnelServer) Open(ch Channel, tb srv.TraverseBy) {
 				htl.httpProxy.ServeHTTP(rc, req)
 				_, _ = io.Copy(io.Discard, req.Body)
 				req.Body.Close()
-				rc.finish(nil)
-				if req.Close || req.Header.Get("Connection") == "close" {
+				err := rc.finish(nil, req)
+				if err != nil {
 					_ = rwConn.Close()
 					return
 				}

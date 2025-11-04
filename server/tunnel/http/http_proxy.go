@@ -19,7 +19,6 @@ package http
 import (
 	"context"
 	"errors"
-	"fmt"
 	"net"
 	"net/http"
 	"net/http/httputil"
@@ -45,8 +44,16 @@ func (h *HttpProxy) ServeHTTP(writer http.ResponseWriter, request *http.Request)
 		newCtx = context.WithValue(newCtx, RequestInfoKey, newReqId())
 		newCtx = context.WithValue(newCtx, RouteInfoKey, info)
 	}
+	h.initHeader(writer, request)
 	newReq := request.Clone(newCtx)
 	h.http.ServeHTTP(writer, newReq)
+}
+
+func (h *HttpProxy) initHeader(writer http.ResponseWriter, request *http.Request) {
+	if writer.Header() != nil {
+		header := writer.Header()
+		header.Set("Connection", request.Header.Get("Connection"))
+	}
 }
 
 func NewHttpProxy(fun RouteFunction) *HttpProxy {
@@ -60,7 +67,6 @@ func httpProxy() *httputil.ReverseProxy {
 	reverseProxy := &httputil.ReverseProxy{
 		BufferPool: iox.GetBytePool32k(),
 		Rewrite: func(request *httputil.ProxyRequest) {
-			fmt.Println(request.In.URL)
 			out := request.Out
 			in := request.In
 			out.Header[ForwardedKey] = in.Header[ForwardedKey]
@@ -70,6 +76,7 @@ func httpProxy() *httputil.ReverseProxy {
 		},
 		ModifyResponse: func(response *http.Response) error {
 			response.Header.Del(RequestInfoKey)
+			response.Header.Del(ForwardedKey)
 			return nil
 		},
 
@@ -77,6 +84,8 @@ func httpProxy() *httputil.ReverseProxy {
 			ResponseHeaderTimeout: 5 * time.Second,
 			DisableKeepAlives:     true,
 			MaxIdleConnsPerHost:   0,
+			IdleConnTimeout:       5 * time.Second,
+			MaxIdleConns:          100,
 			DialContext: func(ctx context.Context, network, addr string) (net.Conn, error) {
 				value := ctx.Value(RouteInfoKey)
 				id := ctx.Value(RequestInfoKey)
