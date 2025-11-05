@@ -17,6 +17,8 @@
 package base
 
 import (
+	"sync"
+
 	"github.com/brook/common/configs"
 	"github.com/brook/common/hash"
 	"github.com/brook/common/lang"
@@ -27,7 +29,8 @@ import (
 type ConfigNode struct {
 	config *configs.ServerTunnelConfig
 	// state is start.
-	state bool
+	state    bool
+	openLock sync.Mutex
 }
 
 type ConfigNotify func(cfg *ConfigNode)

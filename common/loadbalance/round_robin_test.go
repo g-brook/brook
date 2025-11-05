@@ -14,23 +14,16 @@
  * limitations under the License.
  */
 
-package defin
+package loadbalance
 
 import (
-	"github.com/brook/common/lang"
+	"testing"
 )
 
-const (
-	TunnelPortKey lang.KeyType = "tunnel_port"
-
-	HttpIdKey  lang.KeyType = "httpIdKey"
-	ProxyIdKey lang.KeyType = "proxyIdKey"
-
-	ToSChannelId lang.KeyType = "to_channel_id"
-
-	HttpChannel lang.KeyType = "http_channel"
-
-	TokenKey lang.KeyType = "runtime_token"
-
-	ServerPort lang.KeyType = "server_port"
-)
+func TestRoundRobin_Select(t *testing.T) {
+	strings := []string{"a", "b", "c", "d", "f"}
+	robin := NewRoundRobin()
+	for i := 0; i < 10; i++ {
+		t.Log(robin.Select(strings))
+	}
+}

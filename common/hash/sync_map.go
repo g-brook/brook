@@ -120,8 +120,20 @@ func (receiver *SyncMap[K, V]) Clear() {
 // Store This function stores a key-value pair in the SyncMap
 func (receiver *SyncMap[K, V]) Store(key K, value V) {
 	// Store the key-value pair in the data field of the SyncMap
-	receiver.len.Add(1)
+	_, ok := receiver.data.Load(key)
+	if !ok {
+		receiver.len.Add(1)
+	}
 	receiver.data.Store(key, value)
+}
+
+func (receiver *SyncMap[K, V]) Keys() []K {
+	var keys []K
+	receiver.data.Range(func(key, value any) bool {
+		keys = append(keys, key.(K))
+		return true
+	})
+	return keys
 }
 
 // Load This function is a method of the SyncMap struct and is used to load a value from the map given a key.

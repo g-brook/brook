@@ -29,7 +29,7 @@ var routes []*RouteInfo
 var lock sync.RWMutex
 
 // ProxyConnectionFunction is a function that returns a net.Conn
-type ProxyConnectionFunction func(proxyId string, reqId int64) (workConn net.Conn, err error)
+type ProxyConnectionFunction func(httpId string) (workConn net.Conn, err error)
 
 // RouteFunction is a function that returns a RouteInfo
 type RouteFunction func(request *http.Request) (*RouteInfo, error)

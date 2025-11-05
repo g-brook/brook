@@ -14,23 +14,18 @@
  * limitations under the License.
  */
 
-package defin
+package loadbalance
 
-import (
-	"github.com/brook/common/lang"
-)
+var defaultBalance = NewRoundRobin()
 
-const (
-	TunnelPortKey lang.KeyType = "tunnel_port"
+type Balance interface {
+	Select(channels []string) string
+}
 
-	HttpIdKey  lang.KeyType = "httpIdKey"
-	ProxyIdKey lang.KeyType = "proxyIdKey"
+func Select(channels []string) string {
+	return defaultBalance.Select(channels)
+}
 
-	ToSChannelId lang.KeyType = "to_channel_id"
-
-	HttpChannel lang.KeyType = "http_channel"
-
-	TokenKey lang.KeyType = "runtime_token"
-
-	ServerPort lang.KeyType = "server_port"
-)
+func getWeight(id string) int {
+	return 5
+}

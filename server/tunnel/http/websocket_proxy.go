@@ -54,12 +54,12 @@ func websocketProxy(info *RouteInfo, writer http.ResponseWriter, request *http.R
 		}
 	}
 	return func(conn *websocket.Conn) {
-		id := newReqId()
-		targetConn, err := info.getProxyConnection(info.httpId, id)
+		targetConn, err := info.getProxyConnection(info.httpId)
 		if err != nil {
 			log.Error("get proxy connection error %v", err)
 			return
 		}
+		id := newReqId()
 		switch v := targetConn.(type) {
 		case *ProxyConnection:
 			workFunction(conn, v, id)

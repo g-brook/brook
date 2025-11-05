@@ -20,6 +20,7 @@ import (
 	"bufio"
 	"crypto/tls"
 	"errors"
+	"fmt"
 	"io"
 	"net"
 	"net/http"
@@ -31,6 +32,7 @@ import (
 	"github.com/brook/common/filex"
 	"github.com/brook/common/hash"
 	"github.com/brook/common/lang"
+	"github.com/brook/common/loadbalance"
 	"github.com/brook/common/log"
 	"github.com/brook/common/threading"
 	. "github.com/brook/common/transport"
@@ -39,8 +41,8 @@ import (
 	"github.com/brook/server/tunnel"
 )
 
-// HttpTunnelServer is a struct that represents a HTTP tunnel server.
-type HttpTunnelServer struct {
+// TunnelServer is a struct that represents a HTTP tunnel server.
+type TunnelServer struct {
 	*tunnel.BaseTunnelServer
 
 	proxyToConn *hash.SyncMap[string, *hash.SyncMap[string, *Tracker]]
@@ -60,7 +62,7 @@ type HttpTunnelServer struct {
 // and returns a pointer to HttpTunnelServer. The constructor sets the DoStart field of BaseTunnelServer to the startAfter
 // method of HttpTunnelServer, which is used to perform cleanup or subsequent processing operations startAfter the server
 // processes the request. The constructor also returns a pointer to HttpTunnelServer.
-func NewHttpTunnelServer(server *tunnel.BaseTunnelServer) (*HttpTunnelServer, error) {
+func NewHttpTunnelServer(server *tunnel.BaseTunnelServer) (*TunnelServer, error) {
 	if server.Cfg == nil {
 		log.Error("start http tunnel server error, cfg is nil")
 		return nil, errors.New("cfg is nil")
@@ -69,7 +71,7 @@ func NewHttpTunnelServer(server *tunnel.BaseTunnelServer) (*HttpTunnelServer, er
 		log.Error("http tunnel server cfg verify is false")
 		return nil, err
 	}
-	tunnelServer := &HttpTunnelServer{
+	tunnelServer := &TunnelServer{
 		BaseTunnelServer: server,
 		proxyToConn:      hash.NewSyncMap[string, *hash.SyncMap[string, *Tracker]](),
 	}
@@ -83,7 +85,7 @@ func NewHttpTunnelServer(server *tunnel.BaseTunnelServer) (*HttpTunnelServer, er
 }
 
 // addRoute is a function that adds route information to the HttpTunnelServer. It
-func formatCfg(cfg *configs.ServerTunnelConfig, this *HttpTunnelServer) {
+func formatCfg(cfg *configs.ServerTunnelConfig, this *TunnelServer) {
 	RouteClean()
 	for _, httpJson := range cfg.Http {
 		AddRouteInfo(httpJson.Id, httpJson.Domain, httpJson.Paths, this.getProxyConnection)
@@ -98,7 +100,7 @@ func formatCfg(cfg *configs.ServerTunnelConfig, this *HttpTunnelServer) {
 	}
 }
 
-func loadTls(cfg *configs.ServerTunnelConfig, this *HttpTunnelServer) error {
+func loadTls(cfg *configs.ServerTunnelConfig, this *TunnelServer) error {
 	kf := cfg.KeyFile
 	cf := cfg.CertFile
 	if kf == "" || cf == "" {
@@ -154,19 +156,29 @@ func verifyCfg(cfg *configs.ServerTunnelConfig) error {
 
 // getProxyConnection is a function that returns a net.Conn object based on the httpId. It
 // It returns an error if the httpId is not found.
-func (htl *HttpTunnelServer) getProxyConnection(httpId string, reqId int64) (workConn net.Conn, err error) {
+func (htl *TunnelServer) getProxyConnection(httpId string) (workConn net.Conn, err error) {
 	err = errors.New("http Id not found in http connection:" + httpId)
 	channelIds, ok := htl.proxyToConn.Load(httpId)
-	if !ok {
+	var selectKeys []string
+	channelIds.Range(func(key string, value *Tracker) (shouldContinue bool) {
+		channel := htl.TunnelChannel[key]
+		if channel != nil {
+			selectKeys = append(selectKeys, key)
+		} else {
+			htl.proxyToConn.Delete(key)
+		}
+		return true
+	})
+	if !ok || len(selectKeys) == 0 {
 		return nil, err
 	}
 	var channel Channel
 	var tracker *Tracker
-	channelIds.Range(func(key string, value *Tracker) (shouldContinue bool) {
-		channel = htl.BaseTunnelServer.TunnelChannel[key]
-		tracker = value
-		return !(channel != nil)
-	})
+
+	key := loadbalance.Select(selectKeys)
+	fmt.Println(key)
+	channel = htl.BaseTunnelServer.TunnelChannel[key]
+	tracker, _ = channelIds.Load(key)
 	if channel == nil || tracker == nil {
 		return nil, err
 	}
@@ -187,7 +199,7 @@ func (htl *HttpTunnelServer) getProxyConnection(httpId string, reqId int64) (wor
 }
 
 // Reader    is a method of HttpTunnelServer, which is used to process incoming requests. It
-func (htl *HttpTunnelServer) Reader(ch Channel, tb srv.TraverseBy) {
+func (htl *TunnelServer) Reader(ch Channel, tb srv.TraverseBy) {
 	channel := ch.(srv.GContext)
 	bt, err := channel.Next(-1)
 	if err != nil {
@@ -200,7 +212,7 @@ func (htl *HttpTunnelServer) Reader(ch Channel, tb srv.TraverseBy) {
 	//skip next loop.
 	tb()
 }
-func (htl *HttpTunnelServer) Open(ch Channel, tb srv.TraverseBy) {
+func (htl *TunnelServer) Open(ch Channel, tb srv.TraverseBy) {
 	channel := ch.(srv.GContext)
 	conn := newHttpConn(ch, htl.isHttps)
 	channel.GetContext().AddAttr(defin.HttpChannel, conn)
@@ -251,7 +263,7 @@ func (htl *HttpTunnelServer) Open(ch Channel, tb srv.TraverseBy) {
 // the server processes the request.This method currently does not perform any operation, and returns nil directly.
 // This may be a reserved hook point for future additions.Parameters:
 // None Return value: error, indicating the result of the execution of the operation, and always returns nil.
-func (htl *HttpTunnelServer) startAfter() error {
+func (htl *TunnelServer) startAfter() error {
 	tunnel.AddTunnel(htl)
 	htl.Server.AddHandler(htl)
 	htl.httpProxy = NewHttpProxy(htl.getRoute)
@@ -261,7 +273,7 @@ func (htl *HttpTunnelServer) startAfter() error {
 }
 
 // getRoute is a method of HttpTunnelServer, which is used to get the route information based on the request path.
-func (htl *HttpTunnelServer) getRoute(req *http.Request) (*RouteInfo, error) {
+func (htl *TunnelServer) getRoute(req *http.Request) (*RouteInfo, error) {
 	host := req.Host
 	hosts := strings.Split(host, ":")
 	info := GetRouteInfo(hosts[0], req.URL.Path)
@@ -272,16 +284,16 @@ func (htl *HttpTunnelServer) getRoute(req *http.Request) (*RouteInfo, error) {
 }
 
 // RegisterConn is a method of HttpTunnelServer, which is used to register a connection.
-func (htl *HttpTunnelServer) RegisterConn(ch Channel, request exchange.TRegister) {
+func (htl *TunnelServer) RegisterConn(ch Channel, request exchange.TRegister) {
 	if request.GetProxyId() == "" || request.GetHttpId() == "" {
 		log.Warn("Register http tunnel, but It' httpId or httpId is nil")
 		return
 	}
 	htl.registerLock.Lock()
 	htl.BaseTunnelServer.RegisterConn(ch, request)
-	log.Info("Register http tunnel, httpId: %s,%s", request.GetProxyId(), request.GetHttpId())
 	proxies, ok := htl.proxyToConn.Load(request.GetHttpId())
 	if ok {
+		log.Info("Register http tunnel, proxyId: %s,httpId:%s", request.GetProxyId(), request.GetHttpId())
 		tracker := NewHttpTracker(ch)
 		proxies.Store(ch.GetId(), tracker)
 		tracker.Run()
@@ -294,7 +306,7 @@ func (htl *HttpTunnelServer) RegisterConn(ch Channel, request exchange.TRegister
 	htl.registerLock.Unlock()
 }
 
-func (htl *HttpTunnelServer) createConn(ch Channel) (err error) {
+func (htl *TunnelServer) createConn(ch Channel) (err error) {
 	req := &exchange.WorkConnReq{
 		ProxyId:    htl.Cfg.Id,
 		RemotePort: htl.Cfg.Port,
@@ -305,10 +317,11 @@ func (htl *HttpTunnelServer) createConn(ch Channel) (err error) {
 }
 
 // unRegisterConn is a method of HttpTunnelServer, which is used to unregister a connection.
-func (htl *HttpTunnelServer) unRegisterConn(ch Channel) {
-	proxyId, ok := ch.GetAttr(defin.HttpIdKey)
+func (htl *TunnelServer) unRegisterConn(ch Channel) {
+	httpId, ok := ch.GetAttr(defin.HttpIdKey)
 	if ok {
-		key := proxyId.(string)
+		log.Debug("unRegister http tunnel, httpId: %v,channelId:%v", httpId, ch.GetId())
+		key := httpId.(string)
 		channels, ok := htl.proxyToConn.Load(key)
 		if ok {
 			channels.Delete(ch.GetId())

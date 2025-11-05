@@ -46,6 +46,8 @@ func OpenTunnelServer(request exchange.OpenTunnelReq, manager Channel) (int, err
 	if cfgNode == nil {
 		return 0, fmt.Errorf("not found proxy id %v", request.ProxyId)
 	}
+	cfgNode.openLock.Lock()
+	defer cfgNode.openLock.Unlock()
 	t, b := servers.Load(cfgNode.config.Id)
 	if b {
 		t.PutManager(manager)

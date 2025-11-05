@@ -88,12 +88,11 @@ func httpProxy() *httputil.ReverseProxy {
 			MaxIdleConns:          100,
 			DialContext: func(ctx context.Context, network, addr string) (net.Conn, error) {
 				value := ctx.Value(RouteInfoKey)
-				id := ctx.Value(RequestInfoKey)
 				switch v := value.(type) {
 				case error:
 					return nil, v
 				case *RouteInfo:
-					connection, err := v.getProxyConnection(v.httpId, id.(int64))
+					connection, err := v.getProxyConnection(v.httpId)
 					if err != nil {
 						log.Error("get proxy connection error %v", err)
 						return nil, err

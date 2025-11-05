@@ -252,7 +252,6 @@ func (c *Client) doConnection() error {
 		log.Info("👍---->Connection %s success OK.✅--->", c.getAddress())
 		return nil
 	}
-	log.Info("👍---->Connection %s %s success OK.✅--->", c.getAddress(), "^ Tunnel ^")
 	//OpenStream smux
 	openSmux := func() (*smux.Session, error) {
 		config := smux.DefaultConfig()
@@ -266,6 +265,7 @@ func (c *Client) doConnection() error {
 	session, err := openSmux()
 	if err != nil {
 		log.Error("Active smux Client error %v", err)
+		c.cct.Close()
 		return err
 	}
 	c.session = session
@@ -289,7 +289,12 @@ func (c *Client) OpenTunnel(config *configs.ClientTunnelConfig) error {
 		log.Error("Not found [%s] tunnel client, Pleas check.", config.TunnelType)
 		return errors.New("not found tunnel client")
 	}
-	return client.Open(c.session)
+	err := client.Open(c.session)
+	if err != nil {
+		log.Error("Open tunnel error, close client:%v", config.TunnelType)
+		c.cct.Close()
+	}
+	return err
 }
 
 func (c *Client) error(str string, err error) error {
@@ -433,14 +438,8 @@ func (c *Client) sessionLoop() {
 		for {
 			select {
 			case <-c.session.CloseChan():
-				if c.state != Closed {
-					return
-				}
-				if c.session.IsClosed() {
-					return
-				}
 				log.Warn("Tunnel Session closed %v", c.session.RemoteAddr())
-				c.cct.state <- Closed
+				c.cct.Close()
 				return
 			}
 		}

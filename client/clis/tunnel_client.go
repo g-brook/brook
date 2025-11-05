@@ -37,6 +37,10 @@ type TunnelClientControl struct {
 	Bucket    *exchange.MessageBucket
 }
 
+var (
+	sessionError = errors.New("session error")
+)
+
 // Context returns the context associated with the TunnelClientControl.
 // This context can be used to track the lifecycle of the tunnel client
 // and to cancel operations if needed.
@@ -74,6 +78,9 @@ func (receiver *TunnelClientControl) retry(f func() error) {
 			}
 			if err := f(); err != nil {
 				log.Warn("Active tunnel error...", err)
+				if errors.Is(err, sessionError) {
+					return
+				}
 			}
 			ticker.Reset(time.Second * 5)
 			select {
@@ -174,11 +181,11 @@ func (b *BaseTunnelClient) OpenStream() error {
 			_ = b.session.Close()
 			log.Debug("session is close, exit")
 			b.TcControl.Cancel()
-			return nil
+			return sessionError
 		}
 		if err != nil {
 			log.Error("Active session fail %v", err)
-			return err
+			return sessionError
 		}
 		streamCancelCtx, streamCancel := context.WithCancel(b.TcControl.Context())
 		channel := transport.NewSChannel(stream, streamCancelCtx, true)
