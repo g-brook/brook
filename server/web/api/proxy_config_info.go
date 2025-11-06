@@ -125,6 +125,7 @@ func updateProxyConfig(req *Request[sql.ProxyConfig]) *Response {
 	if err != nil {
 		return NewResponseFail(errs.CodeSysErr, "update proxy configs failed")
 	}
+	toPushConfig(req.Body.Idx)
 	return NewResponseSuccess(nil)
 }
 
@@ -136,6 +137,7 @@ func updateProxyState(req *Request[sql.ProxyConfig]) *Response {
 	if err != nil {
 		return NewResponseFail(errs.CodeSysErr, "update proxy configs failed")
 	}
+	toPushConfig(req.Body.Idx)
 	return NewResponseSuccess(nil)
 }
 
@@ -180,10 +182,7 @@ func addWebConfigs(req *Request[WebConfigInfo]) *Response {
 	if err != nil {
 		return NewResponseFail(errs.CodeSysErr, "Add web configs failed")
 	}
-	info := sql.GetProxyConfigById(body.RefProxyId)
-	if info != nil {
-		base.TunnelCfm.Push(info.ProxyID)
-	}
+	toPushConfig(body.RefProxyId)
 	return NewResponseSuccess(nil)
 }
 
@@ -210,5 +209,13 @@ func addProxyConfigs(req *Request[sql.ProxyConfig]) *Response {
 	if err != nil {
 		return NewResponseFail(errs.CodeSysErr, "add configs failed")
 	}
+	base.TunnelCfm.Push(body.ProxyID)
 	return NewResponseSuccess(nil)
+}
+
+func toPushConfig(id int) {
+	info := sql.GetProxyConfigByIdNotState(id)
+	if info != nil {
+		base.TunnelCfm.Push(info.ProxyID)
+	}
 }

@@ -10,15 +10,9 @@
   },
   "tunnels": [
     {
-      "type": "http",
-      "localAddress": "127.0.0.1:8080",
-      "proxyId": "HttpLocal-2",
-      "httpId": "local"
-    },
-    {
-      "type": "tcp",
-      "localAddress": "127.0.0.1:6379",
-      "proxyId": "Redis-3306"
+      "type": "udp",
+      "localAddress": "127.0.0.1:9000",
+      "proxyId": "333223"
     }
   ]
 }

@@ -30,7 +30,12 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	defer conn.Close()
+	defer func(conn net.PacketConn) {
+		err := conn.Close()
+		if err != nil {
+
+		}
+	}(conn)
 	fmt.Println("UDP server listening on", addr)
 
 	buf := make([]byte, 1024)

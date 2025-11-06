@@ -45,6 +45,7 @@ func (receiver *LocalTunnelConfig) GetConfig(proxyId string) *ConfigNode {
 func (receiver *LocalTunnelConfig) UpdateConfig(proxyId string) *ConfigNode {
 	cfg := sql.GetProxyConfigByProxyId(proxyId)
 	if cfg == nil {
+		receiver.configs.Delete(proxyId)
 		return nil
 	}
 	config := format(cfg)

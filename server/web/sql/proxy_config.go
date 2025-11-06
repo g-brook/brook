@@ -93,7 +93,21 @@ func GetProxyConfigByProxyId(proxyId string) *ProxyConfig {
 }
 
 func GetProxyConfigById(id int) *ProxyConfig {
-	res, err := Query("select idx,name, tag, remote_port, proxy_id, protocol,state,run_state from proxy_config where state = 1 and idx = ?", id)
+	return GetProxyConfigByIdAndState(id, 1, true)
+}
+
+func GetProxyConfigByIdNotState(id int) *ProxyConfig {
+	return GetProxyConfigByIdAndState(id, 1, false)
+}
+
+func GetProxyConfigByIdAndState(id int, state int, isCheckState bool) *ProxyConfig {
+	var res *Result
+	var err error
+	if isCheckState {
+		res, err = Query("select idx,name, tag, remote_port, proxy_id, protocol,state,run_state from proxy_config where state = ? and idx = ?", state, id)
+	} else {
+		res, err = Query("select idx,name, tag, remote_port, proxy_id, protocol,state,run_state from proxy_config where idx = ?", id)
+	}
 	if err != nil {
 		return nil
 	}
