@@ -40,6 +40,7 @@ Chart.register(LineElement, PointElement, CategoryScale, LinearScale, Title, Too
 const list = ref<any[]>([])
 const realTimeData = ref<any[]>([])
 const drawerRef = ref(null)
+const seleceRef = ref(null)
 let dataUpdateInterval: any = null
 
 // 为每个服务器生成独立的图表数据
@@ -165,8 +166,9 @@ const avatarCss =(tunnelType) => {
   }
 }
 
-const openDetails = () => {
-  drawerRef.value.open()
+const openDetails = (server) => {
+  seleceRef.value=server;
+  drawerRef.value.open();
 }
 
 onMounted(() => {
@@ -182,7 +184,7 @@ onUnmounted(() => {
 </script>
 <template>
   <Drawer ref="drawerRef" title="隧道详情展示" icon="brook-caidan02" width="40%">
-    <DetailInfo />
+    <DetailInfo :proxyId="seleceRef.proxyId"/>
   </Drawer>
     <div class="space-y-8 p-6">
         <div v-if="list.length === 0" class="justify-center flex flex-col items-center">
@@ -210,7 +212,7 @@ onUnmounted(() => {
                                     <div class="badge badge-sm badge-secondary">{{ server.tag }}</div>
                                 </h3>
                               <div class="text-xl font-extralight">{{ server.port || 'N/A' }}
-                                <button class="btn btn-sm btn-circle" @click="openDetails">
+                                <button class="btn btn-sm btn-circle" @click="openDetails(server)">
                                   <Icon icon="brook-caidan02"/>
                                 </button>
                               </div>

@@ -18,7 +18,12 @@ import Message from "@/components/message";
 import axios, {AxiosError, type AxiosInstance, type AxiosRequestConfig,} from "axios";
 
 import {DefaultResponse, type ResponseData} from "@/types/response";
+import NProgress from 'nprogress';
+import '@/assets/nprogress.css'
 
+NProgress.configure({
+    showSpinner: false,
+})
 /**
  * 请求对象.
  */
@@ -34,11 +39,11 @@ export class Request {
     this.instance = axios.create(Object.assign(this.baseConfig, config));
     this.instance.interceptors.request.use(
       (config) => {
+          NProgress.start();
         const token = localStorage.getItem("token");
         if (token) {
           config.headers["Authorization"] = `${token}`;
         }
-        
         // 添加时间戳防止缓存
         const timestamp = Date.now();
         if (config.method?.toLowerCase() === 'get') {
@@ -62,15 +67,18 @@ export class Request {
         return config;
       },
       (err) => {
+          NProgress.done();
         return Promise.reject(err);
       }
     );
 
     this.instance.interceptors.response.use(
       (rsp) => {
+          NProgress.done();
         return rsp;
       },
       (err: AxiosError) => {
+          NProgress.done();
         Message.error(err.message);
         return Promise.reject(err);
       }

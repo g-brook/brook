@@ -45,6 +45,7 @@ type SChannel struct {
 	cancel       context.CancelFunc
 	attr         map[lang.KeyType]interface{}
 	closeEvents  []CloseEvent
+	lastTime     time.Time
 }
 
 // NewSChannel creates a new SChannel with the given smux stream
@@ -58,6 +59,7 @@ func NewSChannel(stream *smux.Stream, parent context.Context, isOpenTunnel bool)
 		attr:         map[lang.KeyType]interface{}{},
 		IsOpenTunnel: isOpenTunnel,
 		closeEvents:  make([]CloseEvent, 0),
+		lastTime:     time.Now(),
 		buf:          bytes.Buffer{}} // Initialize as pointer
 	return ch
 }
@@ -67,96 +69,98 @@ func (c *SChannel) SendTo([]byte, net.Addr) (int, error) {
 }
 
 // Close closes the SChannel by closing the underlying stream
-func (s *SChannel) Close() error {
-	err := s.Stream.Close()
-	s.cancel()
-	for _, event := range s.closeEvents {
+func (c *SChannel) Close() error {
+	err := c.Stream.Close()
+	c.cancel()
+	for _, event := range c.closeEvents {
 		if event != nil {
-			event(s)
+			event(c)
 		}
 	}
-	clear(s.closeEvents)
+	clear(c.closeEvents)
 	return err
 }
 
 // SetDeadline sets the deadline for both read and write operations
-func (s *SChannel) SetDeadline(t time.Time) error {
-	return s.Stream.SetDeadline(t)
+func (c *SChannel) SetDeadline(t time.Time) error {
+	return c.Stream.SetDeadline(t)
 }
 
 // SetReadDeadline sets the deadline for read operations
-func (s *SChannel) SetReadDeadline(t time.Time) error {
-	return s.Stream.SetReadDeadline(t)
+func (c *SChannel) SetReadDeadline(t time.Time) error {
+	return c.Stream.SetReadDeadline(t)
 }
 
 // SetWriteDeadline sets the deadline for write operations
-func (s *SChannel) SetWriteDeadline(t time.Time) error {
-	return s.Stream.SetWriteDeadline(t)
+func (c *SChannel) SetWriteDeadline(t time.Time) error {
+	return c.Stream.SetWriteDeadline(t)
 }
 
 // GetConn returns the underlying connection
-func (s *SChannel) GetConn() net.Conn {
-	return s.Stream
+func (c *SChannel) GetConn() net.Conn {
+	return c.Stream
 }
 
 // RemoteAddr returns the remote network address
-func (s *SChannel) RemoteAddr() net.Addr {
-	return s.Stream.RemoteAddr()
+func (c *SChannel) RemoteAddr() net.Addr {
+	return c.Stream.RemoteAddr()
 }
 
 // LocalAddr returns the local network address
-func (s *SChannel) LocalAddr() net.Addr {
-	return s.Stream.LocalAddr()
+func (c *SChannel) LocalAddr() net.Addr {
+	return c.Stream.LocalAddr()
 }
 
-func (s *SChannel) AddAttr(key lang.KeyType, value interface{}) {
-	s.attr[key] = value
+func (c *SChannel) AddAttr(key lang.KeyType, value interface{}) {
+	c.attr[key] = value
 }
 
-func (s *SChannel) OnClose(event CloseEvent) {
-	s.closeEvents = append(s.closeEvents, event)
+func (c *SChannel) OnClose(event CloseEvent) {
+	c.closeEvents = append(c.closeEvents, event)
 }
 
-func (s *SChannel) IsClose() bool {
+func (c *SChannel) IsClose() bool {
 	select {
-	case <-s.Done():
+	case <-c.Done():
 		return true
-	case <-s.Stream.GetDieCh():
+	case <-c.Stream.GetDieCh():
 		return true
 	default:
 		return false
 	}
 }
 
-func (s *SChannel) GetAttr(key lang.KeyType) (interface{}, bool) {
-	value, ok := s.attr[key]
+func (c *SChannel) GetAttr(key lang.KeyType) (interface{}, bool) {
+	value, ok := c.attr[key]
 	return value, ok
 }
 
 // Read reads data into p
-func (s *SChannel) Read(p []byte) (n int, err error) {
-	if s.IsClose() {
+func (c *SChannel) Read(p []byte) (n int, err error) {
+	if c.IsClose() {
 		return 0, io.EOF
 	}
-	if s.IsOpenTunnel {
-		return s.Stream.Read(p)
+	c.lastTime = time.Now()
+	if c.IsOpenTunnel {
+		return c.Stream.Read(p)
 	} else {
-		n, err = s.buf.Read(p)
+		n, err = c.buf.Read(p)
 	}
 	return
 }
 
 // Write writes data from p
-func (s *SChannel) Write(p []byte) (n int, err error) {
+func (c *SChannel) Write(p []byte) (n int, err error) {
 	select {
-	case <-s.Done():
+	case <-c.Done():
 		return 0, io.EOF
-	case <-s.Stream.GetDieCh():
+	case <-c.Stream.GetDieCh():
 		return 0, io.EOF
 	default:
-		n, err = s.Stream.Write(p)
+		n, err = c.Stream.Write(p)
+		c.lastTime = time.Now()
 		if errors.Is(err, io.EOF) {
-			_ = s.Close()
+			_ = c.Close()
 			return 0, err
 		}
 	}
@@ -164,28 +168,34 @@ func (s *SChannel) Write(p []byte) (n int, err error) {
 }
 
 // Copy copies data into the buffer
-func (s *SChannel) Copy(p []byte) (n int, err error) {
-	return s.buf.Write(p) // Using pointer access
+func (c *SChannel) Copy(p []byte) (n int, err error) {
+	return c.buf.Write(p) // Using pointer access
 }
 
 // GetReader returns the reader for this channel
-func (s *SChannel) GetReader() io.Reader {
-	return s
+func (c *SChannel) GetReader() io.Reader {
+	return c
 }
 
 // GetWriter returns the writer for this channel
-func (s *SChannel) GetWriter() io.Writer {
-	return s
+func (c *SChannel) GetWriter() io.Writer {
+	return c
 }
 
-func (s *SChannel) GetId() string {
-	return s.id
+func (c *SChannel) GetId() string {
+	return c.id
 }
 
-func (s *SChannel) Done() <-chan struct{} {
-	return s.ctx.Done()
+func (c *SChannel) Done() <-chan struct{} {
+	return c.ctx.Done()
 }
 
-func (s *SChannel) Ctx() context.Context {
-	return s.ctx
+func (c *SChannel) Ctx() context.Context {
+	return c.ctx
+}
+
+func (c *SChannel) IsHealthy() bool {
+	now := time.Now()
+	sub := now.Sub(c.lastTime)
+	return sub <= 500*time.Second
 }

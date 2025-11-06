@@ -63,7 +63,7 @@ func (htl *TunnelTcpServer) Reader(ch trp.Channel, _ srv.TraverseBy) {
 	case srv.GContext:
 		chId, ok := workConn.GetContext().GetAttr(defin.ToSChannelId)
 		if ok && chId != "" {
-			dest, ok := htl.TunnelChannel[chId.(string)]
+			dest, ok := htl.TunnelChannel.Load(chId.(string))
 			if ok {
 				err := iox.Copy(ch, dest)
 				if err != nil {

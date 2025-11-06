@@ -59,12 +59,18 @@ type ServerInfo struct {
 	TAG         string `json:"tag"`
 	Connections int    `json:"connections"`
 	Users       int    `json:"users"`
+	ProxyId     string `json:"proxyId"`
 }
 
 type InitInfo struct {
 	Username        string `json:"username"`
 	Password        string `json:"password"`
 	ConfirmPassword string `json:"confirmPassword"`
+}
+
+type ServerClientInfo struct {
+	Host     string `json:"host"`
+	LastTime string `json:"lastTime"`
 }
 
 type WebConfigInfo struct {

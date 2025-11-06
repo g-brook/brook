@@ -35,7 +35,6 @@ import (
 	"github.com/brook/common/httpx"
 	"github.com/brook/common/ringbuffer"
 	"github.com/brook/common/threading"
-	"github.com/brook/common/wheel"
 )
 
 var httpError = errors.New("error: Agent connect to server failed")
@@ -43,20 +42,11 @@ var httpError = errors.New("error: Agent connect to server failed")
 type HttpClientManager struct {
 	clients *hash.SyncMap[int64, *HttpBridge]
 	lock    sync.Mutex
-	timing  *wheel.TimingWheel
 }
 
 func NewHttpClientManager() *HttpClientManager {
-	timingWheel, _ := wheel.NewTimingWheel(100*time.Millisecond, 100, _check)
 	return &HttpClientManager{
 		clients: hash.NewSyncMap[int64, *HttpBridge](),
-		timing:  timingWheel,
-	}
-}
-
-func _check(key any, value any) {
-	if bridge, ok := value.(*HttpBridge); ok && bridge != nil {
-		bridge.Close()
 	}
 }
 
@@ -82,7 +72,6 @@ func (r *HttpClientManager) GetHttpBridge(ctx context.Context,
 	bridge.isWs = isWs
 	bridge.toRunning()
 	r.clients.Store(reqId, bridge)
-	_ = r.timing.SetTimer(reqId, bridge, time.Second*10)
 	return bridge, nil
 }
 
@@ -182,7 +171,6 @@ func (b *HttpBridge) Close() {
 			_ = b.right.Close()
 		}
 		b.manager.clients.Delete(b.reqId)
-		_ = b.manager.timing.RemoveTimer(b.reqId)
 		b.manager = nil
 		b.buffer = nil
 		b.left = nil

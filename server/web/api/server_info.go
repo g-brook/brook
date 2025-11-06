@@ -26,6 +26,31 @@ import (
 
 func init() {
 	RegisterRoute(NewRoute("/getServerInfo", "POST"), getServerInfo)
+	RegisterRoute(NewRoute("/getServerInfoByProxyId", "POST"), getServerInfoByProxyId)
+}
+
+func getServerInfoByProxyId(req *Request[QueryServerInfo]) *Response {
+	servers := metrics.M.GetServers()
+	prxoyId := req.Body.ProxyId
+	var tm metrics.TunnelMetrics
+	for _, item := range servers {
+		if item.Id() == prxoyId {
+			tm = item
+			break
+		}
+	}
+	if tm == nil {
+		return NewResponseSuccess(nil)
+	}
+	var v []*ServerClientInfo
+	for _, it := range tm.ClientsInfo() {
+		v = append(v, &ServerClientInfo{
+			Host:     it.RemoteAddr().String(),
+			LastTime: it.GetId(),
+		})
+	}
+
+	return NewResponseSuccess(v)
 }
 
 // GetServerInfo retrieves information about the server
@@ -46,6 +71,7 @@ func getServerInfo(req *Request[QueryServerInfo]) *Response {
 			TAG:         newItem.Tag,
 			Connections: item.Connections(),
 			Users:       item.Clients(),
+			ProxyId:     item.Id(),
 		})
 		fmt.Println(item.Name())
 	}

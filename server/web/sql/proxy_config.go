@@ -38,8 +38,8 @@ func (r *ProxyConfig) IsHttpOrHttps() bool {
 func AddProxyConfig(p ProxyConfig) error {
 	err := Exec(`
             INSERT INTO proxy_config(name, tag, remote_port, proxy_id, protocol,state,run_state)
-            VALUES (?, ?, ?, ?, ?,?);
-        `, p.Name, p.Tag, p.RemotePort, p.ProxyID, p.Protocol, p.State)
+            VALUES (?, ?, ?, ?, ?,?,?);
+        `, p.Name, p.Tag, p.RemotePort, p.ProxyID, p.Protocol, p.State, p.RunState)
 	return err
 }
 

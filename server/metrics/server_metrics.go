@@ -18,6 +18,8 @@ package metrics
 
 import (
 	"time"
+
+	"github.com/brook/common/transport"
 )
 
 type TunnelMetrics interface {
@@ -28,4 +30,5 @@ type TunnelMetrics interface {
 	Connections() int
 	Clients() int
 	Runtime() time.Time
+	ClientsInfo() []transport.Channel
 }

@@ -3,12 +3,22 @@
   "serverHost": "127.0.0.1",
   "token": "39244d37256c4326735372695431496d6e3746537551236f3475384b73637961",
   "pingTime": 30000,
+  "logger": {
+    "logLevel": "debug",
+    "logPath": "./",
+    "outs": "file,stdout"
+  },
   "tunnels": [
     {
       "type": "http",
       "localAddress": "127.0.0.1:8080",
       "proxyId": "HttpLocal-2",
       "httpId": "local"
+    },
+    {
+      "type": "tcp",
+      "localAddress": "127.0.0.1:6379",
+      "proxyId": "Redis-3306"
     }
   ]
 }

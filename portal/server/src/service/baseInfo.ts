@@ -34,6 +34,10 @@ const getServerInfo = <Q>(data: any): Promise<Response<Q>> => {
   return Http.post("/api/getServerInfo", data);
 };
 
-const functions = { getBaseInfo, initServer, login, getServerInfo };
+const getServerInfoByProxyId = <Q>(data: any): Promise<Response<Q>> => {
+    return Http.post("/api/getServerInfoByProxyId", data);
+};
+
+const functions = { getBaseInfo, initServer, login, getServerInfo,getServerInfoByProxyId };
 
 export default functions;

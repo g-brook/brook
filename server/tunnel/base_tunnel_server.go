@@ -53,7 +53,7 @@ type BaseTunnelServer struct {
 	Cfg             *configs.ServerTunnelConfig
 	Server          *srv.Server
 	DoStart         func() error
-	TunnelChannel   map[string]transport.Channel
+	TunnelChannel   *hash.SyncMap[string, transport.Channel]
 	ManagerChannel  *hash.SyncSet[transport.Channel]
 	openCh          chan error
 	openChOnce      sync.Once
@@ -82,11 +82,15 @@ func (b *BaseTunnelServer) Name() string {
 }
 
 func (b *BaseTunnelServer) Clients() int {
-	return len(b.TunnelChannel)
+	return b.TunnelChannel.Len()
 }
 
 func (b *BaseTunnelServer) TrafficObj() *metrics.TunnelTraffic {
 	return b.trafficMetrics
+}
+
+func (b *BaseTunnelServer) ClientsInfo() []transport.Channel {
+	return b.TunnelChannel.Values()
 }
 
 func (b *BaseTunnelServer) AddEvent(etype EventType,
@@ -107,10 +111,11 @@ func (b *BaseTunnelServer) Shutdown() {
 		b.Server.Shutdown(b.closeCtx)
 	}
 	if b.TunnelChannel != nil {
-		for t := range b.TunnelChannel {
-			_ = b.TunnelChannel[t].Close()
-		}
-		clear(b.TunnelChannel)
+		b.TunnelChannel.Range(func(key string, value transport.Channel) (shouldContinue bool) {
+			_ = value.Close()
+			return false
+		})
+		b.TunnelChannel.Clear()
 	}
 	metrics.M.RemoveServer(b)
 }
@@ -120,7 +125,7 @@ func NewBaseTunnelServer(cfg *configs.ServerTunnelConfig) *BaseTunnelServer {
 	return &BaseTunnelServer{
 		port:           cfg.Port,
 		Cfg:            cfg,
-		TunnelChannel:  make(map[string]transport.Channel),
+		TunnelChannel:  hash.NewSyncMap[string, transport.Channel](),
 		ManagerChannel: hash.NewSyncSet[transport.Channel](),
 		openCh:         make(chan error),
 		handlers:       make(map[EventType]Event, 16),
@@ -169,9 +174,9 @@ func (b *BaseTunnelServer) Runtime() time.Time {
 // RegisterConn  register the tunnel server connection
 func (b *BaseTunnelServer) RegisterConn(ch transport.Channel,
 	_ exchange.TRegister) {
-	oldCh, ok := b.TunnelChannel[ch.GetId()]
+	oldCh, ok := b.TunnelChannel.Load(ch.GetId())
 	if !ok || oldCh != ch {
-		b.TunnelChannel[ch.GetId()] = ch
+		b.TunnelChannel.Store(ch.GetId(), ch)
 		handler := b.handlers[Register]
 		if handler != nil {
 			handler(ch)
@@ -183,7 +188,7 @@ func (b *BaseTunnelServer) RegisterConn(ch transport.Channel,
 func (b *BaseTunnelServer) unRegister(ch transport.Channel) {
 	b.lock.Lock()
 	defer b.lock.Unlock()
-	delete(b.TunnelChannel, ch.GetId())
+	b.TunnelChannel.Delete(ch.GetId())
 	handler := b.handlers[Unregister]
 	if handler != nil {
 		handler(ch)

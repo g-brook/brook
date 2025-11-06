@@ -149,3 +149,12 @@ func (receiver *SyncMap[K, V]) Load(key K) (V, bool) {
 	// Otherwise, return the value and true
 	return value.(V), true
 }
+
+func (receiver *SyncMap[K, V]) Values() []V {
+	var values []V
+	receiver.data.Range(func(key, value any) bool {
+		values = append(values, value.(V))
+		return true
+	})
+	return values
+}

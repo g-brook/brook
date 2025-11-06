@@ -65,6 +65,7 @@ func (t *TcpTunnelClient) initOpen(ch *transport.SChannel) error {
 	err = t.AsyncRegister(t.GetRegisterReq(), func(p *exchange.Protocol, rw io.ReadWriteCloser, _ context.Context) error {
 		log.Info("Connection local address success then Client to server register success:%v", t.GetCfg().LocalAddress)
 		if p.IsSuccess() {
+			addHealthyCheckStream(ch)
 			errors := iox.Pipe(ch, localConnection)
 			if len(errors) > 0 {
 				log.Error("Pipe error %v", errors)
