@@ -99,7 +99,7 @@ const handleGithubClick = () => {
                 </div>
 
                 <!-- 组件内容 -->
-                <div v-else-if="selected" key="content">
+                <div v-else-if="selected" key="content" class="h-full w-full">
                     <component :is="selected" :key="selected" />
                 </div>
 

@@ -30,13 +30,15 @@ import (
 )
 
 var (
-	RouteInfoKey   = "routeInfo"
-	RequestInfoKey = "httpRequestId"
-	ProxyKey       = "httpProxy"
-	ForwardedKey   = "X-Forwarded-For"
-	index          atomic.Int64
-	timeoutErr     = &timeoutError{}
-	readDone       = errors.New("read done")
+	RouteInfoKey     = "routeInfo"
+	RequestInfoKey   = "httpRequestId"
+	RequestHttpIdKey = "br_httpId"
+	RequestDomainKey = "br_domain"
+	ProxyKey         = "httpProxy"
+	ForwardedKey     = "X-Forwarded-For"
+	index            atomic.Int64
+	timeoutErr       = &timeoutError{}
+	readDone         = errors.New("read done")
 )
 
 func newReqId() int64 {

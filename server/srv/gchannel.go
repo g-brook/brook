@@ -229,6 +229,10 @@ func (receiver *ConnContext) LastActive() {
 	//conn.context = receiver
 }
 
+func (c *GChannel) LastTime() time.Time {
+	return c.Context.lastActive
+}
+
 // GetLastActive
 //
 //	@Description:

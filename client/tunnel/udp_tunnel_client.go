@@ -56,7 +56,7 @@ func NewUdpTunnelClient(cfg *configs.ClientTunnelConfig, mtpc *MultipleTunnelCli
 		udpConnMap:       hash.NewSyncMap[string, *net.UDPConn](),
 	}
 	var err error
-	client.localAddress, err = net.ResolveUDPAddr("udp", cfg.LocalAddress)
+	client.localAddress, err = net.ResolveUDPAddr("udp", cfg.Destination)
 	if err != nil {
 		log.Error("NewUdpTunnelClient error %v", err)
 		return nil
@@ -129,13 +129,13 @@ func (t *UdpTunnelClient) initOpen(*transport.SChannel) (err error) {
 	}
 	err = t.AsyncRegister(t.getReq(), func(p *exchange.Protocol, rw io.ReadWriteCloser, _ context.Context) error {
 		if p.IsSuccess() {
-			log.Info("Connection local address success then Client to server register success:%v", t.GetCfg().LocalAddress)
+			log.Info("Connection local address success then Client to server register success:%v", t.GetCfg().Destination)
 			bucket := exchange.NewTunnelBucket(rw, t.TcControl.Context())
 			revLoop(rw, bucket)
 			bucket.Run()
 			<-stop
 		} else {
-			log.Error("Connection local address success then Client to server register fail:%v", t.GetCfg().LocalAddress)
+			log.Error("Connection local address success then Client to server register fail:%v", t.GetCfg().Destination)
 			return fmt.Errorf("register fail")
 		}
 		return nil
@@ -162,7 +162,7 @@ func (t *UdpTunnelClient) localConn(rAddr *net.UDPAddr) (*net.UDPConn, error, bo
 		if err != nil {
 			return nil, err
 		}
-		log.Info("Connection localAddress, %v success", t.GetCfg().LocalAddress)
+		log.Info("Connection localAddress, %v success", t.GetCfg().Destination)
 		t.udpConnMap.Store(rAddr.String(), dial)
 		return dial, err
 	}

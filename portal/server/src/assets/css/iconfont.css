@@ -1,8 +1,8 @@
 @font-face {
   font-family: "iconfont"; /* Project id 5010444 */
-  src: url('iconfont.woff2?t=1761476838437') format('woff2'),
-       url('iconfont.woff?t=1761476838437') format('woff'),
-       url('iconfont.ttf?t=1761476838437') format('truetype');
+  src: url('iconfont.woff2?t=1762598237165') format('woff2'),
+       url('iconfont.woff?t=1762598237165') format('woff'),
+       url('iconfont.ttf?t=1762598237165') format('truetype');
 }
 
 .iconfont {
@@ -13,12 +13,20 @@
   -moz-osx-font-smoothing: grayscale;
 }
 
-.brook-download:before {
-  content: "\e760";
+.brook-calendar:before {
+  content: "\e62c";
 }
 
-.brook-Copy:before {
-  content: "\eaa9";
+.brook-client:before {
+  content: "\e62a";
+}
+
+.brook-a-clipboardnotedocument:before {
+  content: "\e60b";
+}
+
+.brook-download:before {
+  content: "\e760";
 }
 
 .brook-refresh:before {

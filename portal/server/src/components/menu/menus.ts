@@ -43,12 +43,12 @@ class Menu {
 
 const menus: Menu[] = [
   new Menu(
-    "Dashboard",
+    "在线通道",
     "显示当前在线的通道信息",
     "brook-Diagram-",
     true,
     [],
-    () => import("@/views/dashboard/Dashboard.vue"),
+    () => import("@/views/serverlist/Index.vue"),
   ),
    new Menu(
     "通道配置",

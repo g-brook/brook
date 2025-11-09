@@ -62,10 +62,10 @@ type HttpRunnelProxy struct {
 }
 
 type ClientTunnelConfig struct {
-	TunnelType   lang.TunnelType `json:"type"`
-	LocalAddress string          `json:"localAddress"`
-	ProxyId      string          `json:"proxyId"`
-	HttpId       string          `json:"httpId,omitempty"`
+	TunnelType  lang.TunnelType `json:"type"`
+	Destination string          `json:"destination"`
+	ProxyId     string          `json:"proxyId"`
+	HttpId      string          `json:"httpId,omitempty"`
 	//default 1500
 	UdpSize    int `json:"udpSize,omitempty"`
 	RemotePort int `json:"-"`

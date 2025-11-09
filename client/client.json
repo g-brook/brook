@@ -11,8 +11,19 @@
   "tunnels": [
     {
       "type": "udp",
-      "localAddress": "127.0.0.1:9000",
+      "destination": "127.0.0.1:9000",
       "proxyId": "333223"
+    },
+    {
+      "type": "tcp",
+      "destination": "127.0.0.1:22",
+      "proxyId": "Local-22"
+    },
+    {
+      "type": "http",
+      "destination": "127.0.0.1:8081",
+      "proxyId": "HttpLocal-2",
+      "httpId": "local"
     }
   ]
 }

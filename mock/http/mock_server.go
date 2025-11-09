@@ -103,8 +103,8 @@ func main() {
 	http.HandleFunc("/base", handlerAdmin)
 	http.HandleFunc("/proxy2", handler)
 	// 启动服务器，监听 8080 端口
-	fmt.Println("服务器已启动：http://localhost:8080")
-	err := http.ListenAndServe(":8080", nil)
+	fmt.Println("服务器已启动：http://localhost:8081")
+	err := http.ListenAndServe(":8081", nil)
 	if err != nil {
 		panic(err)
 	}

@@ -17,7 +17,7 @@
 package api
 
 import (
-	"fmt"
+	"sort"
 	"strconv"
 
 	"github.com/brook/server/metrics"
@@ -46,7 +46,7 @@ func getServerInfoByProxyId(req *Request[QueryServerInfo]) *Response {
 	for _, it := range tm.ClientsInfo() {
 		v = append(v, &ServerClientInfo{
 			Host:     it.RemoteAddr().String(),
-			LastTime: it.GetId(),
+			LastTime: it.LastTime().Format("2006-04-02 15:04:05"),
 		})
 	}
 
@@ -72,8 +72,11 @@ func getServerInfo(req *Request[QueryServerInfo]) *Response {
 			Connections: item.Connections(),
 			Users:       item.Clients(),
 			ProxyId:     item.Id(),
+			Runtime:     item.Runtime(),
 		})
-		fmt.Println(item.Name())
 	}
+	sort.Slice(v, func(i, j int) bool {
+		return v[i].Runtime.After(v[j].Runtime)
+	})
 	return NewResponseSuccess(v)
 }

@@ -63,7 +63,7 @@ func (t *TcpTunnelClient) initOpen(ch *transport.SChannel) error {
 		return err
 	}
 	err = t.AsyncRegister(t.GetRegisterReq(), func(p *exchange.Protocol, rw io.ReadWriteCloser, _ context.Context) error {
-		log.Info("Connection local address success then Client to server register success:%v", t.GetCfg().LocalAddress)
+		log.Info("Connection local address success then Client to server register success:%v", t.GetCfg().Destination)
 		if p.IsSuccess() {
 			addHealthyCheckStream(ch)
 			errors := iox.Pipe(ch, localConnection)
@@ -72,7 +72,7 @@ func (t *TcpTunnelClient) initOpen(ch *transport.SChannel) error {
 			}
 			return nil
 		} else {
-			log.Error("Connection local address success then Client to server register fail:%v", t.GetCfg().LocalAddress)
+			log.Error("Connection local address success then Client to server register fail:%v", t.GetCfg().Destination)
 			return fmt.Errorf("register fail")
 		}
 	})
@@ -88,11 +88,11 @@ func (t *TcpTunnelClient) initOpen(ch *transport.SChannel) error {
 }
 func (t *TcpTunnelClient) localConnection() (net.Conn, error) {
 	connFunction := func() (net.Conn, error) {
-		dial, err := net.Dial(string(lang.NetworkTcp), t.GetCfg().LocalAddress)
+		dial, err := net.Dial(string(lang.NetworkTcp), t.GetCfg().Destination)
 		if err != nil {
 			return nil, err
 		}
-		log.Info("Connection localAddress, %v success", t.GetCfg().LocalAddress)
+		log.Info("Connection localAddress, %v success", t.GetCfg().Destination)
 		return dial, err
 	}
 	return connFunction()

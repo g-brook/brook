@@ -53,13 +53,14 @@ type QueryServerInfo struct {
 }
 
 type ServerInfo struct {
-	Name        string `json:"name"`
-	Port        string `json:"port"`
-	TunnelType  string `json:"tunnelType"`
-	TAG         string `json:"tag"`
-	Connections int    `json:"connections"`
-	Users       int    `json:"users"`
-	ProxyId     string `json:"proxyId"`
+	Name        string    `json:"name"`
+	Port        string    `json:"port"`
+	TunnelType  string    `json:"tunnelType"`
+	TAG         string    `json:"tag"`
+	Connections int       `json:"connections"`
+	Users       int       `json:"users"`
+	ProxyId     string    `json:"proxyId"`
+	Runtime     time.Time `json:"runtime"`
 }
 
 type InitInfo struct {

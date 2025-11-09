@@ -21,6 +21,7 @@ package transport
 import (
 	"io"
 	"net"
+	"time"
 
 	"github.com/brook/common/lang"
 )
@@ -83,4 +84,6 @@ type Channel interface {
 
 	// OnClose CloseEvent The Channel Setter CloseEvent
 	OnClose(event CloseEvent)
+
+	LastTime() time.Time
 }

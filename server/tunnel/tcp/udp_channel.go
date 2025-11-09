@@ -26,15 +26,15 @@ import (
 	"github.com/brook/common/transport"
 )
 
-type UdpChannel struct {
+type UdpSChannel struct {
 	*transport.SChannel
 	bucket     *exchange.TunnelBucket
 	udpConnMap hash.SyncMap[string, transport.Channel]
 }
 
-func NewUdpChannel(src *transport.SChannel) *UdpChannel {
+func NewUdpChannel(src *transport.SChannel) *UdpSChannel {
 	bucket := exchange.NewTunnelBucket(src, src.Ctx()).Run()
-	channel := &UdpChannel{
+	channel := &UdpSChannel{
 		SChannel: src,
 		bucket:   bucket,
 	}
@@ -42,7 +42,7 @@ func NewUdpChannel(src *transport.SChannel) *UdpChannel {
 	return channel
 }
 
-func (r *UdpChannel) read(p *exchange.TunnelProtocol) {
+func (r *UdpSChannel) read(p *exchange.TunnelProtocol) {
 	var udpPackage exchange.UdpPackage
 	err := json.Unmarshal(p.Data, &udpPackage)
 	if err != nil {
@@ -55,7 +55,7 @@ func (r *UdpChannel) read(p *exchange.TunnelProtocol) {
 	}
 }
 
-func (r *UdpChannel) AsyncWriter(data []byte, ct transport.Channel) {
+func (r *UdpSChannel) AsyncWriter(data []byte, ct transport.Channel) {
 	remoteAddress, ok := ct.RemoteAddr().(*net.UDPAddr)
 	if !ok {
 		log.Warn("It not is udp addr %s", remoteAddress.String())

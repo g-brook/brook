@@ -48,7 +48,7 @@ type TunnelHttpServer struct {
 
 	registerLock sync.Mutex
 
-	httpProxy *HttpProxy
+	httpProxy *Proxy
 
 	websocketProxy *WebsocketProxy
 
@@ -263,7 +263,7 @@ func (htl *TunnelHttpServer) Open(ch Channel, tb srv.TraverseBy) {
 func (htl *TunnelHttpServer) startAfter() error {
 	tunnel.AddTunnel(htl)
 	htl.Server.AddHandler(htl)
-	htl.httpProxy = NewHttpProxy(htl.getRoute)
+	htl.httpProxy = NewHttpProxy(htl.getRoute, htl.Cfg.Id)
 	htl.websocketProxy = NewWebsocketProxy(htl.getRoute)
 	log.Info("Http tunnel server started:%v", htl.Cfg.Port)
 	return nil

@@ -1,8 +1,7 @@
-<script setup lang="ts">
-
+<script setup lang="ts" xmlns="">
 import baseInfo from "@/service/baseInfo";
-import {onMounted, ref} from "vue";
 import Icon from '@/components/icon/Index.vue';
+import {onMounted, ref} from "vue";
 
 interface Info {
   lastTime: string;
@@ -28,72 +27,96 @@ const props = defineProps({
   }
 })
 
+const proxyId = ref<string>(props.proxyId);
+
 const configs = ref<Info[]>([]);
 const webLogs = ref<WebLog[]>([]);
 
 const getServerInfos = async () => {
-  const response = await baseInfo.getServerInfoByProxyId({proxyId: props.proxyId});
-  configs.value = response.data || []
+  await getServerInfos2(proxyId.value)
 }
 
 const getWebLogInfos = async () => {
-  const response = await baseInfo.getWebLogs({proxyId: props.proxyId});
+  await getWebLogInfos2(proxyId.value)
+}
+
+const getWebLogInfos2 = async () => {
+  const response = await baseInfo.getWebLogs({proxyId: proxyId.value});
   webLogs.value = response.data || []
 }
 
+const getServerInfos2 = async (p) => {
+  proxyId.value = p ? p : props.proxyId;
+  const response = await baseInfo.getServerInfoByProxyId({proxyId: proxyId.value});
+  configs.value = response.data || []
+}
 
 onMounted(() => {
   getServerInfos();
 })
 
+// 暴露方法给父组件
+defineExpose({
+  refresh: function (p) {
+    getWebLogInfos2(p)
+    getServerInfos2(p);
+  },
+});
 </script>
 
 <template>
-  <div class="m-1">
+  <div class="ml-1 ">
     <!-- name of each tab group should be unique -->
-    <div class="tabs tabs-border duration-75">
+    <div class="tabs tabs-border tabs-md duration-300 h-full">
       <label class="tab">
         <input type="radio" name="my_tabs_4" checked="checked" @click="getServerInfos"/>
         <Icon icon="brook-client"/>
-        客户端详情
+        <p class="pl-1">客户端详情</p>
       </label>
       <div class="tab-content bg-base-100 border-base-300">
-        <table class="table">
-          <!-- head -->
-          <thead class="sticky top-0 z-20 bg-base-100">
-          <tr>
-            <th class="bg-base-100 font-semibold" style="width: 10px">#
-            </th>
-            <th class="bg-base-100 font-semibold" style="width: 80px">地址
-            </th>
-            <th class="bg-base-100 font-semibold" style="width: 80px">连接时间
-            </th>
-          </tr>
-          </thead>
-          <tbody>
-          <tr v-for="(item, index) in configs" :key="index">
-            <th>
-              <div class="flex items-center gap-2">
-                {{ index + 1 }}
-              </div>
+        <div v-if="configs.length > 0">
+          <table class="table">
+            <!-- head -->
+            <thead class="sticky top-0 z-20 bg-base-100">
+            <tr>
+              <th class="bg-base-100 font-semibold" style="width: 2px">#
+              </th>
+              <th class="bg-base-100 font-semibold" style="width: 80px">地址
+              </th>
+              <th class="bg-base-100 font-semibold" style="width: 80px">连接时间
+              </th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr v-for="(item, index) in configs" :key="index">
+              <th>
+                <div class="flex items-center gap-2">
+                  {{ index + 1 }}
+                </div>
 
-            </th>
-            <td>{{ item.host }}</td>
-            <td>{{ item.lastTime }}</td>
-          </tr>
-          </tbody>
-        </table>
+              </th>
+              <td>{{ item.host }}</td>
+              <td>{{ item.lastTime }}</td>
+            </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="flex  items-center 　justify-center w-full " v-else>
+          没有数据
+        </div>
         　
       </div>
 
       <label class="tab">
         <input type="radio" name="my_tabs_4" @click="getWebLogInfos"/>
-        <Icon icon="brook-a-clipboardnotedocument"/>
-        Http日志
+        <Icon icon="brook-calendar"/>
+        <p class="pl-1">HTTP日志</p>
+
       </label>
       <div class="tab-content bg-base-100 border-base-300">
         <div class="fab">
-          <button class="btn btn-lg btn-circle btn-primary opacity-80" @click="getWebLogInfos" >
+          <button class="btn btn-lg btn-circle btn-primary opacity-80" @click="getWebLogInfos">
             <Icon icon="brook-refresh" style="font-size: 20px"/>
           </button>
         </div>
@@ -145,5 +168,6 @@ onMounted(() => {
 </template>
 
 <style scoped>
+
 
 </style>

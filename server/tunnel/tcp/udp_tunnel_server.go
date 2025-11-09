@@ -66,7 +66,7 @@ func (htl *TunnelUdpServer) Reader(ch trp.Channel, tb srv.TraverseBy) {
 			return
 		}
 		data, _ := workConn.Next(-1)
-		userConn.(*UdpChannel).AsyncWriter(data, ch)
+		userConn.(*UdpSChannel).AsyncWriter(data, ch)
 		_ = htl.resources.put(userConn)
 		return
 	}

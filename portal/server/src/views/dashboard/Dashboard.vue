@@ -183,7 +183,7 @@ onUnmounted(() => {
 })
 </script>
 <template>
-  <Drawer ref="drawerRef" title="隧道详情展示" icon="brook-caidan02" width="40%">
+  <Drawer ref="drawerRef" title="隧道信息" icon="brook-caidan02" width="40%">
     <DetailInfo :proxyId="seleceRef.proxyId"/>
   </Drawer>
     <div class="space-y-8 p-6">

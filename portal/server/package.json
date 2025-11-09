@@ -11,6 +11,7 @@
   "dependencies": {
     "axios": "^1.13.2",
     "chart.js": "^4.5.0",
+    "dayjs": "^1.11.19",
     "json-editor-vue": "^0.18.1",
     "nprogress": "^0.2.0",
     "vue": "^3.5.18",

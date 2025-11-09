@@ -83,7 +83,7 @@ func (h *HttpTunnelClient) bindHandler(_ *exchange.Protocol, rw io.ReadWriteClos
 		// If the pt.Ver is v1, that it is a http request
 		if pt.Ver == exchange.V1 || pt.Ver == exchange.WebsocketV1 {
 			isWs := pt.Ver == exchange.WebsocketV1
-			httpBridge, err := h.http.GetHttpBridge(ctx, rw, h.GetCfg().LocalAddress, pt.ReqId, isWs)
+			httpBridge, err := h.http.GetHttpBridge(ctx, rw, h.GetCfg().Destination, pt.ReqId, isWs)
 			if err != nil {
 				log.Warn("GetHttpBridge fail %v", err)
 				response := getErrorResponse(httpError)

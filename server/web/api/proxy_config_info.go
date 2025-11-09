@@ -77,9 +77,9 @@ func genClientConfig(*Request[any]) *Response {
 	if cfgs != nil {
 		for _, cfg := range cfgs {
 			tcfg := &configs.ClientTunnelConfig{
-				TunnelType:   base.TransformProtocol(cfg.Protocol),
-				ProxyId:      cfg.ProxyID,
-				LocalAddress: "#{localAddress}",
+				TunnelType:  base.TransformProtocol(cfg.Protocol),
+				ProxyId:     cfg.ProxyID,
+				Destination: "#{localAddress}",
 			}
 			if tcfg.ProxyId == "UDP" {
 				tcfg.UdpSize = 1500

@@ -106,7 +106,7 @@ const props = defineProps({
         </button>
       </div>
       <!-- 抽屉内容 -->
-      <div class="drawer-content overflow-hidden h-full" v-if="isOpen">
+      <div class="drawer-content overflow-auto h-full" v-if="isOpen">
         <slot></slot>
       </div>
 

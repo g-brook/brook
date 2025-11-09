@@ -28,42 +28,48 @@ import (
 	"github.com/brook/common/httpx"
 	"github.com/brook/common/iox"
 	"github.com/brook/common/log"
+	"github.com/brook/server/web/logger"
 )
 
-type HttpProxy struct {
+type Proxy struct {
 	http     http.Handler
 	routeFun RouteFunction
 }
 
-func (h *HttpProxy) ServeHTTP(writer http.ResponseWriter, request *http.Request) {
+func (h *Proxy) ServeHTTP(writer http.ResponseWriter, request *http.Request) {
 	newCtx := request.Context()
 	newCtx = context.WithValue(newCtx, ProxyKey, true)
-	if info, err := h.routeFun(request); err != nil {
+	info, err := h.routeFun(request)
+	if err != nil {
 		newCtx = context.WithValue(newCtx, RouteInfoKey, err)
 	} else {
 		newCtx = context.WithValue(newCtx, RequestInfoKey, newReqId())
 		newCtx = context.WithValue(newCtx, RouteInfoKey, info)
 	}
-	h.initHeader(writer, request)
+	h.initHeader(writer, request, info)
 	newReq := request.Clone(newCtx)
 	h.http.ServeHTTP(writer, newReq)
 }
 
-func (h *HttpProxy) initHeader(writer http.ResponseWriter, request *http.Request) {
+func (h *Proxy) initHeader(writer http.ResponseWriter, request *http.Request, r *RouteInfo) {
 	if writer.Header() != nil {
 		header := writer.Header()
 		header.Set("Connection", request.Header.Get("Connection"))
 	}
+	if r != nil {
+		request.Header.Set(RequestHttpIdKey, r.httpId)
+		request.Header.Set(RequestDomainKey, r.domain)
+	}
 }
 
-func NewHttpProxy(fun RouteFunction) *HttpProxy {
-	return &HttpProxy{
-		http:     httpProxy(),
+func NewHttpProxy(fun RouteFunction, proxyId string) *Proxy {
+	return &Proxy{
+		http:     httpProxy(proxyId),
 		routeFun: fun,
 	}
 }
 
-func httpProxy() *httputil.ReverseProxy {
+func httpProxy(proxyId string) *httputil.ReverseProxy {
 	reverseProxy := &httputil.ReverseProxy{
 		BufferPool: iox.GetBytePool32k(),
 		Rewrite: func(request *httputil.ProxyRequest) {
@@ -71,12 +77,23 @@ func httpProxy() *httputil.ReverseProxy {
 			in := request.In
 			out.Header[ForwardedKey] = in.Header[ForwardedKey]
 			out.Header[RequestInfoKey] = in.Header[RequestInfoKey]
+			out.Header[RequestHttpIdKey] = in.Header[RequestHttpIdKey]
 			out.URL.Scheme = "http"
 			out.URL.Host = out.Host
 		},
 		ModifyResponse: func(response *http.Response) error {
+			req := response.Request
+			logger.WithWebLog(&logger.WebLogger{
+				Protocol: req.Proto,
+				Path:     req.URL.Path,
+				Host:     req.Host,
+				Method:   req.Method,
+				ProxyId:  proxyId,
+				Status:   response.StatusCode,
+				HttpId:   req.Header.Get(RequestHttpIdKey),
+				Time:     time.Now(),
+			})
 			response.Header.Del(RequestInfoKey)
-			response.Header.Del(ForwardedKey)
 			return nil
 		},
 
@@ -105,7 +122,7 @@ func httpProxy() *httputil.ReverseProxy {
 				return req.URL, nil
 			},
 		},
-		ErrorHandler: func(writer http.ResponseWriter, request *http.Request, err error) {
+		ErrorHandler: func(writer http.ResponseWriter, req *http.Request, err error) {
 			if errors.Is(err, readDone) {
 				return
 			}
@@ -118,6 +135,16 @@ func httpProxy() *httputil.ReverseProxy {
 			log.Error("Not found path %v", err)
 			writer.WriteHeader(state)
 			_, _ = writer.Write(httpx.GetPageNotFound(state))
+			logger.WithWebLog(&logger.WebLogger{
+				Protocol: req.Proto,
+				Path:     req.URL.Path,
+				Host:     req.Host,
+				Method:   req.Method,
+				ProxyId:  proxyId,
+				Status:   state,
+				HttpId:   req.Header.Get(RequestHttpIdKey),
+				Time:     time.Now(),
+			})
 		},
 	}
 	return reverseProxy

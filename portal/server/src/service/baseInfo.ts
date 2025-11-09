@@ -19,25 +19,30 @@ import {Response} from "@/types/response";
 import {InitInfo} from "@/types/info";
 
 const getBaseInfo = <Q>(): Promise<Response<Q>> => {
-  return Http.post("/api/getBaseInfo");
+    return Http.post("/api/getBaseInfo");
 };
 
 const initServer = <Q>(data: InitInfo): Promise<Response<Q>> => {
-  return Http.post("/api/initBrookServer",data);
+    return Http.post("/api/initBrookServer", data);
 };
 
 const login = <Q>(data: any): Promise<Response<Q>> => {
-  return Http.post("/api/login", data);
+    return Http.post("/api/login", data);
 };
 
 const getServerInfo = <Q>(data: any): Promise<Response<Q>> => {
-  return Http.post("/api/getServerInfo", data);
+    return Http.post("/api/getServerInfo", data);
 };
 
 const getServerInfoByProxyId = <Q>(data: any): Promise<Response<Q>> => {
     return Http.post("/api/getServerInfoByProxyId", data);
 };
 
-const functions = { getBaseInfo, initServer, login, getServerInfo,getServerInfoByProxyId };
+
+const getWebLogs = <Q>(data: any): Promise<Response<Q>> => {
+    return Http.post("/api/getWebLogs", data);
+};
+
+const functions = {getBaseInfo, initServer, login, getServerInfo, getServerInfoByProxyId, getWebLogs};
 
 export default functions;

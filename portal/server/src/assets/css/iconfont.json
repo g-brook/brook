@@ -6,18 +6,32 @@
   "description": "",
   "glyphs": [
     {
+      "icon_id": "13932668",
+      "name": "calendar",
+      "font_class": "calendar",
+      "unicode": "e62c",
+      "unicode_decimal": 58924
+    },
+    {
+      "icon_id": "13932666",
+      "name": "client",
+      "font_class": "client",
+      "unicode": "e62a",
+      "unicode_decimal": 58922
+    },
+    {
+      "icon_id": "24185189",
+      "name": "logger",
+      "font_class": "a-clipboardnotedocument",
+      "unicode": "e60b",
+      "unicode_decimal": 58891
+    },
+    {
       "icon_id": "5560708",
       "name": "download",
       "font_class": "download",
       "unicode": "e760",
       "unicode_decimal": 59232
-    },
-    {
-      "icon_id": "12004923",
-      "name": "Copy",
-      "font_class": "Copy",
-      "unicode": "eaa9",
-      "unicode_decimal": 60073
     },
     {
       "icon_id": "1224250",
