@@ -92,6 +92,17 @@ func UpdateConnections(add string, port int, localAddr string, protocol string, 
 	})
 }
 
+func UpdateConnState(isClose bool) {
+	Page.Connections.Range(func(key string, value *TunnelCon) (shouldContinue bool) {
+		if isClose {
+			value.State = "NO"
+		} else {
+			value.State = "OK"
+		}
+		return true
+	})
+}
+
 func UpdateSpell(ms int64) {
 	Page.Latency = ms
 }

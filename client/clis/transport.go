@@ -19,6 +19,7 @@ package clis
 import (
 	"time"
 
+	"github.com/brook/client/cli"
 	"github.com/brook/common/configs"
 	"github.com/brook/common/exchange"
 	"github.com/brook/common/log"
@@ -83,6 +84,9 @@ func (t *Transport) Connection(opts ...ClientOption) {
 func (t *Transport) Close() {
 	// Close the client connection using the client's connection table (cct)
 	t.client.cct.Close()
+	if t.client.isSmux() {
+		cli.UpdateConnState(true)
+	}
 }
 
 func (t *Transport) openTunnel() {
