@@ -22,10 +22,15 @@ Brook 提供直观的 **可视化管理界面**，让用户能够轻松配置和
 
 ### 1️⃣ 下载与安装
 
-```bash
-git clone https://github.com/yourname/brook.git
-cd brook
-go build -o brook .
+🧩 下载与安装
 
-![img.png](docment/img.png)
+你可以从 [GitHub Releases](https://github.com/yourname/brook/releases) 页面下载适合你系统的二进制包。
 
+| 平台 | 架构 | 文件名 | 下载地址                                                                                     |
+|------|------|---------|------------------------------------------------------------------------------------------|
+| 🐧 Linux | amd64 | `brook-linux-amd64.tar.gz` | [下载](https://github.com/g-brook/brook/releases/latest/download/brook-linux-amd64.tar.gz) |
+| 🍎 macOS | arm64 | `brook-darwin-arm64.zip` | [下载](https://github.com/g-brook/brook/releases/latest/download/brook-darwin-arm64.zip)  |
+| 🪟 Windows | amd64 | `brook-windows-amd64.zip` | [下载](https://github.com/g-brook/brook/releases/latest/download/brook-windows-amd64.zip) |
+
+> 🔄 以上链接会自动指向最新版本（`/latest/download/`）。  
+> 你也可以进入 [Releases 页面](https://github.com/yourname/brook/releases) 查看历史版本。
