@@ -37,4 +37,4 @@ go.work.sum
 .env
 
 /portal/.idea/
-/server/web/dist/
+/server/web/dist/!/server/db.db
