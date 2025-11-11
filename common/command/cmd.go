@@ -26,8 +26,10 @@ import (
 //	@Description:
 //	@param cmd
 //	@param server
-func RegisterClientFlags(cmd *cobra.Command, config configs.ClientConfig) {
-	cmd.PersistentFlags().IntVarP(&config.ServerPort, "server_port", "", config.ServerPort, "help")
+func RegisterClientFlags(cmd *cobra.Command, config *configs.ClientConfig) {
+	cmd.PersistentFlags().IntVarP(&config.ServerPort, "serverPort", "p", config.ServerPort, "connect to server port")
+	cmd.PersistentFlags().StringVarP(&config.ServerHost, "serverHost", "s", config.ServerHost, "connect to server host")
+	cmd.PersistentFlags().StringVarP(&config.Token, "token", "t", config.Token, "connect server token")
 }
 
 // RegisterServerFlags

@@ -21,41 +21,40 @@ import (
 	"os"
 
 	"github.com/brook/client/cli"
-	"github.com/brook/common/command"
 	"github.com/brook/common/configs"
 	"github.com/brook/common/lang"
 	"github.com/brook/common/log"
+	"github.com/brook/common/version"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/spf13/cobra"
 )
 
 var (
-	config  configs.ClientConfig
+	config  *configs.ClientConfig
 	cfgPath string
 )
 
 func init() {
+	config = &configs.ClientConfig{}
 	cmd.PersistentFlags().StringVarP(&cfgPath, "configs", "c", "./client.json", "brook client configs")
-	command.RegisterClientFlags(cmd, config)
 }
 
 var cmd = &cobra.Command{
-	Use:   "Brook",
+	Use:   "Brook-Cli-" + version.GetBuildVersion(),
 	Short: "Brook is a cross-platform(Linux/Mac/Windows) proxy software",
-	RunE: func(cmd *cobra.Command, args []string) error {
-		if cfgPath != "" {
-			if newConfig, err := configs.GetClientConfig(cfgPath); err != nil {
-				fmt.Println(err)
-				os.Exit(1)
-			} else {
-				config = newConfig
-			}
+	Run: func(cmd *cobra.Command, args []string) {
+		if cfgPath == "" {
+			fmt.Println("configs is null, please use -c or --configs to set configs file")
+			os.Exit(1)
+		}
+		if err := configs.WriterConfig(cfgPath, config); err != nil {
+			fmt.Println(err)
+			os.Exit(1)
 		}
 		log.NewLogger(config.Logger)
 		LoadTunnel()
-		verilyBaseConfig(&config)
-		run(&config)
-		return nil
+		verilyBaseConfig(config)
+		run(config)
 	},
 }
 

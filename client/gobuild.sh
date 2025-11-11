@@ -28,8 +28,8 @@ set -e
 # =========================
 # Interactive user input
 # =========================
-read -p "Enter application name (default: brook-sev): " APP_NAME
-APP_NAME=${APP_NAME:-brook-sev}
+read -p "Enter application name (default: brook-cli): " APP_NAME
+APP_NAME=${APP_NAME:-brook-cli}
 
 read -p "Enter version number (default: 1.0.0): " VERSION
 VERSION=${VERSION:-1.0.0}
@@ -69,20 +69,9 @@ TAR_NAME="${APP_NAME}_${VERSION}_${FILE_NAME}.tar.gz"
 
 rm -rf "$OUTPUT_DIR"
 mkdir -p "$OUTPUT_DIR"/logs
-mkdir -p "$OUTPUT_DIR"/fdb
 
 # Copy mandatory files
-cp server.json "$OUTPUT_DIR"
-
-# Optional database copy
-if [[ "$COPY_DB" == "y" || "$COPY_DB" == "Y" ]]; then
-    if [ -f db-emp.db ]; then
-        cp db-emp.db "$OUTPUT_DIR/db.db"
-        echo "Database copied and renamed."
-    else
-        echo "Warning: db-emp.db not found, skipping."
-    fi
-fi
+cp client.json "$OUTPUT_DIR"
 
 # =========================
 # Build Go executable

@@ -4,6 +4,7 @@ portal/server/.gitignore
 /client/logs/
 /server/logs/
 /server/fdb/
+/server/dist/
 /ssl/
 
 
@@ -38,3 +39,4 @@ go.work.sum
 
 /portal/.idea/
 /server/web/dist/!/server/db.db
+!/server/dist/

@@ -19,6 +19,7 @@ package tunnel
 import (
 	"time"
 
+	"github.com/brook/client/cli"
 	"github.com/brook/client/clis"
 	"github.com/brook/common/configs"
 	"github.com/brook/common/exchange"
@@ -117,6 +118,9 @@ func (m *MultipleTunnelClient) Open(session *smux.Session) error {
 		return err
 	}
 	rspObj, _ := exchange.Parse[exchange.OpenTunnelResp](rsp.Data)
+
+	cli.UpdateConnections(session.RemoteAddr().String(), rspObj.RemotePort, m.currentConfig.Destination, string(m.currentConfig.TunnelType), session.IsClosed())
+
 	clis.ManagerTransport.PutConfig(m.currentConfig)
 	m.sessions.Store(m.currentConfig.ProxyId, session)
 	log.Info("Open %v tunnel client success:%v:%v", m.currentConfig.TunnelType, m.currentConfig.ProxyId, rspObj.RemotePort)

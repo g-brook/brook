@@ -85,17 +85,16 @@ func GetServerConfig(cfgPath string) (ServerConfig, error) {
 	return cfg, nil
 }
 
-// GetClientConfig
+// WriterConfig
 //
 //	@Description: Get Config.
 //	@return ServerConfig
-func GetClientConfig(cfgPath string) (ClientConfig, error) {
-	var cfg ClientConfig
-	err := jsonx.ReaderJson(cfgPath, &cfg)
+func WriterConfig(cfgPath string, cfg *ClientConfig) error {
+	err := jsonx.ReaderJson(cfgPath, cfg)
 	if err != nil {
-		return cfg, err
+		return err
 	}
-	return cfg, nil
+	return nil
 }
 
 // ClientConfig

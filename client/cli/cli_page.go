@@ -17,9 +17,12 @@
 package cli
 
 import (
+	"fmt"
 	"strconv"
 	"strings"
 
+	"github.com/brook/common/hash"
+	"github.com/brook/common/version"
 	"github.com/charmbracelet/lipgloss"
 )
 
@@ -31,6 +34,16 @@ type MainPage struct {
 	Status string
 
 	Latency int64
+
+	Connections *hash.SyncMap[string, *TunnelCon]
+}
+
+type TunnelCon struct {
+	Addr      string
+	Port      string
+	LocalAddr string
+	Protocol  string
+	State     string
 }
 
 var style = lipgloss.NewStyle().
@@ -47,9 +60,10 @@ var greenStyle = lipgloss.NewStyle().
 	Foreground(lipgloss.Color("#228B22")).Bold(true)
 
 var Page = MainPage{
-	Title:   style.Render("=========== Welcome Your Come  Brook (version:0.0.1) ==========="),
-	Latency: 0,
-	Status:  "offline",
+	Title:       style.Render("=========== Welcome Your Come Brook (version:", version.GetBuildVersion(), ") ==========="),
+	Latency:     0,
+	Status:      "offline",
+	Connections: hash.NewSyncMap[string, *TunnelCon](),
 }
 
 func UpdateStatus(status string) {
@@ -63,6 +77,21 @@ func UpdateStatus(status string) {
 	}
 }
 
+func UpdateConnections(add string, port int, localAddr string, protocol string, isClose bool) {
+	ipAndPort := strings.Split(add, ":")
+	s := "OK"
+	if isClose {
+		s = "NO"
+	}
+	Page.Connections.Store(strconv.Itoa(port), &TunnelCon{
+		Addr:      ipAndPort[0],
+		Port:      strconv.Itoa(port),
+		Protocol:  protocol,
+		LocalAddr: localAddr,
+		State:     s,
+	})
+}
+
 func UpdateSpell(ms int64) {
 	Page.Latency = ms
 }
@@ -73,6 +102,17 @@ func GetViewPage() *strings.Builder {
 	writeLine("Status:", &sb, Page.Status, true)
 	writeLine("Remote Address:", &sb, Page.RemoteAddress, true)
 	writeLine("Latency:", &sb, strconv.FormatInt(Page.Latency, 10)+"ms", true)
+	// 分割线
+	sb.WriteString(strings.Repeat("-", 70) + "\n")
+	// Connections
+	// 表头
+	sb.WriteString(fmt.Sprintf("| %-4s | %-4s | %-38s | %-13s |\n", "No.", "P", "Target IP", "Status"))
+	sb.WriteString(strings.Repeat("-", 70) + "\n")
+	for i, c := range Page.Connections.Values() {
+		sb.WriteString(fmt.Sprintf("| %-4d | %-4s | %-38s | %-13s |\n", i+1, c.Protocol, fmt.Sprintf("%s:%s->%s", c.Addr, c.Port, c.LocalAddr), c.State))
+	}
+	sb.WriteString(strings.Repeat("-", 70) + "\n")
+
 	return &sb
 }
 

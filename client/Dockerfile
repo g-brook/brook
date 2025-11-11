@@ -7,10 +7,8 @@ LABEL stage="runtime" \
 
 WORKDIR /app
 
-COPY dist/brook-sev/ ./
+COPY dist/brook-cli/ ./
 
 RUN chmod 755 /app && chmod -R 755 /app/*
 
-EXPOSE 8000
-
-CMD ["./brook-sev"]
+CMD ["./brook-cli"]

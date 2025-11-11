@@ -64,7 +64,7 @@ defineExpose({
       <label class="tab">
         <input type="radio" name="my_tabs_4" checked="checked" @click="getServerInfos"/>
         <Icon icon="brook-client"/>
-        <p class="pl-1">客户端详情</p>
+        <p class="pl-1">端点(Agent)详情</p>
       </label>
       <div class="tab-content bg-base-100 border-base-300">
         <div v-if="configs.length > 0">

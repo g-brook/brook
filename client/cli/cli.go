@@ -98,10 +98,12 @@ func (m model) View() string {
 	return sb.String()
 }
 
+// InitModel initializes and returns a new model with default values
+// The model contains a list of choices, a cursor position, and a map to track selections
 func InitModel() model {
 	return model{
-		choices:  []string{"Buy carrots", "Buy celery", "Buy kohlrabi"},
-		cursor:   0,
-		selected: make(map[int]struct{}),
+		choices:  []string{},             // List of initial choices/options
+		cursor:   0,                      // Initial cursor position set to the first item
+		selected: make(map[int]struct{}), // Initialize an empty map to track selected items
 	}
 }
