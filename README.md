@@ -20,11 +20,9 @@ Brook 提供直观的 **可视化管理界面**，让用户能够轻松配置和
 
 ## ⚙️ 快速开始
 
-### 1️⃣ 下载与安装
+### 🧩下载与安装
 
-🧩 下载与安装
-
-你可以从 [GitHub Releases](https://github.com/yourname/brook/releases) 页面下载适合你系统的二进制包。
+你可以从 [GitHub Releases](https://github.com/g-brook/brook/releases) 页面下载适合你系统的二进制包。
 
 | 平台 | 架构 | 文件名 | 下载地址                                                                                     |
 |------|------|---------|------------------------------------------------------------------------------------------|
@@ -33,4 +31,16 @@ Brook 提供直观的 **可视化管理界面**，让用户能够轻松配置和
 | 🪟 Windows | amd64 | `brook-windows-amd64.zip` | [下载](https://github.com/g-brook/brook/releases/latest/download/brook-windows-amd64.zip) |
 
 > 🔄 以上链接会自动指向最新版本（`/latest/download/`）。  
-> 你也可以进入 [Releases 页面](https://github.com/yourname/brook/releases) 查看历史版本。
+> 你也可以进入 [Releases 页面](https://github.com/g-brook/brook/releases) 查看历史版本。
+
+### 🖥️ 服务端运行示例
+```sh
+tar -czvf /path/to/archive.tar.gz /path/to/brook
+./brook-srv
+```
+
+### 🖥️ 客户端运行示例
+```sh
+tar -czvf /path/to/archive.tar.gz /path/to/brook
+./brook-cli
+```
