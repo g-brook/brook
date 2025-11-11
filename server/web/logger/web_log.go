@@ -45,6 +45,6 @@ func WithWebLog(logger *WebLogger) {
 		Status:   logger.Status,
 		ProxyId:  logger.ProxyId,
 		HttpId:   logger.HttpId,
-		Time:     sql2.NullString{String: logger.Time.Format("2006-04-02 15:04:05"), Valid: true},
+		Time:     sql2.NullString{String: logger.Time.Format("2006-01-02 15:04:05"), Valid: true},
 	})
 }

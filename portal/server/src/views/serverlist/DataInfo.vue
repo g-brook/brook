@@ -33,23 +33,15 @@ const configs = ref<Info[]>([]);
 const webLogs = ref<WebLog[]>([]);
 
 const getServerInfos = async () => {
-  await getServerInfos2(proxyId.value)
+  const response = await baseInfo.getServerInfoByProxyId({proxyId: proxyId.value});
+  configs.value = response.data || []
 }
 
 const getWebLogInfos = async () => {
-  await getWebLogInfos2(proxyId.value)
-}
-
-const getWebLogInfos2 = async () => {
   const response = await baseInfo.getWebLogs({proxyId: proxyId.value});
   webLogs.value = response.data || []
 }
 
-const getServerInfos2 = async (p) => {
-  proxyId.value = p ? p : props.proxyId;
-  const response = await baseInfo.getServerInfoByProxyId({proxyId: proxyId.value});
-  configs.value = response.data || []
-}
 
 onMounted(() => {
   getServerInfos();
@@ -58,14 +50,15 @@ onMounted(() => {
 // 暴露方法给父组件
 defineExpose({
   refresh: function (p) {
-    getWebLogInfos2(p)
-    getServerInfos2(p);
+    proxyId.value = p ? p : props.proxyId;
+    getServerInfos(p)
+    getWebLogInfos(p);
   },
 });
 </script>
 
 <template>
-  <div class="ml-1 ">
+  <div class="ml-1" v-if="proxyId!==''">
     <!-- name of each tab group should be unique -->
     <div class="tabs tabs-border tabs-md duration-300 h-full">
       <label class="tab">
@@ -102,7 +95,7 @@ defineExpose({
           </table>
         </div>
 
-        <div class="flex  items-center 　justify-center w-full " v-else>
+        <div class="flex  justify-center" v-else>
           没有数据
         </div>
         　
