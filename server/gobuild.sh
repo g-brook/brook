@@ -17,11 +17,6 @@
 
 #!/bin/bash
 # build.sh
-# Go project build and packaging script
-# Generates a versioned tar.gz package
-#!/bin/bash
-# interactive_build.sh
-# Interactive Go build and tar.gz packaging
 
 set -e
 
@@ -47,7 +42,7 @@ read -p "Choose [1-7]: " OS_CHOICE
 case $OS_CHOICE in
     1) BUILD_OS=linux;  BUILD_ARCH=amd64; FILE_NAME="Linux-x86_64(amd64)" ;;
     2) BUILD_OS=linux;  BUILD_ARCH=arm64; FILE_NAME="Linux-arm64" ;;
-    3) BUILD_OS=darwin; BUILD_ARCH=arm64; FILE_NAME="macOS-ARM64(Apple M)"  ;;
+    3) BUILD_OS=darwin; BUILD_ARCH=arm64; FILE_NAME="macOS-ARM64(Apple-M)"  ;;
     4) BUILD_OS=darwin; BUILD_ARCH=amd64; FILE_NAME="macOS-Intel"  ;;
     5) BUILD_OS=windows; BUILD_ARCH=amd64;FILE_NAME="Windows-x86_64"  ;;
     6) BUILD_OS=linux; BUILD_ARCH=arm64; BUILD_DOCKER=true ;PLATFORMS=linux/arm64 ;;
