@@ -226,7 +226,7 @@ type responseWriter struct {
 
 func (r *responseWriter) Hijack() (net.Conn, *bufio.ReadWriter, error) {
 	r.httpConn.isWebSocket = true
-	return r.httpConn, bufio.NewReadWriter(bufio.NewReader(r.httpConn), bufio.NewWriter(r.httpConn)), nil
+	return r.conn, bufio.NewReadWriter(bufio.NewReader(r.conn), bufio.NewWriter(r.conn)), nil
 }
 
 func newResponseWriter(conn net.Conn,

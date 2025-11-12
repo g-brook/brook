@@ -32,7 +32,7 @@ func main() {
 	dialer := ws.Dialer{
 		Header: header,
 	}
-	conn, _, _, err := dialer.Dial(ctx, "ws://127.0.0.1:30003/ws")
+	conn, _, _, err := dialer.Dial(ctx, "wss://127.0.0.1:30003/ws")
 	if err != nil {
 		panic(err)
 	}

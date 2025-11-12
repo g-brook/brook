@@ -211,28 +211,28 @@ func (htl *TunnelHttpServer) Reader(ch Channel, tb srv.TraverseBy) {
 }
 func (htl *TunnelHttpServer) Open(ch Channel, tb srv.TraverseBy) {
 	channel := ch.(srv.GContext)
-	conn := newHttpConn(ch, htl.isHttps)
-	channel.GetContext().AddAttr(defin.HttpChannel, conn)
+	httpConn := newHttpConn(ch, htl.isHttps)
+	channel.GetContext().AddAttr(defin.HttpChannel, httpConn)
 	threading.GoSafe(func() {
 		var rwConn net.Conn
 		if htl.isHttps {
 			var tlsConn *tls.Conn
-			tlsConn = tls.Server(conn, htl.tlsConfig)
-			errRc := newResponseWriter(tlsConn, conn, nil)
+			tlsConn = tls.Server(httpConn, htl.tlsConfig)
+			errRc := newResponseWriter(tlsConn, httpConn, nil)
 			if err := tlsConn.Handshake(); err != nil {
 				log.Debug("TLS handshake failed: %v", err)
 				errRc.error(err)
-				_ = conn.Close()
+				_ = httpConn.Close()
 				return
 			}
 			rwConn = tlsConn
 		} else {
-			rwConn = conn
+			rwConn = httpConn
 		}
 		reader := bufio.NewReader(rwConn)
 		for {
 			req, err := http.ReadRequest(reader)
-			rc := newResponseWriter(rwConn, conn, req)
+			rc := newResponseWriter(rwConn, httpConn, req)
 			if err != nil {
 				log.Debug("Read HTTP request error: %v", err)
 				rc.error(err)

@@ -41,6 +41,8 @@ func websocketProxy(info *RouteInfo, writer http.ResponseWriter, request *http.R
 	workFunction := func(websocketConnection *websocket.Conn, targetConn *ProxyConnection, reqId int64) {
 		targetConn.isWebsocket = true
 		targetConn.path = request.URL.Path
+		request.URL.Scheme = "http"
+
 		err := request.Write(targetConn)
 		if err != nil {
 			writer.WriteHeader(http.StatusBadGateway)

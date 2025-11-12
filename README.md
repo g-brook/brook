@@ -71,6 +71,10 @@ tar -czvf /path/to/archive.tar.gz /path/to/brook
 
 ### 🖥️ 客户端运行示例
 
+**1、解压下载的客户端运行包**
+
+
+
 **客户端配置：**
 
 ```sh
