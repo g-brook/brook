@@ -22,6 +22,7 @@ import (
 	"io/fs"
 	"net/http"
 
+	"github.com/brook/common/configs"
 	"github.com/brook/common/log"
 	"github.com/brook/common/threading"
 	"github.com/brook/server/web/api"
@@ -40,9 +41,9 @@ type Server struct {
 }
 
 func NewWebServer(port int) {
-	if port <= 0 || port > 10000 {
+	if port <= 4000 || port > 9000 {
 		log.Info("port is invalid %d, use default port: 8000", port)
-		port = 8000
+		port = configs.DefWebPort
 	}
 	doRoute()
 	db.Open()

@@ -25,6 +25,7 @@ import (
 )
 
 var DefServerPort = 8909
+var DefWebPort = 8000
 
 // ServerConfig
 // @Description: 配置文件存储.
