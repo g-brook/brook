@@ -28,7 +28,7 @@ Brook 提供直观的 **可视化管理界面**，让用户能够轻松配置和
 |------|------|------------------------------------|------------------------------------------------------------------------------------------|------|
 | 🐧 Linux | amd64(X86_64) | `brook-sev_Linux-x86_64(amd64).tar.gz` | Server | [下载](https://github.com/g-brook/brook/releases/latest/download/brook-sev_Linux-x86_64(amd64).tar.gz) |
 | 🐧 Linux | arm64 | `brook-sev_Linux-arm64.tar.gz` | Server | [下载](https://github.com/g-brook/brook/releases/latest/download/brook-sev_Linux-arm64.tar.gz) |
-| 🍎 macOS | arm64 (Apple M) | `brook-sev_macOS-ARM64(Apple M).tar.gz` | Server | [下载](https://github.com/g-brook/brook/releases/latest/download/brook-sev_macOS-ARM64(Apple M).tar.gz)  |
+| 🍎 macOS | arm64 (Apple M) | `brook-sev_macOS-ARM64(Apple M).tar.gz` | Server | [下载](`https://github.com/g-brook/brook/releases/latest/download/brook-sev_macOS-ARM64(Apple M).tar.gz`)  |
 | 🍎 macOS | Intel | ` brook-sev_macOS-Intel.tar.gz` | Server | [下载](https://github.com/g-brook/brook/releases/latest/download/brook-sev_macOS-Intel.tar.gz) |
 | 🪟 Windows | amd64(X86_64) | `brook-sev_Windows-x86_64.tar.gz` | Server | [下载](https://github.com/g-brook/brook/releases/latest/download/brook-sev_Windows-x86_64.tar.gz)  |
 
@@ -37,7 +37,7 @@ Brook 提供直观的 **可视化管理界面**，让用户能够轻松配置和
 |------|------|--------------------------------|--------|------|
 | 🐧 Linux | amd64(X86_64) | `brook-cli_Linux-x86_64(amd64).tar.gz` | Client | [下载](https://github.com/g-brook/brook/releases/latest/download/brook-cli_Linux-x86_64(amd64).tar.gz) |
 | 🐧 Linux | arm64 | `brook-cli_Linux-arm64.tar.gz` | Client | [下载](https://github.com/g-brook/brook/releases/latest/download/brook-cli_Linux-arm64.tar.gz) |
-| 🍎 macOS | arm64 (Apple M) | `brook-cli_macOS-ARM64(Apple M).tar.gz` | Client | [下载](https://github.com/g-brook/brook/releases/latest/download/brook-cli_macOS-ARM64(Apple M).tar.gz) |
+| 🍎 macOS | arm64 (Apple M) | `brook-cli_macOS-ARM64(Apple M).tar.gz` | Client | [下载](`https://github.com/g-brook/brook/releases/latest/download/brook-cli_macOS-ARM64(Apple M).tar.gz`) |
 | 🍎 macOS | Intel | ` brook-cli_macOS-Intel.tar.gz`   | Client | [下载](https://github.com/g-brook/brook/releases/latest/download/brook-cli_macOS-Intel.tar.gz) |
 | 🪟 Windows | amd64(X86_64) | `brook-cli_Windows-x86_64.tar.gz` | Client | [下载](https://github.com/g-brook/brook/releases/latest/download/brook-cli_Windows-x86_64.tar.gz) |
 
