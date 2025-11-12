@@ -65,7 +65,7 @@ COPY_DB=${COPY_DB:-y}
 # Setup directories
 # =========================
 OUTPUT_DIR="dist/${APP_NAME}"
-TAR_NAME="${APP_NAME}_${VERSION}_${FILE_NAME}.tar.gz"
+TAR_NAME="${APP_NAME}_${FILE_NAME}.tar.gz"
 
 rm -rf "$OUTPUT_DIR"
 mkdir -p "$OUTPUT_DIR"/logs
