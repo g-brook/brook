@@ -1,6 +1,8 @@
 
 # <img src="document/svg.png" alt="svg.png" style="zoom:80%;" /> Brook
 
+[English Version](document/README.en.md)
+
 Brook 是一款跨平台（Linux / macOS / Windows）的高性能网络隧道与代理工具，使用 Go 语言编写。
 支持 TCP、UDP、HTTP(S)、WebSocket 等隧道传输方式，兼容 SSH、HTTP、Redis、MySQL 等主流协议，并提供直观的可视化管理界面，便于配置与监控。
 
@@ -11,7 +13,6 @@ Brook 是一款跨平台（Linux / macOS / Windows）的高性能网络隧道与
 - 提供可视化界面，支持初始化、配置与状态监控
 - 简单配置（`client.json`、`server.json`），支持自动重连与日志输出
 - 轻量高效，跨平台运行
-
 ---
 
 ## 下载与安装
