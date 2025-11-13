@@ -51,7 +51,7 @@ Brook 提供直观的 **可视化管理界面**，让用户能够轻松配置和
 **1、解压下载的服务器运行包**
 
 ```sh
-tar -czvf /path/to/archive.tar.gz /path/to/brook
+tar -czvf brook-sev_Linux-arm64.tar.gz
 ```
 
 **2、更新服务器配置**
@@ -103,12 +103,41 @@ tar -czvf /path/to/archive.tar.gz /path/to/brook
 ### 🖥️ 客户端运行示例
 
 **1、解压下载的客户端运行包**
+```sh
+tar -czvf brook-cli_Linux-arm64.tar.gz
+```
 
+**2、客户端配置：**
+> 可以从Server端下载模板，进行更改。
+* 更新client.json文件(示例如下)
+```json
+{
+  "serverPort": 8909, //服务管理端口，默认:8909，端口4000~9000之间
+  "serverHost": "127.0.0.1",　//服务端IP
+  "token": "39244d37256c4326735372695431496d6e3746537551236f3475384b73637961", //后台生成的token
+  "tunnels": [
+    {
+      "type": "udp",　//协议，注意，这个需要与服务端一致
+      "destination": "127.0.0.1:9000", //转发到本地IP与端口
+      "proxyId": "333223" //在创建通道时的ProxyId.
+    },
+    {
+      "type": "http",
+      "destination": "127.0.0.1:8081",
+      "proxyId": "HttpLocal-2",
+      "httpId": "local" //仅http与https的HttpId，在设置通道的web配置时需要填写.
+    }
+  ]
+}
 
+```
+* 从服务器端获取模板与ProxyId的获取
+  <img src="document/img_8.png" alt="初始化　" style="zoom:60%;" />
+* 
+* HttpId的获取
+  <img src="document/img_9.png" alt="初始化　" style="zoom:60%;" />
 
-**客户端配置：**
 
 ```sh
-tar -czvf /path/to/archive.tar.gz /path/to/brook
 ./brook-cli
 ```
