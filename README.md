@@ -160,7 +160,8 @@ CLI 启动参数：
 ---
 
 ## 从源码构建
-
+- 前端构建：
+  - 进入 `portal/server/` 目录并执行：`npm install`、`npm run build`
 - 服务端：
   - 进入 `server/` 目录并执行：`bash gobuild.sh`
   - 按提示选择平台与架构，生成包位于 `server/dist/brook-sev_*.tar.gz`
