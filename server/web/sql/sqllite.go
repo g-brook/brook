@@ -20,7 +20,7 @@ import (
 	"database/sql"
 
 	"github.com/brook/common/log"
-	_ "github.com/mattn/go-sqlite3"
+	_ "modernc.org/sqlite"
 )
 
 var SqlDB *sql.DB
@@ -40,9 +40,15 @@ func (t *Result) Close() {
 // It returns an error if the connection fails or if there are issues configuring the connection parameters
 func InitSQLDB() error {
 	// Open a connection to the SQLite database file named "db.db" in the current directory
-	db, err := sql.Open("sqlite3", "./db.db")
+	db, err := sql.Open("sqlite", "./db.db")
 	if err != nil {
 		// Return the error if the database connection cannot be established
+		log.Error("err: %v", err)
+		return err
+	}
+	err = db.Ping()
+	if err != nil {
+		log.Error("db.Ping err: %v", err)
 		return err
 	}
 	// Set the maximum number of idle connections in the connection pool to 1

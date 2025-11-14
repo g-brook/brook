@@ -21,6 +21,7 @@ import (
 
 	"github.com/brook/common/configs"
 	"github.com/brook/common/lang"
+	"github.com/brook/common/log"
 	"github.com/brook/server/defin"
 	"github.com/brook/server/metrics"
 	"github.com/brook/server/tunnel/base"
@@ -207,6 +208,7 @@ func addProxyConfigs(req *Request[sql.ProxyConfig]) *Response {
 	}
 	err := sql.AddProxyConfig(body)
 	if err != nil {
+		log.Error(err.Error())
 		return NewResponseFail(errs.CodeSysErr, "add configs failed")
 	}
 	base.TunnelCfm.Push(body.ProxyID)
