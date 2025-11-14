@@ -17,6 +17,8 @@
 <script lang="ts" setup>
 import Icon from '@/components/icon/Index.vue';
 import {getGlobalTheme} from '@/components/theme/useTheme';
+import {useI18n} from '@/components/lang/useI18n';
+import LanguageSwitcher from '@/components/lang/LanguageSwitcher.vue'
 
 defineProps<{
     selected: any
@@ -29,6 +31,9 @@ defineProps<{
 // 使用全局主题管理
 const { isDark, toggleTheme } = getGlobalTheme();
 
+// 国际化
+const { t } = useI18n();
+
 const handleGithubClick = () => {
     window.open('https://github.com/g-brook/brook', '_blank');
 }
@@ -37,7 +42,7 @@ const handleGithubClick = () => {
 
 <template>
     <div class="flex flex-col m-2 ml-0 rounded-2xl overflow-hidden h-full bg-base-100">
-        <div class=" px-3 pt-1 pb-1">
+        <div class="px-3 pt-1 pb-1 bg-gradient-to-bl from-primary/10 from-10% to-base-300/10 to-40% rounded-t-2xl bg-base-200/30">
             <div v-if="selected" class="flex items-center">
                 <!-- 图标 -->
                 <div class="flex-shrink-0">
@@ -48,13 +53,14 @@ const handleGithubClick = () => {
 
                 <!-- 标题和描述 -->
                 <div class="flex-1 min-w-0 ml-2">
-                    <h1 class="font-thin [&:first-line]:font-black text-base-content mb-1.5">{{ title }}</h1>
-                    <p class="text-xs text-base-content/60">{{ describe }}</p>
+                    <h1 class="font-thin [&:first-line]:font-black text-base-content mb-1.5">{{ t(title) }}</h1>
+                    <p class="text-xs text-base-content/60">{{ t(describe) }}</p>
                 </div>
 
 
                 <!-- 操作按钮区域 -->
                 <div class="flex-shrink-0 flex items-center gap-2">
+                   
                     <button class="btn btn-ghost btn-sm btn-square" @click="handleGithubClick">
                         <Icon icon="brook-github" style="font-size: 20px; pointer-events: none;" />
                     </button>
@@ -66,8 +72,7 @@ const handleGithubClick = () => {
                             :checked="isDark" 
                             @change="toggleTheme"
                             class="hidden" 
-                        />
-                
+                        />                
                         <!-- 太阳图标 - 在浅色主题时显示 -->
                         <svg v-show="!isDark" class="h-5 w-5 fill-current transition-transform duration-300" xmlns="http://www.w3.org/2000/svg"
                             viewBox="0 0 24 24">
@@ -82,7 +87,7 @@ const handleGithubClick = () => {
                                 d="M21.64,13a1,1,0,0,0-1.05-.14,8.05,8.05,0,0,1-3.37.73A8.15,8.15,0,0,1,9.08,5.49a8.59,8.59,0,0,1,.25-2A1,1,0,0,0,8,2.36,10.14,10.14,0,1,0,22,14.05,1,1,0,0,0,21.64,13Zm-9.5,6.69A8.14,8.14,0,0,1,7.08,5.22v.27A10.15,10.15,0,0,0,17.22,15.63a9.79,9.79,0,0,0,2.1-.22A8.11,8.11,0,0,1,12.14,19.73Z" />
                         </svg>
                     </label>
-
+                       <LanguageSwitcher />
                 </div>
             </div>
         </div>
@@ -94,7 +99,7 @@ const handleGithubClick = () => {
                 <div v-if="isLoading" key="loading" class="flex items-center justify-center h-64">
                     <div class="flex flex-col items-center space-y-4">
                         <div class="loading loading-spinner loading-lg text-primary"></div>
-                        <p class="text-base-content/60">正在加载...</p>
+                        <p class="text-base-content/60">{{ t('common.loading') }}</p>
                     </div>
                 </div>
 
@@ -109,9 +114,9 @@ const handleGithubClick = () => {
                         <div class="w-24 h-24 bg-base-200 rounded-full flex items-center justify-center mx-auto mb-6">
                             <Icon icon="brook-github" class="text-base-content/30" style="font-size: 48px;" />
                         </div>
-                        <h3 class="text-lg font-medium text-base-content/60 mb-2">选择功能模块</h3>
+                        <h3 class="text-lg font-medium text-base-content/60 mb-2">{{ t('right.selectModule') }}</h3>
                         <p class="text-sm text-base-content/40 max-w-md">
-                            从左侧导航栏选择您需要的功能模块，开始管理您的 Brook 服务器
+                            {{ t('right.selectModuleDesc') }}
                         </p>
                     </div>
                 </div>

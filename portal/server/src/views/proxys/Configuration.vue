@@ -159,7 +159,7 @@ const handleToggleStatus = async (id: number, state: boolean) => {
       state: state ? 0 : 1
     });
     if (res.success()) {
-      Message.info("更新状态成功")
+      Message.info(t('success.configurationUpdated'))
       getConfigs()
     }
   } catch (error) {
@@ -172,10 +172,10 @@ const handleClickDownload = () => {
 
 <template>
   <div class="overflow-hidden">
-    <Drawer ref="drawerRef" title="Web信息配置" icon="brook-web" width="50%">
+    <Drawer ref="drawerRef" :title="t('configuration.webInfoConfig')" icon="brook-web" width="50%">
       <WebConfiguration :refProxyId="webItem?.id" :protocol="webItem?.protocol"/>
     </Drawer>
-    <Drawer ref="downloadDrawerRef" title="配置模板" icon="brook-empty" width="50%">
+    <Drawer ref="downloadDrawerRef" :title="t('configuration.template')" icon="brook-empty" width="50%">
       <DownloadConfig/>
     </Drawer>
     <!-- 操作栏 -->
@@ -198,7 +198,7 @@ const handleClickDownload = () => {
       <div class="flex items-center">
         <button class="btn  btn-ghost btn-sm" @click="handleClickDownload">
           <Icon icon="brook-empty" style="font-size: 12px;"/>
-          配置模板
+          {{ t('configuration.template') }}
         </button>
         <button class="btn  btn-ghost btn-sm" @click="handleAdd">
           <Icon icon="brook-add" style="font-size: 12px;"/>
@@ -288,7 +288,7 @@ const handleClickDownload = () => {
               {{ config.isRunning ? t('server.start') : t('server.stop') }}
             </div>
             <p class="list-col-wrap text-xs">
-              客户端数:{{ config.clients }}
+              {{ t('server.fields.clients') }}:{{ config.clients }}
             </p>
           </td>
           <td>
@@ -298,7 +298,7 @@ const handleClickDownload = () => {
                       :title="t('configuration.delete')"
                       v-if="config.protocol === `HTTP` || config.protocol === `HTTPS`">
                 <div class="tooltip tooltip-open tooltip-warning animate-bounce tooltip-left"
-                     data-tip="没有设置WEB配置,请设置" v-if="!config.isExistWeb">
+                     :data-tip="t('configuration.webNotSet')" v-if="!config.isExistWeb">
                   <Icon icon="brook-web"/>
                 </div>
                 <div v-else>

@@ -20,7 +20,7 @@ export default {
     loading: "Loading...",
     submit: "Submit",
     cancel: "Cancel",
-    confirm: "Confirm.vue",
+    confirm: "Confirm",
     save: "Save",
     edit: "Edit",
     delete: "Delete",
@@ -75,6 +75,7 @@ export default {
     download: "Download",
     upload: "Upload",
     running: "Running",
+    copy: "Copy",
   },
 
   // Login page
@@ -112,7 +113,7 @@ export default {
     step2: "2. Set up administrator account",
     step3: "3. Initialize database connection",
     step4: "4. Start core services",
-    confirmPassword: "Confirm.vue Password",
+    confirmPassword: "Confirm Password",
     confirmPasswordPlaceholder: "Please enter password again",
     passwordRequirements: "Password Requirements",
     usernameRequirement: "Username at least 3 characters",
@@ -157,6 +158,11 @@ export default {
       title: "My Settings",
       description:
         "Manage your account settings and client connection configuration",
+    },
+    onlineServer: {
+      title: "Online Server",
+      description:
+        "Manage and monitor all online tunnel servers and their connections",
     },
     serverManagement: {
       title: "Server Management",
@@ -268,6 +274,33 @@ export default {
     noConfigurationsDesc:
       'Click "Add Configuration" button to create your first configuration',
     addConfiguration: "Add Configuration",
+    template: "Configuration Template",
+    webInfoConfig: "Web Configuration",
+    webNotSet: "WEB configuration not set, please configure",
+    httpsCertConfig: "HTTPS Certificate Settings",
+    inputCertFilePath: "Enter CertFile path",
+    inputKeyFilePath: "Enter KeyFile path",
+    proxyList: "Proxy Configuration List",
+    saveConfig: "Save Configuration",
+    domain: "Domain",
+    paths: "Paths",
+    addRow: "Add Row",
+    egProxyId: "e.g.: proxy1",
+    egDomain: "e.g.: localhost",
+    egPath: "e.g.: /*",
+    addPath: "Add Path",
+    confirmDeleteProxy: "Are you sure to delete this proxy configuration?",
+    proxyFormIncomplete: "Please complete the proxy configuration information",
+    atLeastOneProxy: "Please add at least one proxy configuration",
+    noProxyTip: "No proxy configurations. Click \"Add Row\" to add",
+    proxyIdTip: "Used by clients to connect",
+    form: {
+      proxyIdPlaceholder: "Please enter ProxyId",
+      namePlaceholder: "Please enter configuration name",
+      tagLabel: "Tag",
+      tagPlaceholder: "Please enter tag (optional)",
+      portPlaceholder: "Please enter port"
+    }
   },
 
   // Server management
@@ -303,6 +336,10 @@ export default {
       memory: "Memory Usage",
       disk: "Disk Usage",
       network: "Network Usage",
+      path: "Path",
+      httpId: "HttpId",
+      method: "Method",
+      clients: "Clients",
     },
     types: {
       http: "HTTP Proxy",
@@ -321,6 +358,9 @@ export default {
       exportConfig: "Export Configuration",
       importConfig: "Import Configuration",
     },
+    agentDetails: "Agent Details",
+    connectionTime: "Connection Time",
+    listEmpty: "No servers yet. Create a server to view details",
   },
 
   // User management
@@ -371,6 +411,22 @@ export default {
       suspendUser: "Suspend User",
       activateUser: "Activate User",
     },
+  },
+
+  // My Settings
+  mysetting: {
+    title: "Access Token",
+    subtitle: "Security token for client connections",
+    currentToken: "Current Token",
+    copyToken: "Copy Token",
+    noTokenTitle: "No token generated",
+    noTokenDesc: "You need to generate an access token for clients to connect",
+    generate: "Generate Token",
+    regenerate: "Regenerate Token",
+    revoke: "Revoke Token",
+    confirmRevoke: "Are you sure to revoke the current token? Clients using this token will not be able to connect.",
+    hideToken: "Hide Token",
+    showToken: "Show Token",
   },
 
   // System settings
@@ -511,6 +567,7 @@ export default {
     operationFailed: "Operation failed",
     dataCorrupted: "Data corrupted",
     serviceUnavailable: "Service unavailable",
+    copyFailed: "Copy failed",
   },
 
   // Success messages
@@ -532,6 +589,7 @@ export default {
     fileUploaded: "File uploaded successfully",
     dataExported: "Data exported successfully",
     dataImported: "Data imported successfully",
+    copied: "Copied",
   },
 
   // Confirmation dialogs
@@ -548,6 +606,7 @@ export default {
     maxLength: "Maximum {max} characters allowed",
     numeric: "Please enter a number",
     alphanumeric: "Only letters and numbers allowed",
+    alphanumericDashUnderscore: "Only letters, numbers, underscore and hyphen allowed",
     passwordMismatch: "Passwords do not match",
     invalidFormat: "Invalid format",
     duplicateValue: "Value already exists",
@@ -586,5 +645,11 @@ export default {
     weeks: "weeks",
     months: "months",
     years: "years",
+  },
+    // Right pane empty state
+  right: {
+    selectModule: "Select a Module",
+    selectModuleDesc:
+      "Choose a module from the left sidebar to start managing your Brook server",
   },
 };

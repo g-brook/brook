@@ -2,6 +2,7 @@
 import baseInfo from "@/service/baseInfo";
 import Icon from '@/components/icon/Index.vue';
 import {onMounted, ref} from "vue";
+import useI18n from '@/components/lang/useI18n';
 
 interface Info {
   lastTime: string;
@@ -31,6 +32,8 @@ const proxyId = ref<string>(props.proxyId);
 
 const configs = ref<Info[]>([]);
 const webLogs = ref<WebLog[]>([]);
+
+const { t } = useI18n();
 
 const getServerInfos = async () => {
   const response = await baseInfo.getServerInfoByProxyId({proxyId: proxyId.value});
@@ -64,7 +67,7 @@ defineExpose({
       <label class="tab">
         <input type="radio" name="my_tabs_4" checked="checked" @click="getServerInfos"/>
         <Icon icon="brook-client"/>
-        <p class="pl-1">端点(Agent)详情</p>
+        <p class="pl-1">{{ t('server.agentDetails') }}</p>
       </label>
       <div class="tab-content bg-base-100 border-base-300">
         <div v-if="configs.length > 0">
@@ -74,9 +77,9 @@ defineExpose({
             <tr>
               <th class="bg-base-100 font-semibold" style="width: 2px">#
               </th>
-              <th class="bg-base-100 font-semibold" style="width: 80px">地址
+              <th class="bg-base-100 font-semibold" style="width: 80px">{{ t('common.address') }}
               </th>
-              <th class="bg-base-100 font-semibold" style="width: 80px">连接时间
+              <th class="bg-base-100 font-semibold" style="width: 80px">{{ t('server.connectionTime') }}
               </th>
             </tr>
             </thead>
@@ -96,7 +99,7 @@ defineExpose({
         </div>
 
         <div class="flex  justify-center" v-else>
-          没有数据
+          {{ t('pagination.noData') }}
         </div>
         　
       </div>
@@ -104,7 +107,7 @@ defineExpose({
       <label class="tab">
         <input type="radio" name="my_tabs_4" @click="getWebLogInfos"/>
         <Icon icon="brook-calendar"/>
-        <p class="pl-1">HTTP日志</p>
+        <p class="pl-1">{{ t('logs.accessLogs') }}</p>
 
       </label>
       <div class="tab-content bg-base-100 border-base-300">
@@ -119,18 +122,18 @@ defineExpose({
           <tr>
             <th class="bg-base-100 font-semibold" style="width: 10px">#
             </th>
-            <th class="bg-base-100 font-semibold">时间
+            <th class="bg-base-100 font-semibold">{{ t('common.time') }}
             </th>
-            <th class="bg-base-100 font-semibold">Path
+            <th class="bg-base-100 font-semibold">{{ t('server.fields.path') }}
             </th>
-            <th class="bg-base-100 font-semibold" style="width: 40px">HttpId
+            <th class="bg-base-100 font-semibold" style="width: 40px">{{ t('server.fields.httpId') }}
             </th>
-            <th class="bg-base-100 font-semibold" style="width: 40px">协议
+            <th class="bg-base-100 font-semibold" style="width: 40px">{{ t('server.fields.protocol') }}
             </th>
 
-            <th class="bg-base-100 font-semibold" style="width: 40px">Method
+            <th class="bg-base-100 font-semibold" style="width: 40px">{{ t('server.fields.method') }}
             </th>
-            <th class="bg-base-100 font-semibold" style="width: 40px">状态
+            <th class="bg-base-100 font-semibold" style="width: 40px">{{ t('common.status') }}
             </th>
           </tr>
           </thead>

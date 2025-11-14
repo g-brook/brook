@@ -19,6 +19,7 @@ import Icon from '@/components/icon/Index.vue';
 import {menus} from '@/components/menu/menus';
 import {ref} from 'vue';
 import {getGlobalTheme} from '@/components/theme/useTheme';
+import {useI18n} from '@/components/lang/useI18n';
 
 defineProps<{
     version?: string,
@@ -33,6 +34,9 @@ const isCollapsed = ref(false);
 
 // 使用全局主题管理
 const { isDark } = getGlobalTheme();
+
+// 国际化
+const { t } = useI18n();
 
 const onSelect = (item: any) => {
     menuList.value.forEach(m => (m.active = false));
@@ -97,7 +101,7 @@ const toggleSidebar = () => {
                             'group relative flex items-center rounded-xl transition-all duration-300',
                             'hover:bg-primary/10 hover:text-primary h-9',
                             item.active ? (isCollapsed? 'bg-primary' : 'font-semibold text-primary') : 'text-base-content/60'
-                        ]" :title="isCollapsed ? item.title : ''">
+                        ]" :title="isCollapsed ? t(item.title) : ''">
                             <div  class="flex-shrink-0 w-5 h-5 flex items-center justify-center">
                                 <Icon v-if="item.icon" :icon="item.icon" :class="[
                                     'transition-colors duration-300',
@@ -107,7 +111,7 @@ const toggleSidebar = () => {
                             <span v-show="!isCollapsed" :class="[
                                 'ml-2  font-mono  whitespace-nowrap overflow-hidden text-ellipsis transition-all duration-300',
                             ]">
-                                {{ item.title }}
+                                {{ t(item.title) }}
                             </span>
 
                             <div v-if="item.active && !isCollapsed" :class="[
@@ -122,14 +126,14 @@ const toggleSidebar = () => {
             <div class="p-4">
                 <div v-show="!isCollapsed" class="space-y-2 text-xs">
                     <div class="flex items-center justify-between">
-                        <span class="text-base-content/60">Node Status</span>
+                        <span class="text-base-content/60">{{ t('main.systemStatus') }}</span>
                         <div class="flex items-center space-x-1">
                             <div class="w-2 h-2 bg-success rounded-full animate-pulse"></div>
-                            <span class="font-medium text-success">Online</span>
+                            <span class="font-medium text-success">{{ t('common.online') }}</span>
                         </div>
                     </div>
                     <div class="flex items-center justify-between">
-                        <span class="text-base-content/60">Version</span>
+                        <span class="text-base-content/60">{{ t('common.version') }}</span>
                         <span class="font-mono font-medium text-base-content">{{version}}</span>
                     </div>
 
@@ -137,8 +141,8 @@ const toggleSidebar = () => {
 
                 <!-- 折叠状态下的简化显示 -->
                 <div v-show="isCollapsed" class="flex flex-col items-center space-y-2">
-                    <div class="w-2 h-2 bg-success rounded-full animate-pulse" title="Online" />
-                    <div class="text-xs font-mono text-base-content/60 writing-mode-vertical" title="v1.3.0">v{{version}}</div>
+                    <div class="w-2 h-2 bg-success rounded-full animate-pulse" :title="t('common.online')" />
+                    <div class="text-xs font-mono text-base-content/60 writing-mode-vertical" :title="t('common.version')">v{{version}}</div>
 
                 </div>
             </div>

@@ -43,31 +43,31 @@ class Menu {
 
 const menus: Menu[] = [
   new Menu(
-    "在线通道",
-    "显示当前在线的通道信息",
-    "brook-Diagram-",
+    // 使用 i18n 键而非硬编码文案
+    'menu.onlineServer.title',
+    'menu.onlineServer.description',
+    'brook-Diagram-',
     true,
     [],
-    () => import("@/views/serverlist/Index.vue"),
-  ),
-   new Menu(
-    "通道配置",
-    "管理您的账户设置和客户端连接配置",
-    "brook-technology_usb-cable",
-    false,
-    [],
-    () => import("@/views/proxys/Configuration.vue"),
+    () => import('@/views/serverlist/Index.vue'),
   ),
   new Menu(
-    "我的设置",
-    "系统相关的配置信息，包括客户端连接Token设置",
-    "brook-Gear-",
+    'menu.tunnelConfiguration.title',
+    'menu.tunnelConfiguration.description',
+    'brook-technology_usb-cable',
     false,
     [],
-    () => import("@/views/mysetting/MySetting.vue"),
-    "Setting"
+    () => import('@/views/proxys/Configuration.vue'),
   ),
-  
-];
+  new Menu(
+    'menu.mySetting.title',
+    'menu.mySetting.description',
+    'brook-Gear-',
+    false,
+    [],
+    () => import('@/views/mysetting/MySetting.vue'),
+    'Setting'
+  ),
+]
 
 export { Menu, menus };

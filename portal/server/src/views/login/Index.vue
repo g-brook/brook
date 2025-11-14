@@ -19,11 +19,14 @@ import {onMounted, ref} from 'vue';
 import baseInfo from '@/service/baseInfo';
 import Login from '@/views/login/Login.vue';
 import Initializer from '@/views/login/Initializer.vue';
+import useI18n from '@/components/lang/useI18n';
 
 // 响应式变量
 const version = ref('');
 const isRunning = ref<boolean | null>(null); // null 表示还没加载
 const loadingError = ref(false);
+
+const { t } = useI18n();
 
 const loadBaseInfo = async () => {
   try {
@@ -45,8 +48,11 @@ onMounted(() => {
   <div>
 
     <!-- 等待加载 -->
-    <div v-if="isRunning === null">
-      Loading...
+    <div v-if="isRunning === null" class="flex items-center justify-center h-64">
+      <div class="flex flex-col items-center space-y-4">
+        <div class="loading loading-spinner loading-lg text-primary"></div>
+        <p class="text-base-content/60">{{ t('common.loading') }}</p>
+      </div>
     </div>
 
     <!-- 根据配置渲染组件 -->

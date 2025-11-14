@@ -79,7 +79,7 @@ const removePath = (proxy, index) => {
 
 // 删除代理
 const deleteProxy = (index) => {
-  if (confirm('确定要删除此代理配置吗？')) {
+  if (confirm(t('configuration.confirmDeleteProxy'))) {
     proxyList.value.splice(index, 1);
   }
 };
@@ -116,7 +116,7 @@ const cancelEdit = (proxy, index) => {
 const saveProxy = (proxy) => {
   // 验证表单
   if (!proxy.id || !proxy.domain || proxy.paths.length === 0) {
-    message.warning("请填写完整的代理配置信息");
+    message.warning(t('configuration.proxyFormIncomplete'));
     return;
   }
 
@@ -130,7 +130,7 @@ const saveProxy = (proxy) => {
 
 const saveProxyToRemote = () => {
   if (proxyList.value.length === 0) {
-    message.warning("请添加至少一个代理配置");
+    message.warning(t('configuration.atLeastOneProxy'));
     return;
   }
   config.addWebConfigs({
@@ -140,9 +140,9 @@ const saveProxyToRemote = () => {
     proxy: proxyList.value
   }).then((res) => {
     if (res.success()) {
-      message.success("保存成功");
+      message.success(t('success.dataSaved'));
     } else {
-      message.error("保存失败");
+      message.error(t('errors.operationFailed'));
     }
   })
 };
@@ -167,13 +167,13 @@ onMounted(() => {
     <div class="card bg-base-100 shadow-sm hover:shadow-md transition-shadow duration-300 mb-6"
      >
       <div class="card-body p-4">
-        <h2 class="card-title text-sm mb-2">HTTPS证书配置</h2>
+        <h2 class="card-title text-sm mb-2">{{ t('configuration.httpsCertConfig') }}</h2>
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div class="form-control">
             <label class="label">
               <span class="label-text">CertFile:</span>
             </label>
-            <input type="text" placeholder="输入CertFile路径"
+            <input type="text" :placeholder="t('configuration.inputCertFilePath')"
               class="input input-bordered w-full"
               v-model="properties.certFile" />
           </div>
@@ -181,7 +181,7 @@ onMounted(() => {
             <label class="label">
               <span class="label-text">KeyFile</span>
             </label>
-            <input type="text" placeholder="输入KeyFile路径"
+            <input type="text" :placeholder="t('configuration.inputKeyFilePath')"
               class="input input-bordered w-full"
               v-model="properties.keyFile" />
           </div>
@@ -193,12 +193,12 @@ onMounted(() => {
     <div class="card w-full bg-base-100 shadow-sm hover:shadow-md transition-shadow duration-300">
       <div class="card-body p-4">
         <div class="flex justify-between gap-2 items-center mb-1">
-          <h2 class="card-title text-sm">代理配置列表</h2>
+          <h2 class="card-title text-sm">{{ t('configuration.proxyList') }}</h2>
           <div class="flex gap-2">
             <button @click="saveProxyToRemote"
               class="btn btn-primary btn-sm gap-1 transition-transform duration-200 hover:scale-105">
               <Icon icon="brook-add" style="font-size: 14px;" />
-              保存配置
+              {{ t('configuration.saveConfig') }}
             </button>
           </div>
         </div>
@@ -208,13 +208,13 @@ onMounted(() => {
             <thead>
               <tr class="bg-base-200/70">
                 <th class="w-1/6 rounded-tl-lg">ID</th>
-                <th class="w-1/4">域名</th>
-                <th>路径</th>
+                <th class="w-1/4">{{ t('configuration.domain') }}</th>
+                <th>{{ t('configuration.paths') }}</th>
                 <th class="w-48 rounded-tr-lg">
-                  操作
+                  {{ t('configuration.actions') }}
                   <button @click="addNewRow" class="btn btn-outline btn-xs">
                     <Icon icon="brook-add" style="font-size: 12px;" />
-                    增加行
+                    {{ t('configuration.addRow') }}
                   </button>
                 </th>
               </tr>
@@ -225,17 +225,17 @@ onMounted(() => {
                 <!-- 编辑模式 -->
                 <template v-if="proxy.isEditing">
                   <td>
-                    <input type="text" v-model="proxy.id" placeholder="例如: proxy1"
+                    <input type="text" v-model="proxy.id" :placeholder="t('configuration.egProxyId')"
                       class="input input-bordered input-sm w-full focus:ring focus:ring-primary/20 transition-all duration-200" />
                   </td>
                   <td>
-                    <input type="text" v-model="proxy.domain" placeholder="例如: localhost"
+                    <input type="text" v-model="proxy.domain" :placeholder="t('configuration.egDomain')"
                       class="input input-bordered input-sm w-full focus:ring focus:ring-primary/20 transition-all duration-200" />
                   </td>
                   <td>
                     <div class="flex flex-col gap-2">
                       <div v-for="(path, pathIndex) in proxy.paths" :key="pathIndex" class="flex gap-2 items-center">
-                        <input type="text" v-model="proxy.paths[pathIndex]" placeholder="例如: /*"
+                        <input type="text" v-model="proxy.paths[pathIndex]" :placeholder="t('configuration.egPath')"
                           class="input input-bordered input-sm flex-1 focus:ring focus:ring-primary/20 transition-all duration-200" />
                         <button @click="removePath(proxy, pathIndex)" class="btn btn-ghost btn-circle btn-sm">
                           <Icon icon="brook-delete" style="font-size: 12px;" />
@@ -244,17 +244,17 @@ onMounted(() => {
                       <button @click="addPath(proxy)"
                         class="btn btn-outline btn-sm gap-1 self-start mt-1 hover:bg-primary/10 transition-colors duration-200">
                         <Icon icon="brook-add" style="font-size: 12px;" />
-                        添加路径
+                        {{ t('configuration.addPath') }}
                       </button>
                     </div>
                   </td>
                   <td>
                     <div class="flex gap-2">
                       <button @click="saveProxy(proxy)" class="btn btn-sm btn-soft">
-                        完成
+                        {{ t('common.confirm') }}
                       </button>
                       <button @click="cancelEdit(proxy, index)" class="btn btn-sm btn-soft">
-                        取消
+                        {{ t('common.cancel') }}
                       </button>
                     </div>
                   </td>
@@ -276,11 +276,11 @@ onMounted(() => {
                     <div class="flex flex-row">
                       <button @click="editProxy(proxy)" class="btn  btn-sm btn-ghost">
                         <Icon icon="brook-setting" style="font-size: 12px;" />
-                        编辑
+                        {{ t('common.edit') }}
                       </button>
                       <button @click="deleteProxy(index)" class="btn  btn-sm btn-ghost">
                         <Icon icon="brook-delete" style="font-size: 12px;" />
-                        删除
+                        {{ t('common.delete') }}
                       </button>
                     </div>
                   </td>
@@ -288,7 +288,7 @@ onMounted(() => {
               </tr>
               <tr v-if="proxyList.length === 0">
                 <td colspan="4" class="text-center py-4 text-base-content/60">
-                  暂无代理配置，请点击"增加行"按钮添加
+                  {{ t('configuration.noProxyTip') }}
                 </td>
               </tr>
             </tbody>

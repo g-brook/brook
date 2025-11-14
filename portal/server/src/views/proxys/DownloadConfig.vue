@@ -4,6 +4,7 @@ import { onMounted, ref } from 'vue';
 import JsonEditorVue from 'json-editor-vue'
 import Icon from "@/components/icon/Index.vue";
 import Message from "@/components/message";
+import useI18n from '@/components/lang/useI18n'
 const code = ref('')
 
 const getConfigs = async () => {
@@ -28,8 +29,8 @@ function downloadFile(filename, content) {
 
 const copyContent = ()=> {
   navigator.clipboard.writeText(JSON.stringify(code.value))
-      .then(() => Message.success('复制成功'))
-      .catch(() => Message.error("复制失败"))
+      .then(() => Message.success(t('success.copied')))
+      .catch(() => Message.error(t('errors.copyFailed')))
 }
 
 const downFileHandler = async () => {
@@ -43,6 +44,8 @@ onMounted(() => {
     getConfigs();
 })
 
+const { t } = useI18n()
+
 </script>
 
 <template>
@@ -50,10 +53,10 @@ onMounted(() => {
       <div class="flex gap-2 mb-1">
       <button class="btn btn-primary btn-xs btn-soft" @click="downFileHandler">
         <Icon icon="brook-download" style="font-size: 12px;"/>
-        下载
+        {{ t('common.download') }}
       </button>
       <button class="btn btn-primary btn-xs btn-soft" @click="copyContent">
-        复制
+        {{ t('common.copy') }}
       </button>
       </div>
             <JsonEditorVue v-model="code" mode="text"

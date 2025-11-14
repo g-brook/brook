@@ -4,6 +4,7 @@ import {onMounted, ref} from "vue";
 import DataInfo from "@/views/serverlist/DataInfo.vue";
 import Icon from "@/components/icon/Index.vue";
 import dayjs from 'dayjs'
+import useI18n from '@/components/lang/useI18n'
 
 const list = ref<any[]>([])
 
@@ -31,6 +32,8 @@ onMounted(async () => {
   await initData()
 })
 
+const { t } = useI18n()
+
 </script>
 
 <template>
@@ -38,7 +41,7 @@ onMounted(async () => {
     <div class="w-18 h-18 bg-base-300/59 rounded-full flex items-center justify-center mx-auto mb-4">
       <Icon icon="brook-Diagram-" class="text-base-content/30" style="font-size: 48px;"/>
     </div>
-    <h3 class="text-lg font-medium text-base-content/30 mb-2">暂无服务器通道，当您创建服务器通道后，即可查看</h3>
+    <h3 class="text-lg font-medium text-base-content/30 mb-2">{{ t('server.listEmpty') }}</h3>
   </div>
   <div v-else class="flex flex-row items-center overflow-hidden 　justify-center h-full w-full">
     <div class="w-80 h-full">
@@ -62,15 +65,15 @@ onMounted(async () => {
                 {{ dayjs(server.runtime).format('YYYY-MM-DD HH:mm:ss') }}
               </div>
               <div class="flex flex-col items-center">
-                <div class="badge badge-xs badge-soft">PORT</div>
+                <div class="badge badge-xs badge-soft">{{ t('server.fields.port') }}</div>
                 <p class="font-bold">{{ server.port ? server.port : 'N/A' }}</p>
               </div>
               <div class="flex flex-col items-center">
-                <div class="badge badge-xs badge-soft">连接数</div>
+                <div class="badge badge-xs badge-soft">{{ t('server.fields.connections') }}</div>
                 {{ server.connections ? server.connections : '0' }}
               </div>
               <div class="flex flex-col items-center">
-                <div class="badge badge-xs badge-soft">端点数</div>
+                <div class="badge badge-xs badge-soft">{{ t('server.fields.clients') }}</div>
                 {{ server.users ? server.users : '0' }}
               </div>
             </div>
