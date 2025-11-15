@@ -160,7 +160,7 @@ CLI 启动参数：
 ---
 
 ## 从源码构建
-- 前端构建：
+- 前端构建(要启动服务端，需要构建前端，生成页面)：
   - 进入 `portal/server/` 目录并执行：`npm install`、`npm run build`
 - 服务端：
   - 进入 `server/` 目录并执行：`bash gobuild.sh`
