@@ -7,7 +7,9 @@ LABEL stage="runtime" \
 
 WORKDIR /app
 
-COPY dist/brook-sev/ ./
+ARG APP_PATH
+
+COPY $APP_PATH ./
 
 RUN chmod 755 /app && chmod -R 755 /app/*
 

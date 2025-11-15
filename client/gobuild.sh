@@ -98,7 +98,14 @@ build_target() {
     OUTPUT_FILE="$OUTPUT_DIR/$APP_NAME"
     [ "$BUILD_OS" == "windows" ] && OUTPUT_FILE="$OUTPUT_FILE.exe"
 
-    GOOS=$BUILD_OS GOARCH=$BUILD_ARCH go build -o "$OUTPUT_FILE" ./main.go
+    BUILD_ARGS=""
+    if [ "$BUILD_OS" == "windows" ]; then
+      # shellcheck disable=SC2140
+      BUILD_ARGS="-ldflags="-H=windowsgui""
+      GOOS=$BUILD_OS GOARCH=$BUILD_ARCH go build "$BUILD_ARGS" -o "$OUTPUT_FILE" ./main.go
+      else
+      GOOS=$BUILD_OS GOARCH=$BUILD_ARCH go build -o "$OUTPUT_FILE" ./main.go
+    fi
 
     # Copy resources
     if [[ "$COPY_RES" == "y" || "$COPY_RES" == "Y" ]]; then
@@ -110,8 +117,10 @@ build_target() {
     # Package
     if [ "$DOCKER_BUILD" = true ]; then
         echo "→ Building Docker image..."
-        docker buildx build --platform "$PLATFORM" -t "$APP_NAME:$VERSION-$BUILD_ARCH" -f Dockerfile .
+        docker buildx build --build-arg APP_PATH=$OUTPUT_DIR  --platform "$PLATFORM" -t "$APP_NAME:$VERSION-$BUILD_ARCH" -f Dockerfile .
     else
+        find "$OUTPUT_DIR" -name ".DS_Store" -delete
+        find "$OUTPUT_DIR" -name "._*" -delete
         tar -czf "$TAR_NAME" -C "$OUTPUT_DIR" .
         echo "→ Packaged: $TAR_NAME"
     fi
