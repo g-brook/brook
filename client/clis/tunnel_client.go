@@ -196,9 +196,11 @@ func (b *BaseTunnelClient) OpenStream() error {
 		if err != nil {
 			bucket.Close()
 			streamCancel()
+			log.Error("Open stream fail %v", err)
 			return err
 		}
 		b.isOpen = true
+		log.Info("Open stream success %v:%v", stream.RemoteAddr(), stream.ID())
 		<-channel.Done()
 		log.Info("Tunnel stream close exit:%v:%v", stream.RemoteAddr(), stream.ID())
 		streamCancel()

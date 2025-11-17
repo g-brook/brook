@@ -19,6 +19,7 @@ package run
 import (
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/brook/client/cli"
 	"github.com/brook/common/configs"
@@ -71,6 +72,25 @@ func verilyBaseConfig(c *configs.ClientConfig) {
 	cli.Page.RemoteAddress = fmt.Sprintf("%s:%d", c.ServerHost, c.ServerPort)
 	if c.PingTime <= lang.DefaultPingTime {
 		c.PingTime = lang.DefaultPingTime
+	}
+	i := len(c.Tunnels)
+	if i <= 0 {
+		panic("Tunnels is null, system exit")
+	}
+	for _, it := range c.Tunnels {
+		if it.ProxyId == "" {
+			panic("Tunnels ProxyId is null, system exit")
+		}
+		if it.TunnelType == "" {
+			panic("Tunnels TunnelType（tcp、udp、http(s)） is null, system exit")
+		}
+		if it.Destination == "" {
+			panic("Tunnels Destination is null, system exit")
+		}
+		split := strings.Split(it.Destination, ":")
+		if len(split) != 2 {
+			panic("Tunnels Destination is error:" + it.Destination + "correct is ip:port")
+		}
 	}
 }
 
