@@ -23,7 +23,6 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/brook/common/command"
 	"github.com/brook/common/configs"
 	"github.com/brook/common/log"
 	"github.com/brook/server/defin"
@@ -48,9 +47,6 @@ func init() {
 	// Default value is "./server.json"
 	// The flag stores the configs file path in cfgPath variable
 	cmd.PersistentFlags().StringVarP(&cfgPath, "configs", "c", "./server.json", "configs file path")
-	// Register server-specific flags with the command
-	// This function likely adds flags related to server configuration
-	command.RegisterServerFlags(cmd, serverConfig)
 }
 
 var cmd = &cobra.Command{
