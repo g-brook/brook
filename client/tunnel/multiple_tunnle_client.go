@@ -33,14 +33,14 @@ import (
 // This function is used to register a new tunnel client for the TCP protocol
 func init() {
 	client := &MultipleTunnelClient{
-		state:    true,
-		sessions: hash.NewSyncMap[string, *smux.Session](),
+		messageState: true,
+		sessions:     hash.NewSyncMap[string, *smux.Session](),
 	}
 	ft := func(config *configs.ClientTunnelConfig) clis.TunnelClient {
 		client.currentConfig = config
-		if client.state {
+		if client.messageState {
 			client.messageLister()
-			client.state = false
+			client.messageState = false
 		}
 		return client
 	}
@@ -52,7 +52,7 @@ func init() {
 
 type MultipleTunnelClient struct {
 	currentConfig *configs.ClientTunnelConfig
-	state         bool
+	messageState  bool
 	sessions      *hash.SyncMap[string, *smux.Session]
 }
 
@@ -130,6 +130,8 @@ func (m *MultipleTunnelClient) Open(session *smux.Session) error {
 }
 
 func (m *MultipleTunnelClient) Close() {
+	m.sessions.Clear()
+	m.currentConfig = nil
 
 }
 
@@ -142,5 +144,7 @@ func (m *MultipleTunnelClient) OnlyOpenHttp(proxyId string, remotePort int) {
 		RemotePort: remotePort,
 	}
 	request, _ := exchange.NewRequest(req)
-	_ = clis.ManagerTransport.PushMessage(request)
+	for i := 0; i < 2; i++ {
+		_ = clis.ManagerTransport.PushMessage(request)
+	}
 }

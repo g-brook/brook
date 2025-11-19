@@ -149,6 +149,8 @@ type Client struct {
 	network string
 
 	session *smux.Session
+
+	tunnelClient TunnelClient
 }
 
 // NewClient creates a new Client instance with the provided host and port.
@@ -229,6 +231,7 @@ func (c *Client) doConnection() error {
 	if c.conn != nil {
 		c.conn = nil
 		c.rw = nil
+		c.session = nil
 	}
 	dialer := &net.Dialer{
 		KeepAlive: c.opts.KeepAlive,
@@ -259,6 +262,7 @@ func (c *Client) doConnection() error {
 		if session, err := smux.Client(c.conn, config); err != nil {
 			return nil, c.error("New smux Client error", err)
 		} else {
+			log.Info("👍---->Open session[tunnel] %s success OK.✅--->", c.getAddress())
 			return session, nil
 		}
 	}
@@ -294,6 +298,7 @@ func (c *Client) OpenTunnel(config *configs.ClientTunnelConfig) error {
 		log.Error("Open tunnel error, close client:%v", config.TunnelType)
 		c.cct.Close()
 	}
+	c.tunnelClient = client
 	return err
 }
 
@@ -373,6 +378,9 @@ func (c *Client) handleLoop() {
 		}
 		if c.session != nil {
 			_ = c.session.Close()
+		}
+		if c.tunnelClient != nil {
+			c.tunnelClient.Close()
 		}
 		return nil
 	}
