@@ -16,20 +16,30 @@
 
 package sql
 
+import (
+	"database/sql"
+	"fmt"
+)
+
 type ProxyConfig struct {
-	Idx        int    `db:"idx" json:"id"`
-	Name       string `db:"name" json:"name"`
-	Tag        string `db:"tag" json:"tag"`
-	RemotePort int    `db:"remote_port" json:"remotePort"`
-	ProxyID    string `db:"proxy_id" json:"proxyId"`
-	Protocol   string `db:"protocol" json:"protocol"`
-	State      int    `db:"state" json:"state"`
-	RunState   int    `db:"run_state"`
-	IsRunning  bool   `json:"isRunning"`
-	Runtime    string `json:"runtime"`
-	IsExistWeb bool   `json:"isExistWeb"`
-	Clients    int    `json:"clients"`
+	Idx         int    `db:"idx" json:"id"`
+	Name        string `db:"name" json:"name"`
+	Tag         string `db:"tag" json:"tag"`
+	RemotePort  int    `db:"remote_port" json:"remotePort"`
+	ProxyID     string `db:"proxy_id" json:"proxyId"`
+	Protocol    string `db:"protocol" json:"protocol"`
+	State       int    `db:"state" json:"state"`
+	Destination int    `db:"destination" json:"destination"`
+	RunState    int    `db:"run_state"`
+	IsRunning   bool   `json:"isRunning"`
+	Runtime     string `json:"runtime"`
+	IsExistWeb  bool   `json:"isExistWeb"`
+	Clients     int    `json:"clients"`
 }
+
+var (
+	ProxyQuerySQL = "idx,name, tag, remote_port, proxy_id, protocol,state,run_state,destination"
+)
 
 func (r *ProxyConfig) IsHttpOrHttps() bool {
 	return r.Protocol == "HTTP" || r.Protocol == "HTTPS"
@@ -37,9 +47,9 @@ func (r *ProxyConfig) IsHttpOrHttps() bool {
 
 func AddProxyConfig(p ProxyConfig) error {
 	err := Exec(`
-            INSERT INTO proxy_config(name, tag, remote_port, proxy_id, protocol,state,run_state)
-            VALUES (?, ?, ?, ?, ?,?,?);
-        `, p.Name, p.Tag, p.RemotePort, p.ProxyID, p.Protocol, p.State, p.RunState)
+            INSERT INTO proxy_config(name, tag, remote_port, proxy_id, protocol,state,run_state, destination)
+            VALUES (?, ?, ?, ?, ?,?,?,?);
+        `, p.Name, p.Tag, p.RemotePort, p.ProxyID, p.Protocol, p.State, p.RunState, p.Destination)
 	return err
 }
 
@@ -49,7 +59,7 @@ func DelProxyConfig(id int) error {
 }
 
 func UpdateProxyConfig(p ProxyConfig) error {
-	err := Exec("update proxy_config set name=?,tag=?,proxy_id=?,protocol=? where idx=?", p.Name, p.Tag, p.ProxyID, p.Protocol, p.Idx)
+	err := Exec("update proxy_config set name=?,tag=?,proxy_id=?,protocol=?,destination=? where idx=?", p.Name, p.Tag, p.ProxyID, p.Protocol, p.Destination, p.Idx)
 	return err
 }
 
@@ -59,7 +69,8 @@ func UpdateProxyState(p ProxyConfig) error {
 }
 
 func GetAllProxyConfig() []*ProxyConfig {
-	res, err := Query("select idx,name, tag, remote_port, proxy_id, protocol,state,run_state from proxy_config where state = 1")
+	selectSQL := fmt.Sprintf("select %s from proxy_config where state = 1", ProxyQuerySQL)
+	res, err := Query(selectSQL)
 	if err != nil {
 		return nil
 	}
@@ -67,26 +78,28 @@ func GetAllProxyConfig() []*ProxyConfig {
 
 	var list []*ProxyConfig
 	for res.rows.Next() {
-		var p ProxyConfig
-		if err := res.rows.Scan(&p.Idx, &p.Name, &p.Tag, &p.RemotePort, &p.ProxyID, &p.Protocol, &p.State, &p.RunState); err != nil {
+		if p, err := scanProxyConfig(res.rows); err != nil {
 			return nil
+		} else {
+			list = append(list, p)
 		}
-		list = append(list, &p)
 	}
 	return list
 }
 
 func GetProxyConfigByProxyId(proxyId string) *ProxyConfig {
-	res, err := Query("select idx,name, tag, remote_port, proxy_id, protocol,state,run_state from proxy_config where state = 1 and proxy_id = ?", proxyId)
+	selectSQL := fmt.Sprintf("select %s from proxy_config where  state = 1 and proxy_id = ?", ProxyQuerySQL)
+	res, err := Query(selectSQL, proxyId)
 	if err != nil {
 		return nil
 	}
 	defer res.Close()
 
 	for res.rows.Next() {
-		var p ProxyConfig
-		if err := res.rows.Scan(&p.Idx, &p.Name, &p.Tag, &p.RemotePort, &p.ProxyID, &p.Protocol, &p.State, &p.RunState); err == nil {
-			return &p
+		if p, err := scanProxyConfig(res.rows); err != nil {
+			return nil
+		} else {
+			return p
 		}
 	}
 	return nil
@@ -103,10 +116,13 @@ func GetProxyConfigByIdNotState(id int) *ProxyConfig {
 func GetProxyConfigByIdAndState(id int, state int, isCheckState bool) *ProxyConfig {
 	var res *Result
 	var err error
+	selectSQL := fmt.Sprintf("select %s from proxy_config", ProxyQuerySQL)
 	if isCheckState {
-		res, err = Query("select idx,name, tag, remote_port, proxy_id, protocol,state,run_state from proxy_config where state = ? and idx = ?", state, id)
+		selectSQL += " where state = ? and idx = ? "
+		res, err = Query(selectSQL, state, id)
 	} else {
-		res, err = Query("select idx,name, tag, remote_port, proxy_id, protocol,state,run_state from proxy_config where idx = ?", id)
+		selectSQL += " where idx = ? "
+		res, err = Query(selectSQL, id)
 	}
 	if err != nil {
 		return nil
@@ -114,16 +130,18 @@ func GetProxyConfigByIdAndState(id int, state int, isCheckState bool) *ProxyConf
 	defer res.Close()
 
 	for res.rows.Next() {
-		var p ProxyConfig
-		if err := res.rows.Scan(&p.Idx, &p.Name, &p.Tag, &p.RemotePort, &p.ProxyID, &p.Protocol, &p.State, &p.RunState); err == nil {
-			return &p
+		if p, err := scanProxyConfig(res.rows); err != nil {
+			return nil
+		} else {
+			return p
 		}
 	}
 	return nil
 }
 
 func QueryProxyConfig() []*ProxyConfig {
-	res, err := Query("select idx,name, tag, remote_port, proxy_id, protocol,state,run_state from proxy_config")
+	selectSQL := fmt.Sprintf("select %s from proxy_config", ProxyQuerySQL)
+	res, err := Query(selectSQL)
 	if err != nil {
 		return nil
 	}
@@ -131,11 +149,30 @@ func QueryProxyConfig() []*ProxyConfig {
 
 	var list []*ProxyConfig
 	for res.rows.Next() {
-		var p ProxyConfig
-		if err := res.rows.Scan(&p.Idx, &p.Name, &p.Tag, &p.RemotePort, &p.ProxyID, &p.Protocol, &p.State, &p.RunState); err != nil {
+		if p, err := scanProxyConfig(res.rows); err != nil {
 			return nil
+		} else {
+			list = append(list, p)
 		}
-		list = append(list, &p)
 	}
 	return list
+}
+
+func scanProxyConfig(rows *sql.Rows) (*ProxyConfig, error) {
+	var p ProxyConfig
+	err := rows.Scan(
+		&p.Idx,
+		&p.Name,
+		&p.Tag,
+		&p.RemotePort,
+		&p.ProxyID,
+		&p.Protocol,
+		&p.State,
+		&p.RunState,
+		&p.Destination,
+	)
+	if err != nil {
+		return nil, err
+	}
+	return &p, nil
 }
