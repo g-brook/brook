@@ -17,6 +17,7 @@
 package api
 
 import (
+	sql2 "database/sql"
 	"encoding/json"
 	"time"
 
@@ -84,6 +85,50 @@ type WebConfigInfo struct {
 		Domain string   `json:"domain"`
 		Paths  []string `json:"paths"`
 	} `json:"proxy"`
+}
+
+type ProxyConfig struct {
+	Idx         int    `json:"id"`
+	Name        string `json:"name"`
+	Tag         string `json:"tag"`
+	RemotePort  int    `json:"remotePort"`
+	ProxyID     string `json:"proxyId"`
+	Protocol    string `json:"protocol"`
+	State       int    `json:"state"`
+	Destination string `json:"destination"`
+	IsRunning   bool   `json:"isRunning"`
+	Runtime     string `json:"runtime"`
+	IsExistWeb  bool   `json:"isExistWeb"`
+	Clients     int    `json:"clients"`
+}
+
+func (r *ProxyConfig) IsHttpOrHttps() bool {
+	return r.Protocol == "HTTP" || r.Protocol == "HTTPS"
+}
+
+func (r *ProxyConfig) toDb() sql.ProxyConfig {
+	return sql.ProxyConfig{
+		Idx:         r.Idx,
+		Name:        r.Name,
+		Tag:         r.Tag,
+		RemotePort:  r.RemotePort,
+		ProxyID:     r.ProxyID,
+		Protocol:    r.Protocol,
+		State:       r.State,
+		Destination: sql2.NullString{String: r.Destination},
+	}
+}
+func newProxyConfig(config *sql.ProxyConfig) *ProxyConfig {
+	return &ProxyConfig{
+		Idx:         config.Idx,
+		Name:        config.Name,
+		Tag:         config.Tag,
+		RemotePort:  config.RemotePort,
+		ProxyID:     config.ProxyID,
+		Protocol:    config.Protocol,
+		State:       config.State,
+		Destination: config.Destination.String,
+	}
 }
 
 func (r WebConfigInfo) toDb() sql.WebProxyConfig {

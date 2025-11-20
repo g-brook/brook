@@ -22,28 +22,20 @@ import (
 )
 
 type ProxyConfig struct {
-	Idx         int    `db:"idx" json:"id"`
-	Name        string `db:"name" json:"name"`
-	Tag         string `db:"tag" json:"tag"`
-	RemotePort  int    `db:"remote_port" json:"remotePort"`
-	ProxyID     string `db:"proxy_id" json:"proxyId"`
-	Protocol    string `db:"protocol" json:"protocol"`
-	State       int    `db:"state" json:"state"`
-	Destination int    `db:"destination" json:"destination"`
-	RunState    int    `db:"run_state"`
-	IsRunning   bool   `json:"isRunning"`
-	Runtime     string `json:"runtime"`
-	IsExistWeb  bool   `json:"isExistWeb"`
-	Clients     int    `json:"clients"`
+	Idx         int            `db:"idx"`
+	Name        string         `db:"name"`
+	Tag         string         `db:"tag"`
+	RemotePort  int            `db:"remote_port"`
+	ProxyID     string         `db:"proxy_id"`
+	Protocol    string         `db:"protocol"`
+	State       int            `db:"state"`
+	Destination sql.NullString `db:"destination"`
+	RunState    int            `db:"run_state"`
 }
 
 var (
 	ProxyQuerySQL = "idx,name, tag, remote_port, proxy_id, protocol,state,run_state,destination"
 )
-
-func (r *ProxyConfig) IsHttpOrHttps() bool {
-	return r.Protocol == "HTTP" || r.Protocol == "HTTPS"
-}
 
 func AddProxyConfig(p ProxyConfig) error {
 	err := Exec(`

@@ -48,8 +48,12 @@ func getProxyConfigs(*Request[any]) *Response {
 	if config == nil {
 		return NewResponseSuccess(nil)
 	}
-	configMap := make(map[string]*sql.ProxyConfig)
-	for _, cf := range config {
+	newConfig := make([]*ProxyConfig, len(config))
+	for i, proxyConfig := range config {
+		newConfig[i] = newProxyConfig(proxyConfig)
+	}
+	configMap := make(map[string]*ProxyConfig)
+	for _, cf := range newConfig {
 		configMap[cf.ProxyID] = cf
 	}
 	servers := metrics.M.GetServers()
@@ -67,11 +71,10 @@ func getProxyConfigs(*Request[any]) *Response {
 			v.IsExistWeb = proxyConfig != nil
 		}
 	}
-	return NewResponseSuccess(config)
+	return NewResponseSuccess(newConfig)
 }
 
 func genClientConfig(*Request[any]) *Response {
-
 	serverPort := defin.GetServerPort()
 	cfgs := sql.GetAllProxyConfig()
 	var tunnelCfgs = make([]*configs.ClientTunnelConfig, 0)
@@ -85,7 +88,7 @@ func genClientConfig(*Request[any]) *Response {
 			if tcfg.ProxyId == "UDP" {
 				tcfg.UdpSize = 1500
 			}
-			if cfg.IsHttpOrHttps() {
+			if cfg.Protocol == "HTTP" || cfg.Protocol == "HTTPS" {
 				webCfg, ok := getWebConfig(cfg.Idx)
 				if ok {
 					for _, proxyInfo := range webCfg.Proxy {
@@ -107,7 +110,7 @@ func genClientConfig(*Request[any]) *Response {
 	return NewResponseSuccess(cfg)
 }
 
-func delProxyConfig(req *Request[sql.ProxyConfig]) *Response {
+func delProxyConfig(req *Request[ProxyConfig]) *Response {
 	if req.Body.Idx <= 0 {
 		return NewResponseFail(errs.CodeSysErr, "idx is empty")
 	}
@@ -118,11 +121,11 @@ func delProxyConfig(req *Request[sql.ProxyConfig]) *Response {
 	return NewResponseSuccess(nil)
 }
 
-func updateProxyConfig(req *Request[sql.ProxyConfig]) *Response {
+func updateProxyConfig(req *Request[ProxyConfig]) *Response {
 	if req.Body.Idx <= 0 {
 		return NewResponseFail(errs.CodeSysErr, "idx is empty")
 	}
-	err := sql.UpdateProxyConfig(req.Body)
+	err := sql.UpdateProxyConfig(req.Body.toDb())
 	if err != nil {
 		return NewResponseFail(errs.CodeSysErr, "update proxy configs failed")
 	}
@@ -130,11 +133,11 @@ func updateProxyConfig(req *Request[sql.ProxyConfig]) *Response {
 	return NewResponseSuccess(nil)
 }
 
-func updateProxyState(req *Request[sql.ProxyConfig]) *Response {
+func updateProxyState(req *Request[ProxyConfig]) *Response {
 	if req.Body.Idx <= 0 {
 		return NewResponseFail(errs.CodeSysErr, "idx is empty")
 	}
-	err := sql.UpdateProxyState(req.Body)
+	err := sql.UpdateProxyState(req.Body.toDb())
 	if err != nil {
 		return NewResponseFail(errs.CodeSysErr, "update proxy configs failed")
 	}
@@ -187,7 +190,7 @@ func addWebConfigs(req *Request[WebConfigInfo]) *Response {
 	return NewResponseSuccess(nil)
 }
 
-func addProxyConfigs(req *Request[sql.ProxyConfig]) *Response {
+func addProxyConfigs(req *Request[ProxyConfig]) *Response {
 	body := req.Body
 	if body.Name == "" {
 		return NewResponseFail(errs.CodeSysErr, "name is empty")
@@ -206,7 +209,7 @@ func addProxyConfigs(req *Request[sql.ProxyConfig]) *Response {
 	} else {
 		body.State = 1
 	}
-	err := sql.AddProxyConfig(body)
+	err := sql.AddProxyConfig(body.toDb())
 	if err != nil {
 		log.Error(err.Error())
 		return NewResponseFail(errs.CodeSysErr, "add configs failed")

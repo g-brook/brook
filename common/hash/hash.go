@@ -26,3 +26,16 @@ func GetHash32(data string) int {
 	_, _ = h.Write([]byte(data))
 	return int(h.Sum32()) % math.MaxInt32
 }
+
+func MapToArray[K comparable, V any](m map[K]V) []*V {
+	if m == nil {
+		return nil
+	}
+	slice := make([]*V, len(m))
+	i := 0
+	for _, v := range m {
+		slice[i] = &v
+		i++
+	}
+	return slice
+}

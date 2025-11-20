@@ -16,9 +16,9 @@
 
 <script lang="ts" setup>
 import config from "@/service/config";
-import { computed, reactive, ref } from 'vue';
+import {computed, reactive, ref} from 'vue';
 import Icon from "@/components/icon/Index.vue";
-import { useI18n } from '@/components/lang/useI18n';
+import {useI18n} from '@/components/lang/useI18n';
 
 
 // 表单数据类型
@@ -29,6 +29,8 @@ interface ConfigForm {
   remotePort: number | null;
   proxyId: string;
   protocol: string;
+  destinationAddr: string | null;
+  destinationPort: number | null;
 }
 
 // 错误信息类型
@@ -54,10 +56,10 @@ defineEmits<{
 }>();
 // 协议类型选项
 const protocolTypes = [
-  { value: 'HTTP', label: 'HTTP' },
-  { value: 'HTTPS', label: 'HTTPS' },
-  { value: 'TCP', label: 'TCP' },
-  { value: 'UDP', label: 'UDP' },
+  {value: 'HTTP', label: 'HTTP'},
+  {value: 'HTTPS', label: 'HTTPS'},
+  {value: 'TCP', label: 'TCP'},
+  {value: 'UDP', label: 'UDP'},
 ];
 
 // 响应式数据
@@ -76,7 +78,7 @@ const errors = reactive<FormErrors>({});
 // 计算属性
 const isEdit = computed(() => props.isEdit || false);
 
-const { t } = useI18n();
+const {t} = useI18n();
 
 // 表单验证
 const validateForm = (): boolean => {
@@ -91,7 +93,7 @@ const validateForm = (): boolean => {
     errors.name = t('validation.required');
     isValid = false;
   } else if (form.name.length > 50) {
-    errors.name = t('validation.maxLength', { max: 50 });
+    errors.name = t('validation.maxLength', {max: 50});
     isValid = false;
   }
 
@@ -152,6 +154,8 @@ const resetForm = () => {
   form.remotePort = 10000;
   form.proxyId = '';
   form.protocol = '';
+  form.destinationAddr = '';
+  form.destinationPort = null;
   Object.keys(errors).forEach(key => {
     delete errors[key as keyof FormErrors];
   });
@@ -164,7 +168,7 @@ defineExpose({
 });
 
 if (props.onRegister) {
-  props.onRegister({ handleSubmit });
+  props.onRegister({handleSubmit});
 }
 </script>
 <template>
@@ -173,11 +177,11 @@ if (props.onRegister) {
     <form @submit.prevent="handleSubmit">
       <div class="grid grid-cols-7 gap-2 items-center ml-4">
         <label
-          class="flex justify-center flex-col items-center rounded-full bg-primary-content
+            class="flex justify-center flex-col items-center rounded-full bg-primary-content
           h-16 w-16 cursor-pointer hover:bg-primary hover:cursor-pointer duration-300  hover:-translate-y-1 hover:scale-100 group"
-          v-for="type in protocolTypes" :key="type.value">
+            v-for="type in protocolTypes" :key="type.value">
           <input type="radio" name="types" v-model="form.protocol" :value="type.value"
-            class="radio radio-accent radio-sm checked:bg-red-200 checked:text-red-600 checked:border-red-600  group-hover:border-base-100"  />
+                 class="radio radio-accent radio-sm checked:bg-red-200 checked:text-red-600 checked:border-red-600  group-hover:border-base-100"/>
           <p class="text-sm font-bold text-neutral">{{ type.label }}</p>
         </label>
       </div>
@@ -189,10 +193,11 @@ if (props.onRegister) {
               <span class="label-text font-medium">{{ t('configuration.proxyId') }} <span class="text-red-500">*</span></span>
             </label>
             <div class="tooltip" :data-tip="t('configuration.proxyIdTip')">
-              <Icon icon="brook-exclamation-circle" style="font-size: 14px;" />
+              <Icon icon="brook-exclamation-circle" style="font-size: 14px;"/>
             </div>
             <input type="text" v-model="form.proxyId"
-              :class="['input  focus:input-primary w-full', { 'input-error': errors.proxyId }]" :placeholder="t('configuration.form.proxyIdPlaceholder')" />
+                   :class="['input  focus:input-primary w-full', { 'input-error': errors.proxyId }]"
+                   :placeholder="t('configuration.form.proxyIdPlaceholder')"/>
             <label v-if="errors.proxyId" class="label py-1">
               <span class="label-text-alt text-red-500 text-xs">{{ errors.proxyId }}</span>
             </label>
@@ -204,29 +209,52 @@ if (props.onRegister) {
               <span class="label-text  font-medium">{{ t('common.name') }} <span class="text-red-500">*</span></span>
             </label>
             <input type="text" v-model="form.name"
-              :class="['input  focus:input-primary w-full', { 'input-error': errors.name }]" :placeholder="t('configuration.form.namePlaceholder')" />
+                   :class="['input  focus:input-primary w-full', { 'input-error': errors.name }]"
+                   :placeholder="t('configuration.form.namePlaceholder')"/>
             <label v-if="errors.name" class="label py-0">
               <span class="label-text-alt text-red-500 text-xs">{{ errors.name }}</span>
             </label>
           </div>
           <div class="form-control"><label class="label py-1 w-14">
-              <span class="label-text  font-medium">{{ t('configuration.form.tagLabel') }}</span>
-            </label>
-            <input type="text" v-model="form.tag" class="input  focus:input-primary w-full" :placeholder="t('configuration.form.tagPlaceholder')" />
+            <span class="label-text  font-medium">{{ t('configuration.form.tagLabel') }}</span>
+          </label>
+            <input type="text" v-model="form.tag" class="input  focus:input-primary w-full"
+                   :placeholder="t('configuration.form.tagPlaceholder')"/>
           </div>
         </div>
-        <div class="fieldset border-base-300 rounded-box w-xs p-4"><!-- 端口 -->
+        <div class="fieldset border-base-300  rounded-box w-xs p-4"><!-- 端口 -->
           <div class="form-control">
             <label class="label py-1 w-14">
-              <span class="label-text  font-medium">{{ t('configuration.remotePort') }}(10000~65535) <span class="text-red-500">*</span></span>
+              <span class="label-text  font-medium">{{ t('configuration.remotePort') }}(10000~65535) <span
+                  class="text-red-500">*</span></span>
             </label>
             <input type="number" v-model.number="form.remotePort" :disabled="props.isEdit"
-              :class="['input  focus:input-primary w-full', { 'input-error': errors.remotePort }]" :placeholder="t('configuration.form.portPlaceholder')"
-              min="10000" max="65535" />
+                   :class="['input  focus:input-primary w-full', { 'input-error': errors.remotePort }]"
+                   :placeholder="t('configuration.form.portPlaceholder')"
+                   min="10000" max="65535"/>
             <label v-if="errors.remotePort" class="label py-1">
               <span class="label-text-alt text-red-500 text-xs">{{ errors.remotePort }}</span>
             </label>
           </div>
+
+          <div class="form-control">
+            <label class="label py-1 w-14">
+              <span class="label-text  font-medium">{{ t('configuration.destination') }}(IP/Host)</span>
+            </label>
+            <input type="text" v-model.number="form.destinationAddr" :disabled="props.isEdit"
+                   :class="['input  focus:input-primary w-full', { 'input-error': errors.remotePort }]"
+                   :placeholder="t('configuration.form.destAddrPlaceholder')"/>
+          </div>
+
+          <div class="form-control">
+            <label class="label py-1 w-14">
+              <span class="label-text  font-medium">{{ t('configuration.destination') }}PORT</span>
+            </label>
+            <input type="number" v-model.number="form.destinationPort" :disabled="props.isEdit"
+                   :class="['input  focus:input-primary w-full', { 'input-error': errors.remotePort }]"
+                   :placeholder="t('configuration.form.destPortPlaceholder')" max="65535"/>
+          </div>
+
         </div>
       </div>
     </form>

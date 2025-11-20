@@ -110,7 +110,7 @@ func (m *MultipleTunnelClient) Open(session *smux.Session) error {
 	}
 	rsp, err := clis.ManagerTransport.SyncWrite(req, 5*time.Second)
 	if err != nil {
-		log.Error("Open %v tunnel server error %v", m.currentConfig.ProxyId, err)
+		log.Error("Open tunnel server error: %v", err)
 		return err
 	}
 	if !rsp.IsSuccess() {

@@ -39,6 +39,7 @@ interface ConfigItem {
   runtime: string;
   isExistWeb: boolean;
   clients: number;
+  destination: string;
 }
 
 const {t} = useI18n();
@@ -57,8 +58,11 @@ const downloadDrawerRef = ref<{ open: () => void } | null>(null);
 const getConfigs = async () => {
   try {
     const res = await config.getProxyConfigs();
+    console.info(res.data.data);
+    console.info("..............")
     configs.value = res.data || [];
   } catch (error) {
+    console.error(error);
   }
 };
 
@@ -222,6 +226,7 @@ const handleClickDownload = () => {
           <th class="bg-base-100 font-semibold">{{ t('configuration.nameAndTag') }}</th>
           <th class="bg-base-100 font-semibold" style="width: 100px">{{ t('configuration.remotePort') }}
           </th>
+          <th class="bg-base-100 font-semibold" style="width: 140px">{{ t('configuration.destination') }}(IP:PORT)</th>
           <th class="bg-base-100 font-semibold" style="width: 140px">{{ t('configuration.proxyId') }}</th>
           <th class="bg-base-100 font-semibold" style="width: 100px">{{ t('configuration.protocol') }}
           </th>
@@ -261,6 +266,7 @@ const handleClickDownload = () => {
             </div>
           </td>
           <td>{{ config.remotePort }}</td>
+          <td>{{ config.destination.String }}</td>
           <td>{{ config.proxyId }}</td>
           <td>
             <div class="badge badge-soft badge-secondary w-16">{{ config.protocol }}</div>
@@ -321,7 +327,7 @@ const handleClickDownload = () => {
 
         <!-- 空状态提示 -->
         <tr v-if="configs.length === 0">
-          <td colspan="9" class="text-center py-12">
+          <td colspan="10" class="text-center py-12">
             <div
                 class="w-18 h-18 bg-base-200 rounded-full flex items-center justify-center mx-auto mb-4">
               <Icon icon="brook-technology_usb-cable" class="text-base-content/40"
