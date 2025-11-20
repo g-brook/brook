@@ -58,8 +58,6 @@ const downloadDrawerRef = ref<{ open: () => void } | null>(null);
 const getConfigs = async () => {
   try {
     const res = await config.getProxyConfigs();
-    console.info(res.data.data);
-    console.info("..............")
     configs.value = res.data || [];
   } catch (error) {
     console.error(error);
@@ -266,7 +264,7 @@ const handleClickDownload = () => {
             </div>
           </td>
           <td>{{ config.remotePort }}</td>
-          <td>{{ config.destination.String }}</td>
+          <td>{{ config.destination }}</td>
           <td>{{ config.proxyId }}</td>
           <td>
             <div class="badge badge-soft badge-secondary w-16">{{ config.protocol }}</div>

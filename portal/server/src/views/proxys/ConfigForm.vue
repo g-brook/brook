@@ -31,6 +31,7 @@ interface ConfigForm {
   protocol: string;
   destinationAddr: string | null;
   destinationPort: number | null;
+  destination: string;
 }
 
 // 错误信息类型
@@ -129,7 +130,9 @@ const handleSubmit = async () => {
   loading.value = true;
   try {
     // 发送请求
-    var res;
+    let res;
+    form.destination = form.destinationAddr + ":" + form.destinationPort
+    console.log("res", form.destination);
     if (!props.isEdit) {
       res = await config.addProxyConfig(form);
     } else {
@@ -228,7 +231,7 @@ if (props.onRegister) {
               <span class="label-text  font-medium">{{ t('configuration.remotePort') }}(10000~65535) <span
                   class="text-red-500">*</span></span>
             </label>
-            <input type="number" v-model.number="form.remotePort" :disabled="props.isEdit"
+            <input type="number" v-model.number="form.remotePort" :disabled="isEdit"
                    :class="['input  focus:input-primary w-full', { 'input-error': errors.remotePort }]"
                    :placeholder="t('configuration.form.portPlaceholder')"
                    min="10000" max="65535"/>
@@ -241,8 +244,8 @@ if (props.onRegister) {
             <label class="label py-1 w-14">
               <span class="label-text  font-medium">{{ t('configuration.destination') }}(IP/Host)</span>
             </label>
-            <input type="text" v-model.number="form.destinationAddr" :disabled="props.isEdit"
-                   :class="['input  focus:input-primary w-full', { 'input-error': errors.remotePort }]"
+            <input type="text" v-model="form.destinationAddr"
+                   :class="['input  focus:input-primary w-full', { 'input-error': errors.destinationAddr }]"
                    :placeholder="t('configuration.form.destAddrPlaceholder')"/>
           </div>
 
@@ -250,8 +253,8 @@ if (props.onRegister) {
             <label class="label py-1 w-14">
               <span class="label-text  font-medium">{{ t('configuration.destination') }}PORT</span>
             </label>
-            <input type="number" v-model.number="form.destinationPort" :disabled="props.isEdit"
-                   :class="['input  focus:input-primary w-full', { 'input-error': errors.remotePort }]"
+            <input type="number" v-model.number="form.destinationPort"
+                   :class="['input  focus:input-primary w-full', { 'input-error': errors.destinationPort }]"
                    :placeholder="t('configuration.form.destPortPlaceholder')" max="65535"/>
           </div>
 

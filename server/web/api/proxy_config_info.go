@@ -80,10 +80,14 @@ func genClientConfig(*Request[any]) *Response {
 	var tunnelCfgs = make([]*configs.ClientTunnelConfig, 0)
 	if cfgs != nil {
 		for _, cfg := range cfgs {
+			s := cfg.Destination.String
+			if s == "" {
+				s = "#{localAddress}"
+			}
 			tcfg := &configs.ClientTunnelConfig{
 				TunnelType:  base.TransformProtocol(cfg.Protocol),
 				ProxyId:     cfg.ProxyID,
-				Destination: "#{localAddress}",
+				Destination: s,
 			}
 			if tcfg.ProxyId == "UDP" {
 				tcfg.UdpSize = 1500

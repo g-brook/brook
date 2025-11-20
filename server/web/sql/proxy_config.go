@@ -51,7 +51,7 @@ func DelProxyConfig(id int) error {
 }
 
 func UpdateProxyConfig(p ProxyConfig) error {
-	err := Exec("update proxy_config set name=?,tag=?,proxy_id=?,protocol=?,destination=? where idx=?", p.Name, p.Tag, p.ProxyID, p.Protocol, p.Destination, p.Idx)
+	err := Exec("update proxy_config set name=?,tag=?,proxy_id=?,protocol=?,destination=? where idx=?", p.Name, p.Tag, p.ProxyID, p.Protocol, p.Destination.String, p.Idx)
 	return err
 }
 
