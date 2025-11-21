@@ -109,6 +109,7 @@ func format(item *sql.ProxyConfig) *sf.ServerTunnelConfig {
 	var st = new(sf.ServerTunnelConfig)
 	st.Id = item.ProxyID
 	st.Port = item.RemotePort
+	st.Destination = item.Destination.String
 	protocol := TransformProtocol(item.Protocol)
 	if protocol == "" {
 		log.Error("protocol is not support: %s", item.Protocol)

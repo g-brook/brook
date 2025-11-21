@@ -305,10 +305,12 @@ func (htl *TunnelHttpServer) RegisterConn(ch Channel, request exchange.TRegister
 
 func (htl *TunnelHttpServer) createConn(ch Channel) (err error) {
 	req := &exchange.WorkConnReq{
-		ProxyId:    htl.Cfg.Id,
-		RemotePort: htl.Cfg.Port,
+		ProxyId: htl.Cfg.Id,
 	}
 	request, err := exchange.NewRequest(req)
+	if err != nil {
+		return err
+	}
 	_, err = ch.Write(request.Bytes())
 	return
 }

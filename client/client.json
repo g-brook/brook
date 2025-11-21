@@ -16,7 +16,6 @@
     },
     {
       "type": "tcp",
-      "destination": "127.0.0.1:22",
       "proxyId": "Local-22"
     },
     {

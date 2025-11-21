@@ -36,7 +36,7 @@ type TunnelUdpServer struct {
 func NewUdpTunnelServer(server *tunnel.BaseTunnelServer) *TunnelUdpServer {
 	tunnelServer := &TunnelUdpServer{
 		BaseTunnelServer: server,
-		resources:        NewResources(100, server.Cfg.Id, server.Cfg.Port, server.GetManager),
+		resources:        NewResources(100, server.Cfg, server.GetManager),
 	}
 	server.DoStart = tunnelServer.startAfter
 	return tunnelServer

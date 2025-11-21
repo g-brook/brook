@@ -48,12 +48,13 @@ type LoggerConfig struct {
 }
 
 type ServerTunnelConfig struct {
-	Id       string            `json:"id"`
-	Port     int               `json:"port"`
-	Type     lang.TunnelType   `json:"type"`
-	KeyFile  string            `json:"keyfile"`
-	CertFile string            `json:"certFile"`
-	Http     []HttpRunnelProxy `json:"http"`
+	Id          string            `json:"id"`
+	Port        int               `json:"port"`
+	Type        lang.TunnelType   `json:"type"`
+	KeyFile     string            `json:"keyfile"`
+	CertFile    string            `json:"certFile"`
+	Http        []HttpRunnelProxy `json:"http"`
+	Destination string            `json:"destination"`
 }
 
 type HttpRunnelProxy struct {

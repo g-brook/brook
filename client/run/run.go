@@ -19,7 +19,6 @@ package run
 import (
 	"fmt"
 	"os"
-	"strings"
 
 	"github.com/brook/client/cli"
 	"github.com/brook/common/configs"
@@ -83,13 +82,6 @@ func verilyBaseConfig(c *configs.ClientConfig) {
 		}
 		if it.TunnelType == "" {
 			panic("Tunnels TunnelType（tcp、udp、http(s)） is null, system exit")
-		}
-		if it.Destination == "" {
-			panic("Tunnels Destination is null, system exit")
-		}
-		split := strings.Split(it.Destination, ":")
-		if len(split) != 2 {
-			panic("Tunnels Destination is error:" + it.Destination + "correct is ip:port")
 		}
 	}
 }

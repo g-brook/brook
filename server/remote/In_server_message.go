@@ -26,7 +26,19 @@ import (
 
 var Inserver *InServer
 
-var OpenTunnelServerFun func(req exchange.OpenTunnelReq, ch transport.Channel) (int, error)
+type TunnelCfg struct {
+	RemotePort  int
+	Destination string
+}
+
+func NewTunnelCfg(remotePort int, destination string) *TunnelCfg {
+	return &TunnelCfg{
+		RemotePort:  remotePort,
+		Destination: destination,
+	}
+}
+
+var OpenTunnelServerFun func(req exchange.OpenTunnelReq, ch transport.Channel) (*TunnelCfg, error)
 
 // InWriteMessage This function takes a user ID and an InBound request as parameters and sends the request to the user's connection
 func InWriteMessage(unId string, r exchange.InBound) error {
@@ -44,10 +56,10 @@ func InWriteMessage(unId string, r exchange.InBound) error {
 	}
 }
 
-func OpenTunnelServer(req exchange.OpenTunnelReq, ch transport.Channel) (int, error) {
+func OpenTunnelServer(req exchange.OpenTunnelReq, ch transport.Channel) (*TunnelCfg, error) {
 	if OpenTunnelServerFun == nil {
 		log.Error("not found open tunnel function")
-		return 0, fmt.Errorf("not found open tunnel function")
+		return nil, fmt.Errorf("not found open tunnel function")
 	}
 	return OpenTunnelServerFun(req, ch)
 }

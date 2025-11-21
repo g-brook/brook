@@ -17,6 +17,7 @@
 package tcp
 
 import (
+	"github.com/brook/common/configs"
 	"github.com/brook/common/exchange"
 	trp "github.com/brook/common/transport"
 	. "github.com/brook/server/tunnel"
@@ -24,18 +25,18 @@ import (
 
 type Resources struct {
 	pool       *TunnelPool
-	proxyId    string
-	remotePort int
+	cfg        *configs.ServerTunnelConfig
 	getManager func() trp.Channel
 }
 
 // NewResources creates and returns a new Resources instance
 // This is a constructor function that initializes a Resources struct
-func NewResources(size int, proxyId string, remotePort int, getManager func() trp.Channel) *Resources {
+func NewResources(size int,
+	cfg *configs.ServerTunnelConfig,
+	getManager func() trp.Channel) *Resources {
 	p := &Resources{
-		proxyId:    proxyId,
-		remotePort: remotePort,
 		getManager: getManager,
+		cfg:        cfg,
 	}
 	p.pool = NewTunnelPool(p.createConnection, size)
 	return p
@@ -45,11 +46,10 @@ func (htl *Resources) createConnection() error {
 	manager := htl.getManager()
 	if manager != nil {
 		req := &exchange.WorkConnReq{
-			ProxyId:    htl.proxyId,
-			RemotePort: htl.remotePort,
+			ProxyId: htl.cfg.Id,
 		}
 		request, _ := exchange.NewRequest(req)
-		manager.Write(request.Bytes())
+		_, _ = manager.Write(request.Bytes())
 	}
 	return nil
 }

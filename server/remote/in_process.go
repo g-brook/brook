@@ -108,12 +108,13 @@ func loginProcess(req exchange.LoginReq, ch transport.Channel) (any, error) {
 }
 
 func openTunnelProcess(req exchange.OpenTunnelReq, ch transport.Channel) (any, error) {
-	openPort, err := OpenTunnelServer(req, ch)
+	cfg, err := OpenTunnelServer(req, ch)
 	if err != nil {
 		return nil, err
 	}
 	return exchange.OpenTunnelResp{
-		UnId:       req.UnId,
-		RemotePort: openPort,
+		UnId:        req.UnId,
+		RemotePort:  cfg.RemotePort,
+		Destination: cfg.Destination,
 	}, nil
 }

@@ -17,8 +17,7 @@
 package exchange
 
 type WorkConnReq struct {
-	ProxyId    string `json:"proxy_id"`
-	RemotePort int    `json:"remote_port"`
+	ProxyId string `json:"proxy_id"`
 }
 
 func (r *WorkConnReq) Cmd() Cmd {

@@ -79,7 +79,6 @@ func (m *MultipleTunnelClient) messageLister() {
 				log.Warn("not found session %v", reqWorder.ProxyId)
 				return
 			}
-			config.RemotePort = reqWorder.RemotePort
 			client := newTunnelClient(config, m)
 			if client != nil {
 				_ = client.Open(session)
@@ -118,14 +117,17 @@ func (m *MultipleTunnelClient) Open(session *smux.Session) error {
 		return err
 	}
 	rspObj, _ := exchange.Parse[exchange.OpenTunnelResp](rsp.Data)
-
+	if m.currentConfig.Destination == "" {
+		m.currentConfig.Destination = rspObj.Destination
+	}
+	m.currentConfig.RemotePort = rspObj.RemotePort
 	cli.UpdateConnections(session.RemoteAddr().String(), rspObj.RemotePort, m.currentConfig.Destination, string(m.currentConfig.TunnelType), session.IsClosed())
 
 	clis.ManagerTransport.PutConfig(m.currentConfig)
 	m.sessions.Store(m.currentConfig.ProxyId, session)
 	log.Info("Open %v tunnel client success:%v:%v", m.currentConfig.TunnelType, m.currentConfig.ProxyId, rspObj.RemotePort)
 	//Only httpx client open session.
-	m.OnlyOpenHttp(req.ProxyId, rspObj.RemotePort)
+	m.OnlyOpenHttp(req.ProxyId, rspObj.RemotePort, rspObj.Destination)
 	return nil
 }
 
@@ -135,13 +137,12 @@ func (m *MultipleTunnelClient) Close() {
 
 }
 
-func (m *MultipleTunnelClient) OnlyOpenHttp(proxyId string, remotePort int) {
+func (m *MultipleTunnelClient) OnlyOpenHttp(proxyId string, remotePort int, destination string) {
 	if m.currentConfig.TunnelType != lang.Http && m.currentConfig.TunnelType != lang.Https {
 		return
 	}
 	req := &exchange.WorkConnReq{
-		ProxyId:    proxyId,
-		RemotePort: remotePort,
+		ProxyId: proxyId,
 	}
 	request, _ := exchange.NewRequest(req)
 	for i := 0; i < 2; i++ {

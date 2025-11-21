@@ -41,21 +41,21 @@ func init() {
 
 // OpenTunnelServer open tcp tunnel server
 // This function opens a tunnel server based on the request parameters.
-func OpenTunnelServer(request exchange.OpenTunnelReq, manager Channel) (int, error) {
+func OpenTunnelServer(request exchange.OpenTunnelReq, manager Channel) (*remote.TunnelCfg, error) {
 	cfgNode := TunnelCfm.ConfigApi.GetConfig(request.ProxyId)
 	if cfgNode == nil {
-		return 0, fmt.Errorf("not found proxy id %v", request.ProxyId)
+		return nil, fmt.Errorf("not found proxy id %v", request.ProxyId)
 	}
 	cfgNode.openLock.Lock()
 	defer cfgNode.openLock.Unlock()
 	t, b := servers.Load(cfgNode.config.Id)
 	if b {
 		t.PutManager(manager)
-		return cfgNode.config.Port, nil
+		return remote.NewTunnelCfg(cfgNode.config.Port, cfgNode.config.Destination), nil
 	} else {
 		baseServer, err := running(cfgNode.config)
 		if err != nil {
-			return 0, err
+			return nil, err
 		}
 		t, b := servers.Load(cfgNode.config.Id)
 		if b {
@@ -64,7 +64,7 @@ func OpenTunnelServer(request exchange.OpenTunnelReq, manager Channel) (int, err
 			})
 			t.PutManager(manager)
 		}
-		return baseServer.Port(), err
+		return remote.NewTunnelCfg(baseServer.Port(), baseServer.Cfg.Destination), err
 	}
 }
 

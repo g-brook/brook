@@ -39,7 +39,7 @@ type TunnelTcpServer struct {
 func NewTcpTunnelServer(server *tunnel.BaseTunnelServer) *TunnelTcpServer {
 	tunnelServer := &TunnelTcpServer{
 		BaseTunnelServer: server,
-		resources:        NewResources(100, server.Cfg.Id, server.Cfg.Port, server.GetManager),
+		resources:        NewResources(100, server.Cfg, server.GetManager),
 	}
 	server.DoStart = tunnelServer.startAfter
 	return tunnelServer
