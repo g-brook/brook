@@ -105,13 +105,17 @@ func (t *UdpTunnelClient) initOpen(*transport.SChannel) (err error) {
 			var pk exchange.UdpPackage
 			err = json.Unmarshal(data, &pk)
 			if err != nil {
+				close(stop)
 				return
 			}
-			udpConn, err, ok := t.localConn(pk.RemoteAddress)
+			connKey := pk.RemoteAddress.String()
+			udpConn, ok, err := t.localConn(connKey)
 			if err != nil {
 				if udpConn != nil {
 					_ = udpConn.Close()
 				}
+				log.Error("%v", err)
+				close(stop)
 				return
 			}
 			_, err2 := udpConn.Write(p.Data)
@@ -152,10 +156,13 @@ func (t *UdpTunnelClient) getReq() *exchange.UdpRegisterReqAndRsp {
 		RemoteAddress:     t.localAddress.String(),
 	}
 }
-func (t *UdpTunnelClient) localConn(rAddr *net.UDPAddr) (*net.UDPConn, error, bool) {
-	load, b := t.udpConnMap.Load(rAddr.String())
+func (t *UdpTunnelClient) localConn(connKey string) (*net.UDPConn, bool, error) {
+	load, b := t.udpConnMap.Load(connKey)
 	if b {
-		return load, nil, true
+		if t.isConnAlive(load) {
+			return load, true, nil
+		}
+		t.udpConnMap.Delete(connKey)
 	}
 	connFunction := func() (*net.UDPConn, error) {
 		dial, err := net.DialUDP(string(lang.NetworkUdp), nil, t.localAddress)
@@ -163,9 +170,22 @@ func (t *UdpTunnelClient) localConn(rAddr *net.UDPAddr) (*net.UDPConn, error, bo
 			return nil, err
 		}
 		log.Info("Connection localAddress, %v success", t.GetCfg().Destination)
-		t.udpConnMap.Store(rAddr.String(), dial)
-		return dial, err
+		t.udpConnMap.Store(connKey, dial)
+		return dial, nil
 	}
 	dial, err := connFunction()
-	return dial, err, false
+	return dial, false, err
+}
+
+// 检测 UDP 连接是否可用
+func (t *UdpTunnelClient) isConnAlive(conn *net.UDPConn) bool {
+	if conn == nil {
+		return false
+	}
+	err := conn.SetWriteDeadline(time.Now().Add(1 * time.Millisecond))
+	if err != nil {
+		return false
+	}
+	_ = conn.SetWriteDeadline(time.Time{})
+	return true
 }

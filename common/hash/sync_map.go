@@ -73,9 +73,7 @@ func (receiver *SyncMap[K, V]) LoadAndDelete(key any) (V, bool) {
 
 // Delete This function deletes a key from the SyncMap
 func (receiver *SyncMap[K, V]) Delete(key K) {
-	// Call the Delete function from the data field of the SyncMap
-	receiver.len.Add(-1)
-	receiver.data.Delete(key)
+	receiver.LoadAndDelete(key)
 }
 
 // Swap This function swaps the value associated with a given key in a SyncMap

@@ -17,7 +17,6 @@
 package clis
 
 import (
-	"container/list"
 	"context"
 	"errors"
 	"fmt"
@@ -62,8 +61,6 @@ type ClientControl struct {
 	write chan []byte
 
 	cli *Client
-
-	list *list.List
 }
 
 type ClientHandler interface {
@@ -175,7 +172,6 @@ func NewClient(host string, port int) *Client {
 			timeout: make(chan bool),
 			revRead: make(chan struct{}),
 			write:   make(chan []byte, 1024),
-			list:    list.New(),
 		},
 		handlers: make([]ClientHandler, 0),
 	}

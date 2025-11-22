@@ -111,6 +111,10 @@ func NewChannel(conn gnet.Conn, t *Server) *GChannel {
 	}
 	connLock.Lock()
 	defer connLock.Unlock()
+	value, ok = t.connections.Load(connContext.Id)
+	if ok {
+		return value
+	}
 	bgCtx, cancelFunc := context.WithCancel(context.Background())
 	v2 := &GChannel{
 		Conn:        conn,
@@ -244,8 +248,11 @@ func (sever *Server) OnTraffic(c gnet.Conn) gnet.Action {
 	defer sever.removeIfConnection(conn)
 	if sever.startSmux != nil {
 		if conn.PipeConn != nil {
-			buf, _ := conn.Next(-1)
-			_, err := conn.PipeConn.Copy(buf)
+			buf, err := conn.Next(-1)
+			if err != nil {
+				log.Error("pipeConn.Copy error: %s", err)
+			}
+			_, err = conn.PipeConn.Copy(buf)
 			if err != nil {
 				log.Error("pipeConn.Copy error: %s", err)
 			}
