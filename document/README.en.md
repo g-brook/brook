@@ -154,7 +154,9 @@ Client `client.json` keys:
 CLI flags:
 
 - Server: `./brook-sev -c ./server.json` or `./brook-sev --configs ./server.json`
+- Server background start: `nohup ./brook-sev > app.log 2>&1 &`
 - Client: `./brook-cli -c ./client.json` or `./brook-cli --configs ./client.json`
+- Client background start: `nohup ./brook-cli > app.log 2>&1 &`
 
 ---
 
