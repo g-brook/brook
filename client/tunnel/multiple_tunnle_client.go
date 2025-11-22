@@ -17,6 +17,8 @@
 package tunnel
 
 import (
+	"fmt"
+	"sync"
 	"time"
 
 	"github.com/brook/client/cli"
@@ -30,19 +32,29 @@ import (
 	"github.com/xtaci/smux"
 )
 
+var (
+	globalMultipleClient *MultipleTunnelClient
+	initOnce             sync.Once
+)
+
+const (
+	// HTTP隧道预创建的工作连接数
+	httpWorkerConnCount = 2
+)
+
 // This function is used to register a new tunnel client for the TCP protocol
 func init() {
-	client := &MultipleTunnelClient{
-		messageState: true,
-		sessions:     hash.NewSyncMap[string, *smux.Session](),
-	}
 	ft := func(config *configs.ClientTunnelConfig) clis.TunnelClient {
-		client.currentConfig = config
-		if client.messageState {
-			client.messageLister()
-			client.messageState = false
+		initOnce.Do(func() {
+			globalMultipleClient = &MultipleTunnelClient{
+				sessions: hash.NewSyncMap[string, *smux.Session](),
+			}
+			globalMultipleClient.messageListener()
+		})
+		return &tunnelClientWrapper{
+			multiClient: globalMultipleClient,
+			config:      config,
 		}
-		return client
 	}
 	clis.RegisterTunnelClient(lang.Tcp, ft)
 	clis.RegisterTunnelClient(lang.Udp, ft)
@@ -51,32 +63,40 @@ func init() {
 }
 
 type MultipleTunnelClient struct {
-	currentConfig *configs.ClientTunnelConfig
-	messageState  bool
-	sessions      *hash.SyncMap[string, *smux.Session]
+	sessions  *hash.SyncMap[string, *smux.Session]
+	closeOnce sync.Once
 }
 
-func (m *MultipleTunnelClient) Done() <-chan struct{} {
-	panic("implement me")
+type tunnelClientWrapper struct {
+	multiClient *MultipleTunnelClient
+	config      *configs.ClientTunnelConfig
 }
 
-func (m *MultipleTunnelClient) GetName() string {
-	return "multiple-tunnel-client"
+func (w *tunnelClientWrapper) Done() <-chan struct{} {
+	return nil
 }
 
-func (m *MultipleTunnelClient) messageLister() {
+func (w *tunnelClientWrapper) GetName() string {
+	return "tunnel-client-wrapper"
+}
+
+func (m *MultipleTunnelClient) messageListener() {
 	clis.ManagerTransport.AddMessageNotify(exchange.WorkerConnReq, func(r *exchange.Protocol) error {
 		threading.GoSafe(func() {
-			reqWorder, _ := exchange.Parse[exchange.WorkConnReq](r.Data)
-			config := clis.ManagerTransport.GetConfig(reqWorder.ProxyId)
+			reqWorker, err := exchange.Parse[exchange.WorkConnReq](r.Data)
+			if err != nil {
+				log.Error("Parse WorkConnReq error: %v", err)
+				return
+			}
+			config := clis.ManagerTransport.GetConfig(reqWorker.ProxyId)
 			if config == nil {
-				log.Warn("configs is nil %v", reqWorder.ProxyId)
+				log.Warn("configs is nil %v", reqWorker.ProxyId)
 				return
 			}
 			id := config.ProxyId
 			session, b := m.sessions.Load(id)
 			if !b {
-				log.Warn("not found session %v", reqWorder.ProxyId)
+				log.Warn("not found session %v", reqWorker.ProxyId)
 				return
 			}
 			client := newTunnelClient(config, m)
@@ -101,10 +121,10 @@ func newTunnelClient(config *configs.ClientTunnelConfig, m *MultipleTunnelClient
 }
 
 // Open This function opens a TCP tunnel server for a given session.
-func (m *MultipleTunnelClient) Open(session *smux.Session) error {
+func (w *tunnelClientWrapper) Open(session *smux.Session) error {
 	// Create a new OpenTunnelReq struct with the proxy ID, tunnel type, and tunnel port.
 	req := &exchange.OpenTunnelReq{
-		ProxyId: m.currentConfig.ProxyId,
+		ProxyId: w.config.ProxyId,
 		UnId:    clis.ManagerTransport.UnId,
 	}
 	rsp, err := clis.ManagerTransport.SyncWrite(req, 5*time.Second)
@@ -113,39 +133,71 @@ func (m *MultipleTunnelClient) Open(session *smux.Session) error {
 		return err
 	}
 	if !rsp.IsSuccess() {
-		log.Error("Open %v tunnel server error %v", m.currentConfig.ProxyId, rsp.RspMsg)
-		return err
+		log.Error("Open %v tunnel server error %v", w.config.ProxyId, rsp.RspMsg)
+		return fmt.Errorf("open tunnel failed: %s", rsp.RspMsg)
 	}
-	rspObj, _ := exchange.Parse[exchange.OpenTunnelResp](rsp.Data)
-	if m.currentConfig.Destination == "" {
-		m.currentConfig.Destination = rspObj.Destination
+	rspObj, err := exchange.Parse[exchange.OpenTunnelResp](rsp.Data)
+	if err != nil {
+		log.Error("Parse OpenTunnelResp error: %v", err)
+		return fmt.Errorf("parse response error: %w", err)
 	}
-	m.currentConfig.RemotePort = rspObj.RemotePort
-	cli.UpdateConnections(session.RemoteAddr().String(), rspObj.RemotePort, m.currentConfig.Destination, string(m.currentConfig.TunnelType), session.IsClosed())
 
-	clis.ManagerTransport.PutConfig(m.currentConfig)
-	m.sessions.Store(m.currentConfig.ProxyId, session)
-	log.Info("Open %v tunnel client success:%v:%v", m.currentConfig.TunnelType, m.currentConfig.ProxyId, rspObj.RemotePort)
-	//Only httpx client open session.
-	m.OnlyOpenHttp(req.ProxyId, rspObj.RemotePort, rspObj.Destination)
+	if w.config.Destination == "" {
+		w.config.Destination = rspObj.Destination
+	}
+	w.config.RemotePort = rspObj.RemotePort
+
+	cli.UpdateConnections(session.RemoteAddr().String(), rspObj.RemotePort, w.config.Destination, string(w.config.TunnelType), session.IsClosed())
+
+	clis.ManagerTransport.PutConfig(w.config)
+	w.multiClient.sessions.Store(w.config.ProxyId, session)
+	log.Info("Open %v tunnel client success:%v:%v", w.config.TunnelType, w.config.ProxyId, rspObj.RemotePort)
+	//Only http client open session.
+	w.onlyOpenHttp(req.ProxyId)
 	return nil
 }
 
 func (m *MultipleTunnelClient) Close() {
-	m.sessions.Clear()
-	m.currentConfig = nil
-
+	m.closeOnce.Do(func() {
+		// Close all sessions
+		m.sessions.Range(func(key string, session *smux.Session) bool {
+			if session != nil && !session.IsClosed() {
+				_ = session.Close()
+			}
+			return true
+		})
+		m.sessions.Clear()
+	})
 }
 
-func (m *MultipleTunnelClient) OnlyOpenHttp(proxyId string, remotePort int, destination string) {
-	if m.currentConfig.TunnelType != lang.Http && m.currentConfig.TunnelType != lang.Https {
+func (w *tunnelClientWrapper) Close() {
+	// Wrapper doesn't close the global client
+	// Only remove this session if needed
+	if w.config != nil {
+		if session, ok := w.multiClient.sessions.Load(w.config.ProxyId); ok {
+			if session != nil && !session.IsClosed() {
+				_ = session.Close()
+			}
+			w.multiClient.sessions.Delete(w.config.ProxyId)
+		}
+	}
+}
+
+func (w *tunnelClientWrapper) onlyOpenHttp(proxyId string) {
+	if w.config.TunnelType != lang.Http && w.config.TunnelType != lang.Https {
 		return
 	}
 	req := &exchange.WorkConnReq{
 		ProxyId: proxyId,
 	}
-	request, _ := exchange.NewRequest(req)
-	for i := 0; i < 2; i++ {
-		_ = clis.ManagerTransport.PushMessage(request)
+	request, err := exchange.NewRequest(req)
+	if err != nil {
+		log.Error("Create WorkConnReq error: %v", err)
+		return
+	}
+	for i := 0; i < httpWorkerConnCount; i++ {
+		if err := clis.ManagerTransport.PushMessage(request); err != nil {
+			log.Error("Push WorkConnReq message error: %v", err)
+		}
 	}
 }

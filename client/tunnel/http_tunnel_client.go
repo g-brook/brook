@@ -30,7 +30,8 @@ import (
 
 func NewHttpTunnelClient(config *configs.ClientTunnelConfig) *HttpTunnelClient {
 	if config.HttpId == "" {
-		panic("httpId is empty")
+		log.Warn("HttpId is empty,http tunnel client will not connect")
+		return nil
 	}
 	tunnelClient := clis.NewBaseTunnelClient(config, true)
 	client := HttpTunnelClient{
@@ -66,9 +67,8 @@ func (h *HttpTunnelClient) initOpen(*transport.SChannel) error {
 	if err != nil {
 		log.Error("Register fail %v", err)
 		return err
-	} else {
-		log.Info("Register success:PORT-%v", rsp.TunnelPort)
 	}
+	log.Info("Register success:PORT-%v", rsp.TunnelPort)
 	return nil
 }
 
@@ -99,7 +99,7 @@ func (h *HttpTunnelClient) bindHandler(_ *exchange.Protocol, rw io.ReadWriteClos
 						return
 					}
 					wsBridge.toRunning()
-					log.Debug("Connect to %v websocket success.")
+					log.Debug("Connect to websocket success.")
 					return
 				})
 			}
@@ -122,7 +122,8 @@ func (h *HttpTunnelClient) bindHandler(_ *exchange.Protocol, rw io.ReadWriteClos
 		err := loopRead()
 		if err == io.EOF {
 			log.Debug("http stream close.")
-			rw.Close()
+			_ = rw.Close()
+			return nil
 		}
 	}
 
