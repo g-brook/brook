@@ -7,6 +7,7 @@ import useI18n from '@/components/lang/useI18n';
 interface Info {
   lastTime: string;
   host: string;
+  agentId: string;
 
 }
 
@@ -33,7 +34,7 @@ const proxyId = ref<string>(props.proxyId);
 const configs = ref<Info[]>([]);
 const webLogs = ref<WebLog[]>([]);
 
-const { t } = useI18n();
+const {t} = useI18n();
 
 const getServerInfos = async () => {
   const response = await baseInfo.getServerInfoByProxyId({proxyId: proxyId.value});
@@ -77,6 +78,8 @@ defineExpose({
             <tr>
               <th class="bg-base-100 font-semibold" style="width: 2px">#
               </th>
+              <th class="bg-base-100 font-semibold" style="width: 40px">Agent-Id
+              </th>
               <th class="bg-base-100 font-semibold" style="width: 80px">{{ t('common.address') }}
               </th>
               <th class="bg-base-100 font-semibold" style="width: 80px">{{ t('server.connectionTime') }}
@@ -91,6 +94,7 @@ defineExpose({
                 </div>
 
               </th>
+              <td>{{ item.agentId }}</td>
               <td>{{ item.host }}</td>
               <td>{{ item.lastTime }}</td>
             </tr>

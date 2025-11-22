@@ -50,9 +50,13 @@ type SChannel struct {
 
 // NewSChannel creates a new SChannel with the given smux stream
 // It initializes a pipe for reading and writing
-func NewSChannel(stream *smux.Stream, parent context.Context, isOpenTunnel bool) *SChannel {
+func NewSChannel(
+	stream *smux.Stream,
+	parent context.Context,
+	isOpenTunnel bool) *SChannel {
 	ctx, cancelFunc := context.WithCancel(parent)
-	ch := &SChannel{Stream: stream,
+	ch := &SChannel{
+		Stream:       stream,
 		ctx:          ctx,
 		id:           uuid.NewString(),
 		cancel:       cancelFunc,

@@ -31,10 +31,10 @@ func init() {
 
 func getServerInfoByProxyId(req *Request[QueryServerInfo]) *Response {
 	servers := metrics.M.GetServers()
-	prxoyId := req.Body.ProxyId
+	proxyId := req.Body.ProxyId
 	var tm metrics.TunnelMetrics
 	for _, item := range servers {
-		if item.Id() == prxoyId {
+		if item.Id() == proxyId {
 			tm = item
 			break
 		}
@@ -47,6 +47,7 @@ func getServerInfoByProxyId(req *Request[QueryServerInfo]) *Response {
 		v = append(v, &ServerClientInfo{
 			Host:     it.RemoteAddr().String(),
 			LastTime: it.LastTime().Format("2006-04-02 15:04:05"),
+			AgentId:  it.GetId(),
 		})
 	}
 

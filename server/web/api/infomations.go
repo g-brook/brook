@@ -73,6 +73,7 @@ type InitInfo struct {
 type ServerClientInfo struct {
 	Host     string `json:"host"`
 	LastTime string `json:"lastTime"`
+	AgentId  string `json:"agentId"`
 }
 
 type WebConfigInfo struct {
