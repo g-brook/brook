@@ -21,7 +21,6 @@ import (
 	"fmt"
 	"io"
 	"net"
-	"time"
 
 	"github.com/brook/client/clis"
 	"github.com/brook/common/configs"
@@ -34,18 +33,14 @@ import (
 
 type TcpTunnelClient struct {
 	*clis.BaseTunnelClient
-	reconnect   *clis.ReconnectManager
-	multipleTcp *MultipleTunnelClient
 }
 
-func NewTcpTunnelClient(config *configs.ClientTunnelConfig, mtpc *MultipleTunnelClient) *TcpTunnelClient {
+func NewTcpTunnelClient(config *configs.ClientTunnelConfig, _ *MultipleTunnelClient) *TcpTunnelClient {
 	tunnelClient := clis.NewBaseTunnelClient(config, false)
 	client := TcpTunnelClient{
 		BaseTunnelClient: tunnelClient,
-		multipleTcp:      mtpc,
 	}
 	client.BaseTunnelClient.DoOpen = client.initOpen
-	client.reconnect = clis.NewReconnectionManager(3 * time.Second)
 	return &client
 }
 

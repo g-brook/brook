@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"io"
 	"net"
+	"sync"
 	"time"
 
 	"github.com/brook/client/clis"
@@ -37,21 +38,18 @@ import (
 
 type UdpTunnelClient struct {
 	*clis.BaseTunnelClient
-	reconnect    *clis.ReconnectManager
-	multipleTcp  *MultipleTunnelClient
 	localAddress *net.UDPAddr
 	bufSize      int
 	udpConnMap   *hash.SyncMap[string, *net.UDPConn]
 }
 
-func NewUdpTunnelClient(cfg *configs.ClientTunnelConfig, mtpc *MultipleTunnelClient) *UdpTunnelClient {
+func NewUdpTunnelClient(cfg *configs.ClientTunnelConfig, _ *MultipleTunnelClient) *UdpTunnelClient {
 	if cfg.UdpSize == 0 {
 		cfg.UdpSize = 1500
 	}
 	tunnelClient := clis.NewBaseTunnelClient(cfg, false)
 	client := UdpTunnelClient{
 		BaseTunnelClient: tunnelClient,
-		multipleTcp:      mtpc,
 		bufSize:          cfg.UdpSize,
 		udpConnMap:       hash.NewSyncMap[string, *net.UDPConn](),
 	}
@@ -62,7 +60,6 @@ func NewUdpTunnelClient(cfg *configs.ClientTunnelConfig, mtpc *MultipleTunnelCli
 		return nil
 	}
 	client.BaseTunnelClient.DoOpen = client.initOpen
-	client.reconnect = clis.NewReconnectionManager(3 * time.Second)
 	return &client
 }
 
@@ -73,26 +70,33 @@ func (t *UdpTunnelClient) GetName() string {
 func (t *UdpTunnelClient) initOpen(*transport.SChannel) (err error) {
 
 	stop := make(chan struct{})
+	var stopOnce sync.Once
+	safeClose := func() {
+		stopOnce.Do(func() {
+			close(stop)
+		})
+	}
+
 	readLoop := func(updConn *net.UDPConn, remoteAddress *net.UDPAddr, bucket *exchange.TunnelBucket) {
 		pool := iox.GetByteBufPool(t.bufSize)
 		for {
 			err := iox.WithBuffer(func(buf []byte) error {
-				_, _, err = updConn.ReadFromUDP(buf)
+				n, _, err := updConn.ReadFromUDP(buf)
 				if err != nil {
 					return err
 				}
-				pk := exchange.NewUdpPackage(buf, nil, remoteAddress)
+				pk := exchange.NewUdpPackage(buf[:n], nil, remoteAddress)
 				data, err := json.Marshal(pk)
 				_ = bucket.Push(data, nil)
 				return err
 			}, pool)
-			if err != nil && err == io.EOF {
-				close(stop)
+			if err == io.EOF {
+				safeClose()
 				return
 			}
 			select {
 			case <-bucket.Done():
-				close(stop)
+				safeClose()
 				return
 			default:
 			}
@@ -103,9 +107,8 @@ func (t *UdpTunnelClient) initOpen(*transport.SChannel) (err error) {
 		bucket.DefaultRead(func(p *exchange.TunnelProtocol) {
 			data := p.Data
 			var pk exchange.UdpPackage
-			err = json.Unmarshal(data, &pk)
-			if err != nil {
-				close(stop)
+			if err := json.Unmarshal(data, &pk); err != nil {
+				safeClose()
 				return
 			}
 			connKey := pk.RemoteAddress.String()
@@ -115,13 +118,13 @@ func (t *UdpTunnelClient) initOpen(*transport.SChannel) (err error) {
 					_ = udpConn.Close()
 				}
 				log.Error("%v", err)
-				close(stop)
+				safeClose()
 				return
 			}
 			_, err2 := udpConn.Write(p.Data)
 			if err2 != nil {
 				log.Error("Write to local address error %v", err2)
-				close(stop)
+				safeClose()
 				return
 			}
 			if !ok {
@@ -162,6 +165,7 @@ func (t *UdpTunnelClient) localConn(connKey string) (*net.UDPConn, bool, error) 
 		if t.isConnAlive(load) {
 			return load, true, nil
 		}
+		_ = load.Close()
 		t.udpConnMap.Delete(connKey)
 	}
 	connFunction := func() (*net.UDPConn, error) {
