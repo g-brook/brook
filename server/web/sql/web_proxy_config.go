@@ -24,7 +24,7 @@ type WebProxyConfig struct {
 	Proxy      string `db:"proxy" json:"proxy"`
 }
 
-func AddWebProxyConfig(p WebProxyConfig) error {
+func AddWebProxyConfig(p *WebProxyConfig) error {
 	err := Exec(`
 				INSERT INTO web_proxy_config("ref_proxy_id","cert_file","key_file","proxy")
 				VALUES (?, ?, ?, ?);
@@ -32,7 +32,7 @@ func AddWebProxyConfig(p WebProxyConfig) error {
 	return err
 }
 
-func UpdateWebProxyConfig(p WebProxyConfig) error {
+func UpdateWebProxyConfig(p *WebProxyConfig) error {
 	return Exec(`
 				UPDATE web_proxy_config SET "cert_file"=?, "key_file"=?, "proxy"=? WHERE "ref_proxy_id"=?;
 			`, p.CertFile, p.KeyFile, p.Proxy, p.RefProxyId)

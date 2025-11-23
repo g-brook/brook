@@ -191,6 +191,15 @@ func addWebConfigs(req *Request[WebConfigInfo]) *Response {
 	if err != nil {
 		return NewResponseFail(errs.CodeSysErr, "Add web configs failed")
 	}
+	//更新状态.
+	oldConfig := sql.GetProxyConfigByIdNotState(body.RefProxyId)
+	if oldConfig == nil {
+		return NewResponseFail(errs.CodeSysErr, "Get proxy config failed")
+	}
+	if oldConfig.State != 1 {
+		oldConfig.State = 1
+		_ = sql.UpdateProxyState(oldConfig)
+	}
 	toPushConfig(body.RefProxyId)
 	return NewResponseSuccess(nil)
 }

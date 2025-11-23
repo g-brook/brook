@@ -107,8 +107,8 @@ func (r *ProxyConfig) IsHttpOrHttps() bool {
 	return r.Protocol == "HTTP" || r.Protocol == "HTTPS"
 }
 
-func (r *ProxyConfig) toDb() sql.ProxyConfig {
-	return sql.ProxyConfig{
+func (r *ProxyConfig) toDb() *sql.ProxyConfig {
+	return &sql.ProxyConfig{
 		Idx:         r.Idx,
 		Name:        r.Name,
 		Tag:         r.Tag,
@@ -132,9 +132,9 @@ func newProxyConfig(config *sql.ProxyConfig) *ProxyConfig {
 	}
 }
 
-func (r WebConfigInfo) toDb() sql.WebProxyConfig {
+func (r WebConfigInfo) toDb() *sql.WebProxyConfig {
 	j, _ := json.Marshal(r.Proxy)
-	return sql.WebProxyConfig{
+	return &sql.WebProxyConfig{
 		Id:         r.Id,
 		RefProxyId: r.RefProxyId,
 		CertFile:   r.CertFile,

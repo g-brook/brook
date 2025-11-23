@@ -37,7 +37,7 @@ var (
 	ProxyQuerySQL = "idx,name, tag, remote_port, proxy_id, protocol,state,run_state,destination"
 )
 
-func AddProxyConfig(p ProxyConfig) error {
+func AddProxyConfig(p *ProxyConfig) error {
 	err := Exec(`
             INSERT INTO proxy_config(name, tag, remote_port, proxy_id, protocol,state,run_state, destination)
             VALUES (?, ?, ?, ?, ?,?,?,?);
@@ -50,12 +50,12 @@ func DelProxyConfig(id int) error {
 	return err
 }
 
-func UpdateProxyConfig(p ProxyConfig) error {
+func UpdateProxyConfig(p *ProxyConfig) error {
 	err := Exec("update proxy_config set name=?,tag=?,proxy_id=?,protocol=?,destination=? where idx=?", p.Name, p.Tag, p.ProxyID, p.Protocol, p.Destination.String, p.Idx)
 	return err
 }
 
-func UpdateProxyState(p ProxyConfig) error {
+func UpdateProxyState(p *ProxyConfig) error {
 	err := Exec("update proxy_config set state=? where idx=?", p.State, p.Idx)
 	return err
 }

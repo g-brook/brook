@@ -18,6 +18,9 @@
 import {ref} from 'vue';
 import Icon from '@/components/icon/Index.vue';
 
+const emits = defineEmits<{
+  "close": () => void;
+}>()
 // 抽屉状态
 const isOpen = ref(false);
 
@@ -29,6 +32,7 @@ const openDrawer = () => {
 // 关闭抽屉
 const closeDrawer = () => {
   isOpen.value = false;
+  emits('close');
 };
 
 // 切换抽屉状态

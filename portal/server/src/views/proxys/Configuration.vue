@@ -162,7 +162,7 @@ const handleToggleStatus = async (id: number, state: boolean) => {
     });
     if (res.success()) {
       Message.info(t('success.configurationUpdated'))
-      getConfigs()
+      await getConfigs()
     }
   } catch (error) {
   }
@@ -174,7 +174,7 @@ const handleClickDownload = () => {
 
 <template>
   <div class="overflow-hidden">
-    <Drawer ref="drawerRef" :title="t('configuration.webInfoConfig')" icon="brook-web" width="50%">
+    <Drawer ref="drawerRef" :title="t('configuration.webInfoConfig')" icon="brook-web" width="50%" @close="getConfigs">
       <WebConfiguration :refProxyId="webItem?.id" :protocol="webItem?.protocol"/>
     </Drawer>
     <Drawer ref="downloadDrawerRef" :title="t('configuration.template')" icon="brook-empty" width="50%">
