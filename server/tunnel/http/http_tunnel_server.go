@@ -76,6 +76,7 @@ func NewHttpTunnelServer(server *tunnel.BaseTunnelServer) (*TunnelHttpServer, er
 	}
 	server.DoStart = tunnelServer.startAfter
 	server.UpdateConfigFun = func(cfg *configs.ServerTunnelConfig) {
+		log.Info("http tunnel server config updated")
 		formatCfg(cfg, tunnelServer)
 	}
 	server.AddEvent(tunnel.Unregister, tunnelServer.unRegisterConn)
@@ -275,7 +276,7 @@ func (htl *TunnelHttpServer) getRoute(req *http.Request) (*RouteInfo, error) {
 	hosts := strings.Split(host, ":")
 	info := GetRouteInfo(hosts[0], req.URL.Path)
 	if info == nil {
-		return nil, errors.New("route info not found")
+		return nil, errors.New("route info not found:" + hosts[0] + ":" + req.URL.Path)
 	}
 	return info, nil
 }

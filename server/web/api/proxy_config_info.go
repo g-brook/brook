@@ -122,6 +122,7 @@ func delProxyConfig(req *Request[ProxyConfig]) *Response {
 	if err != nil {
 		return NewResponseFail(errs.CodeSysErr, "delete proxy configs failed")
 	}
+	toPushConfig(req.Body.Idx)
 	return NewResponseSuccess(nil)
 }
 

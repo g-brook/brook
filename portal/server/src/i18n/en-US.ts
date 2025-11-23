@@ -329,7 +329,7 @@ export default {
             name: "Server Name",
             type: "Server Type",
             host: "Host Address",
-            port: "Port Number",
+            port: "Port",
             protocol: "Protocol Type",
             status: "Running Status",
             uptime: "Uptime",

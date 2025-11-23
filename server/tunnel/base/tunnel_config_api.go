@@ -17,11 +17,13 @@
 package base
 
 import (
+	"encoding/json"
 	"sync"
 
 	"github.com/brook/common/configs"
 	"github.com/brook/common/hash"
 	"github.com/brook/common/lang"
+	"github.com/brook/common/log"
 	"github.com/brook/common/queue"
 	"github.com/brook/common/threading"
 )
@@ -85,6 +87,8 @@ func (receiver *ConfigManager) Running(api TunnelConfigApi) {
 			if proxyId != "" {
 				newConfig := receiver.ConfigApi.UpdateConfig(proxyId)
 				if newConfig != nil {
+					j, _ := json.Marshal(newConfig.config)
+					log.Info("Update config proxyId: %s:％s", proxyId, string(j))
 					load, b := receiver.listens.Load(newConfig.config.Id)
 					if b {
 						load(newConfig)
