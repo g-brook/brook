@@ -71,7 +71,9 @@ const form = reactive<ConfigForm>({
   tag: props.initialData?.tag || '',
   remotePort: props.initialData?.remotePort || 10000,
   proxyId: props.initialData?.proxyId || '',
-  protocol: props.initialData?.protocol || ''
+  protocol: props.initialData?.protocol || '',
+  destinationAddr:props.initialData?.destination.split(":")[0] || '',
+  destinationPort:props.initialData?.destination.split(":")[1] || null,
 });
 
 const errors = reactive<FormErrors>({});
