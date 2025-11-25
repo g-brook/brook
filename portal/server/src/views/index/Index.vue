@@ -20,6 +20,10 @@ import Left from './Left.vue';
 import Right from './Right.vue';
 import {Menu, menus} from '@/components/menu/menus';
 import baseInfo from "@/service/baseInfo";
+import {useI18n} from '@/components/lang/useI18n';
+import Message from "@/components/message";
+
+const {t} = useI18n();
 
 const selectedComponent = shallowRef<any>(null)
 const title = ref<string>("")
@@ -27,64 +31,85 @@ const describe = ref<string>("")
 const icon = ref<string>("")
 const isLoading = ref<boolean>(false)
 const version = ref('');
+const isUpgrade = ref<boolean>(false)
 // 点击菜单动态加载组件
 const handleSelect = async (item: Menu) => {
-    try {
-        isLoading.value = true
-        // 动态 import
-        const module = await item.comp()
-        selectedComponent.value = module.default
-        title.value = item.title || ""
-        describe.value = item.describe || ""
-        icon.value = item.icon
-    } catch (error) {
-        console.error('Failed to load component:', error)
-    } finally {
-        isLoading.value = false
-    }
+  try {
+    isLoading.value = true
+    // 动态 import
+    const module = await item.comp()
+    selectedComponent.value = module.default
+    title.value = item.title || ""
+    describe.value = item.describe || ""
+    icon.value = item.icon
+  } catch (error) {
+    console.error('Failed to load component:', error)
+  } finally {
+    isLoading.value = false
+  }
 }
 
 const loadBaseInfo = async () => {
   try {
     const res = await baseInfo.getBaseInfo();
     version.value = res.data.version;
+    isUpgrade.value = res.data.isUpgrade;
+  } catch (err) {
+  }
+};
+
+const upgradeDB = async () => {
+  try {
+    const res = await baseInfo.upgradeDb();
+    if (res.success()) {
+      Message.success(t("success.operationCompleted"))
+      loadBaseInfo()
+    } else {
+      Message.success(t("errors.operationFailed"))
+    }
   } catch (err) {
   }
 };
 
 // 默认加载第一个菜单项
 onMounted(async () => {
-    if (menus.length > 0) {
-        menus[0].active = true
-        await handleSelect(menus[0])
-    }
+  if (menus.length > 0) {
+    menus[0].active = true
+    await handleSelect(menus[0])
+  }
   loadBaseInfo()
 })
 </script>
 
 <template>
-    <div class="flex h-screen bg-base-300/50">
-        <!-- 左侧导航栏 -->
-        <div class="flex-shrink-0 p-2">
-            <Left @update:select="handleSelect" :version="version" />
-        </div>
-        
-        <!-- 右侧内容区域 -->
-        <div class="flex-1 flex flex-col min-w-0">
-            <Right 
-                :selected="selectedComponent" 
-                :describe="describe" 
-                :icon="icon" 
-                :title="title"
-                :is-loading="isLoading"
-            />
-        </div>
+  <div class="flex h-screen bg-base-300/50">
+    <div class="absolute card h-12 items-center w-full  flex-col" v-if="isUpgrade">
+      <div class=" bg-warning card h-11 shadow flex justify-center p-2 font-light text-sm items-center flex-row">
+        {{ t("common.Upgrade") }}
+        <button class="btn btn-neutral btn-soft btn-sm ml-2" @click="upgradeDB">{{ t("common.update") }}</button>
+      </div>
     </div>
+    <!-- 左侧导航栏 -->
+    <div class="flex-shrink-0 p-2">
+      <Left @update:select="handleSelect" :version="version"/>
+    </div>
+
+    <!-- 右侧内容区域 -->
+    <div class="flex-1 flex flex-col min-w-0">
+      <Right
+          :selected="selectedComponent"
+          :describe="describe"
+          :icon="icon"
+          :title="title"
+          :is-loading="isLoading"
+      />
+    </div>
+  </div>
 </template>
 
 <style scoped>
 /* 添加平滑过渡效果 */
 .flex {
-    transition: all 0.3s ease;
+  transition: all 0.3s ease;
 }
 </style>

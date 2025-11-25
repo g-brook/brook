@@ -66,6 +66,7 @@ func InitSQLDB() error {
 func Query(sql string, args ...any) (*Result, error) {
 	rows, err := SqlDB.Query(sql, args...)
 	if err != nil {
+		log.Error("sql: %s, err: %v", sql, err)
 		return nil, err
 	}
 	return &Result{
@@ -75,5 +76,8 @@ func Query(sql string, args ...any) (*Result, error) {
 
 func Exec(sql string, args ...any) error {
 	_, err := SqlDB.Exec(sql, args...)
+	if err != nil {
+		log.Error("sql: %s, err: %v", sql, err)
+	}
 	return err
 }

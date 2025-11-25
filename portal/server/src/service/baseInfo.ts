@@ -43,6 +43,11 @@ const getWebLogs = <Q>(data: any): Promise<Response<Q>> => {
     return Http.post("/api/getWebLogs", data);
 };
 
-const functions = {getBaseInfo, initServer, login, getServerInfo, getServerInfoByProxyId, getWebLogs};
+const upgradeDb = <Q>(data: any): Promise<Response<Q>> => {
+    return Http.post("/api/upgradeDb", data);
+};
+
+
+const functions = {getBaseInfo, initServer, login, getServerInfo, getServerInfoByProxyId, getWebLogs, upgradeDb};
 
 export default functions;

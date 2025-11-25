@@ -40,6 +40,7 @@ type UserInfo struct {
 type BaseInfo struct {
 	IsRunning bool   `json:"isRunning"`
 	Version   string `json:"version"`
+	IsUpgrade bool   `json:"isUpgrade"`
 }
 
 type LoginInfo struct {

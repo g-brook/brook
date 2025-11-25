@@ -18,6 +18,12 @@ package version
 
 const BuildVersion = "0.0.1"
 
+// GetBuildVersion application version.
 func GetBuildVersion() string {
 	return BuildVersion
+}
+
+// GetDbVersion db version.
+func GetDbVersion() int {
+	return 2
 }

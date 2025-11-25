@@ -76,6 +76,7 @@ export default {
         upload: "Upload",
         running: "Running",
         copy: "Copy",
+        Upgrade: "Database has upgrade, click to continue",
     },
 
     // Login page

@@ -22,12 +22,14 @@ import (
 	"github.com/brook/common/version"
 	"github.com/brook/server/web/db"
 	"github.com/brook/server/web/errs"
+	"github.com/brook/server/web/sql"
 )
 
 func init() {
 	RegisterRoute(NewRouteNotAuth("/getBaseInfo", "POST"), getBaseInfo)
 	RegisterRoute(NewRouteNotAuth("/initBrookServer", "POST"), initBrookServer)
 	RegisterRoute(NewRouteNotAuth("/login", "POST"), login)
+	RegisterRoute(NewRoute("/upgradeDb", "POST"), upgradeDb)
 }
 
 const (
@@ -58,6 +60,7 @@ func getBaseInfo(*Request[any]) *Response {
 	get, err := db.Get[UserInfo](userInfoKey)
 	bf.IsRunning = err == nil && get != nil
 	bf.Version = version.GetBuildVersion()
+	bf.IsUpgrade, _ = sql.CheckDBVersion()
 	return NewResponseSuccess(bf)
 }
 
@@ -79,4 +82,12 @@ func initBrookServer(r *Request[InitInfo]) *Response {
 	}
 	log.Info("Initialize brook server success, and userName is: %s and password is: %s", info.Username, info.Password)
 	return NewResponseSuccess(info)
+}
+
+func upgradeDb(*Request[any]) *Response {
+	err := sql.UpdateTableStruct()
+	if err != nil {
+		return NewResponseFail(errs.CodeSysErr, "Upgrade database fail")
+	}
+	return NewResponseSuccess(nil)
 }

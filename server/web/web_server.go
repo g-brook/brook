@@ -52,6 +52,12 @@ func NewWebServer(port int) {
 		log.Error("init sql db err %v", err)
 		return
 	}
+	//init db check
+	err = sql.CheckInfoDB()
+	if err != nil {
+		log.Error("init sql db err %v", err)
+		return
+	}
 	threading.GoSafe(func() {
 		log.Info("start web server on port %d", port)
 		err = http.ListenAndServe(fmt.Sprintf(":%d", port), nil)

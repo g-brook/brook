@@ -76,6 +76,7 @@ export default {
         upload: "上传",
         running: "运行中",
         copy: "复制",
+        Upgrade: "数据库有更新，请点击更新",
     },
 
     // 登录页面
