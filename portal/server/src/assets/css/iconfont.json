@@ -6,6 +6,13 @@
   "description": "",
   "glyphs": [
     {
+      "icon_id": "9358795",
+      "name": "upgrade",
+      "font_class": "upgrade",
+      "unicode": "e600",
+      "unicode_decimal": 58880
+    },
+    {
       "icon_id": "13932668",
       "name": "calendar",
       "font_class": "calendar",

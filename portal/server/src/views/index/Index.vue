@@ -22,6 +22,7 @@ import {Menu, menus} from '@/components/menu/menus';
 import baseInfo from "@/service/baseInfo";
 import {useI18n} from '@/components/lang/useI18n';
 import Message from "@/components/message";
+import Icon from "@/components/icon/Index.vue"
 
 const {t} = useI18n();
 
@@ -84,7 +85,8 @@ onMounted(async () => {
 <template>
   <div class="flex h-screen bg-base-300/50">
     <div class="absolute card h-12 items-center w-full  flex-col" v-if="isUpgrade">
-      <div class=" bg-warning card h-11 shadow flex justify-center p-2 font-light text-sm items-center flex-row">
+      <div class=" bg-warning card h-11 shadow flex justify-center p-2 mt-2 font-light text-sm items-center animate-bounce flex-row">
+        <Icon icon="brook-upgrade" class="mr-2" style="font-size: 20px;" />
         {{ t("common.Upgrade") }}
         <button class="btn btn-neutral btn-soft btn-sm ml-2" @click="upgradeDB">{{ t("common.update") }}</button>
       </div>
