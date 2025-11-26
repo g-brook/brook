@@ -3,7 +3,7 @@
 
 [English](document/README.en.md)
 
-Brook 是一款跨平台（Linux / macOS / Windows）的高性能网络隧道与代理工具，使用 Go 语言编写。
+Brook 是一款跨平台（Linux / macOS / Windows）的高性能网络隧道与代理工具、内网穿透工具，使用 Go 语言编写。 
 支持 TCP、UDP、HTTP(S)、WebSocket 等隧道传输方式，兼容 SSH、HTTP、Redis、MySQL 等主流协议，并提供直观的可视化管理界面，便于配置与监控。
 
 ## 功能特性
