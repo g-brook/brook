@@ -1,6 +1,6 @@
-#!/bin/bash
+#!/bin/sh
 
-set -e  # 遇到错误立即退出
+set -e
 
 APP_NAME="brook-cli"
 APP_PATH="$(cd "$(dirname "$0")" && pwd)/$APP_NAME"
@@ -8,19 +8,18 @@ SERVICE_FILE="/etc/systemd/system/$APP_NAME.service"
 
 # 检测系统语言
 detect_language() {
-    local lang="${LANG:-en_US.UTF-8}"
-    if [[ "$lang" =~ ^zh ]]; then
-        echo "zh"
-    else
-        echo "en"
-    fi
+    lang="${LANG:-en_US.UTF-8}"
+    case "$lang" in
+        zh*) echo "zh" ;;
+        *) echo "en" ;;
+    esac
 }
 
 SYSTEM_LANG=$(detect_language)
 
 # 获取消息
 get_msg() {
-    local key=$1
+    key=$1
     case "$key" in
         MSG_INFO_PREFIX)
             [ "$SYSTEM_LANG" = "zh" ] && echo "[信息]" || echo "[INFO]"
@@ -32,10 +31,22 @@ get_msg() {
             [ "$SYSTEM_LANG" = "zh" ] && echo "[成功]" || echo "[SUCCESS]"
             ;;
         MSG_NO_ROOT)
-            [ "$SYSTEM_LANG" = "zh" ] && echo "请不要以root用户直接运行此脚本，脚本会在需要时使用sudo" || echo "Please do not run this script as root user directly, the script will use sudo when needed"
+            [ "$SYSTEM_LANG" = "zh" ] && echo "请不要以root用户直接运行此脚本,脚本会在需要时使用sudo" || echo "Please do not run this script as root user directly, the script will use sudo when needed"
             ;;
         MSG_NO_SYSTEMD)
-            [ "$SYSTEM_LANG" = "zh" ] && echo "systemctl命令未找到，此系统可能不支持systemd" || echo "systemctl command not found, this system may not support systemd"
+            [ "$SYSTEM_LANG" = "zh" ] && echo "systemctl命令未找到,正在尝试安装systemd..." || echo "systemctl command not found, trying to install systemd..."
+            ;;
+        MSG_INSTALLING_SYSTEMD)
+            [ "$SYSTEM_LANG" = "zh" ] && echo "正在安装systemd..." || echo "Installing systemd..."
+            ;;
+        MSG_SYSTEMD_INSTALLED)
+            [ "$SYSTEM_LANG" = "zh" ] && echo "systemd安装成功" || echo "systemd installed successfully"
+            ;;
+        MSG_SYSTEMD_INSTALL_FAILED)
+            [ "$SYSTEM_LANG" = "zh" ] && echo "systemd安装失败,请手动安装" || echo "Failed to install systemd, please install manually"
+            ;;
+        MSG_UNSUPPORTED_OS)
+            [ "$SYSTEM_LANG" = "zh" ] && echo "不支持的操作系统,无法自动安装systemd" || echo "Unsupported OS, cannot auto-install systemd"
             ;;
         MSG_NO_EXECUTABLE)
             [ "$SYSTEM_LANG" = "zh" ] && echo "可执行文件 $APP_NAME 未在当前目录找到" || echo "Executable file $APP_NAME not found in current directory"
@@ -44,7 +55,7 @@ get_msg() {
             [ "$SYSTEM_LANG" = "zh" ] && echo "期望路径: $APP_PATH" || echo "Expected path: $APP_PATH"
             ;;
         MSG_NOT_EXECUTABLE)
-            [ "$SYSTEM_LANG" = "zh" ] && echo "文件 $APP_PATH 不可执行，正在添加执行权限..." || echo "File $APP_PATH is not executable, adding execute permission..."
+            [ "$SYSTEM_LANG" = "zh" ] && echo "文件 $APP_PATH 不可执行,正在添加执行权限..." || echo "File $APP_PATH is not executable, adding execute permission..."
             ;;
         MSG_CREATE_SERVICE)
             [ "$SYSTEM_LANG" = "zh" ] && echo "创建systemd服务配置文件..." || echo "Creating systemd service configuration file..."
@@ -71,7 +82,7 @@ get_msg() {
             [ "$SYSTEM_LANG" = "zh" ] && echo "服务启动成功" || echo "Service started successfully"
             ;;
         MSG_SERVICE_FAILED)
-            [ "$SYSTEM_LANG" = "zh" ] && echo "服务启动失败，请检查日志" || echo "Service failed to start, please check logs"
+            [ "$SYSTEM_LANG" = "zh" ] && echo "服务启动失败,请检查日志" || echo "Service failed to start, please check logs"
             ;;
         MSG_SERVICE_STATUS)
             [ "$SYSTEM_LANG" = "zh" ] && echo "服务状态:" || echo "Service status:"
@@ -108,30 +119,88 @@ get_msg() {
 
 # 颜色输出函数
 print_info() {
-    echo -e "\033[1;34m$(get_msg MSG_INFO_PREFIX)\033[0m $1"
+    printf "\033[1;34m%s\033[0m %s\n" "$(get_msg MSG_INFO_PREFIX)" "$1"
 }
 
 print_error() {
-    echo -e "\033[1;31m$(get_msg MSG_ERROR_PREFIX)\033[0m $1"
+    printf "\033[1;31m%s\033[0m %s\n" "$(get_msg MSG_ERROR_PREFIX)" "$1"
 }
 
 print_success() {
-    echo -e "\033[1;32m$(get_msg MSG_SUCCESS_PREFIX)\033[0m $1"
+    printf "\033[1;32m%s\033[0m %s\n" "$(get_msg MSG_SUCCESS_PREFIX)" "$1"
 }
 
 # 检查是否以root权限运行
 check_root() {
-    if [ "$EUID" -eq 0 ]; then
+    if [ "$(id -u)" -eq 0 ]; then
         print_error "$(get_msg MSG_NO_ROOT)"
+        exit 1
+    fi
+}
+
+# 检测操作系统类型
+detect_os() {
+    if [ -f /etc/os-release ]; then
+        . /etc/os-release
+        echo "$ID"
+    elif [ -f /etc/redhat-release ]; then
+        echo "rhel"
+    elif [ -f /etc/debian_version ]; then
+        echo "debian"
+    else
+        echo "unknown"
+    fi
+}
+
+# 安装systemd
+install_systemd() {
+    OS=$(detect_os)
+    print_info "$(get_msg MSG_INSTALLING_SYSTEMD)"
+
+    case "$OS" in
+        ubuntu|debian)
+            sudo apt-get update
+            sudo apt-get install -y systemd
+            ;;
+        centos|rhel|fedora)
+            sudo yum install -y systemd
+            ;;
+        arch|manjaro)
+            sudo pacman -S --noconfirm systemd
+            ;;
+        opensuse*)
+            sudo zypper install -y systemd
+            ;;
+        alpine)
+            print_error "$(get_msg MSG_UNSUPPORTED_OS)"
+            print_info "Alpine Linux uses OpenRC, not systemd"
+            exit 1
+            ;;
+        *)
+            print_error "$(get_msg MSG_UNSUPPORTED_OS)"
+            exit 1
+            ;;
+    esac
+
+    if [ $? -eq 0 ]; then
+        print_success "$(get_msg MSG_SYSTEMD_INSTALLED)"
+    else
+        print_error "$(get_msg MSG_SYSTEMD_INSTALL_FAILED)"
         exit 1
     fi
 }
 
 # 检查systemd是否可用
 check_systemd() {
-    if ! command -v systemctl &> /dev/null; then
+    if ! command -v systemctl >/dev/null 2>&1; then
         print_error "$(get_msg MSG_NO_SYSTEMD)"
-        exit 1
+        install_systemd
+
+        # 再次检查是否安装成功
+        if ! command -v systemctl >/dev/null 2>&1; then
+            print_error "$(get_msg MSG_SYSTEMD_INSTALL_FAILED)"
+            exit 1
+        fi
     fi
 }
 
