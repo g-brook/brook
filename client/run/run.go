@@ -17,14 +17,18 @@
 package run
 
 import (
+	"context"
 	"fmt"
 	"os"
+	"os/signal"
+	"syscall"
 
 	"github.com/brook/client/cli"
+	"github.com/brook/common/cmd"
 	"github.com/brook/common/configs"
 	"github.com/brook/common/lang"
 	"github.com/brook/common/log"
-	"github.com/brook/common/version"
+	"github.com/brook/common/pid"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/spf13/cobra"
 )
@@ -36,11 +40,12 @@ var (
 
 func init() {
 	config = &configs.ClientConfig{}
-	cmd.PersistentFlags().StringVarP(&cfgPath, "configs", "c", "./client.json", "brook client configs")
+	rootCmd.PersistentFlags().StringVarP(&cfgPath, "configs", "c", "./client.json", "brook client configs")
+	cmd.InitClientCmd(rootCmd)
 }
 
-var cmd = &cobra.Command{
-	Use:   "Brook-Cli-" + version.GetBuildVersion(),
+var rootCmd = &cobra.Command{
+	Use:   "start",
 	Short: "Brook is a cross-platform(Linux/Mac/Windows) proxy software",
 	Run: func(cmd *cobra.Command, args []string) {
 		if cfgPath == "" {
@@ -87,19 +92,30 @@ func verilyBaseConfig(c *configs.ClientConfig) {
 }
 
 func Start() {
-	err := cmd.Execute()
+	err := rootCmd.Execute()
 	if err != nil {
 		os.Exit(1)
 	}
-
 }
 
 func run(config *configs.ClientConfig) {
+	sysCtx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM, syscall.SIGINT)
+	defer stop()
 	go OpenCli()
 	service := NewService()
-	ctx := service.Run(config)
-	<-ctx.Done()
-	log.Info("Brook client exit...")
+	service.Run(config)
+	pid.CreatePidFile()
+	defer func() {
+		_ = pid.DeletePidFile()
+	}()
+	// wait for exit
+	<-sysCtx.Done()
+	shutdown(service)
+}
+
+func shutdown(s *Service) {
+	log.Info("brook exiting; bye bye!! 👋")
+	s.manager.Close()
 }
 
 func OpenCli() {
@@ -107,7 +123,7 @@ func OpenCli() {
 		tea.WithOutput(os.Stdout))
 	_, err := program.Run()
 	if err != nil {
-		fmt.Println(err)
+		log.Error(err.Error())
 		return
 	}
 }

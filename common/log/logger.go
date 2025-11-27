@@ -17,6 +17,7 @@
 package log
 
 import (
+	"fmt"
 	"os"
 	"strings"
 
@@ -149,6 +150,10 @@ func parseLevel(levelStr string) zapcore.Level {
 // @Description: info log.
 // @param msg The log message to print.
 func Info(msg string, args ...any) {
+	if sugar == nil {
+		fmt.Printf(fmt.Sprintf("[Info] %s\n", msg), args...)
+		return
+	}
 	sugar.Infof(msg, args...)
 }
 
@@ -157,6 +162,10 @@ func Info(msg string, args ...any) {
 // @Description: debug log
 // @param msg The log message
 func Debug(msg string, args ...any) {
+	if sugar == nil {
+		fmt.Printf(fmt.Sprintf("[Debug] %s\n", msg), args...)
+		return
+	}
 	sugar.Debugf(msg, args...)
 }
 
@@ -165,6 +174,10 @@ func Debug(msg string, args ...any) {
 // @Description: warning log
 // @param msg The log message
 func Warn(msg string, args ...any) {
+	if sugar == nil {
+		fmt.Printf(fmt.Sprintf("[Warn] %s\n", msg), args...)
+		return
+	}
 	sugar.Warnf(msg, args...)
 }
 
@@ -173,6 +186,10 @@ func Warn(msg string, args ...any) {
 // @Description: error log
 // @param msg The log message
 func Error(msg string, args ...any) {
+	if sugar == nil {
+		fmt.Printf(fmt.Sprintf("[Error] %s\n", msg), args...)
+		return
+	}
 	sugar.Errorf(msg, args...)
 }
 
@@ -181,6 +198,10 @@ func Error(msg string, args ...any) {
 // @Description: fatal error log
 // @param msg The log message
 func Fatal(msg string, args ...any) {
+	if sugar == nil {
+		fmt.Printf(fmt.Sprintf("[Fatal] %s\n", msg), args...)
+		return
+	}
 	sugar.Fatalf(msg, args...)
 }
 

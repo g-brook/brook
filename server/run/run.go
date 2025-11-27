@@ -23,8 +23,10 @@ import (
 	"os/signal"
 	"syscall"
 
+	"github.com/brook/common/cmd"
 	"github.com/brook/common/configs"
 	"github.com/brook/common/log"
+	"github.com/brook/common/pid"
 	"github.com/brook/server/defin"
 	"github.com/brook/server/remote"
 	"github.com/brook/server/tunnel/base"
@@ -46,10 +48,11 @@ func init() {
 	// The flag can be referenced as "--configs" or "-c"
 	// Default value is "./server.json"
 	// The flag stores the configs file path in cfgPath variable
-	cmd.PersistentFlags().StringVarP(&cfgPath, "configs", "c", "./server.json", "configs file path")
+	rootCmd.PersistentFlags().StringVarP(&cfgPath, "configs", "c", "./server.json", "configs file path")
+	cmd.InitServerCmd(rootCmd)
 }
 
-var cmd = &cobra.Command{
+var rootCmd = &cobra.Command{
 	Use: "server",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		if cfgPath != "" {
@@ -76,7 +79,7 @@ func initLogger(svf *configs.ServerConfig) {
 }
 
 func Start() {
-	err := cmd.Execute()
+	err := rootCmd.Execute()
 	if err != nil {
 		fmt.Println(err)
 	}
@@ -95,6 +98,10 @@ func run() {
 	// Get tunnelServer infos.
 	base.InitTunnelConfig(&serverConfig)
 	afterRun(&serverConfig)
+	pid.CreatePidFile()
+	defer func() {
+		_ = pid.DeletePidFile()
+	}()
 	<-ctx.Done()
 	shutdown(remote.Inserver)
 }
@@ -113,6 +120,7 @@ func afterRun(config *configs.ServerConfig) {
 }
 
 func shutdown(inServer *remote.InServer) {
+	log.Info("brook exiting; bye bye!! 👋")
 	inServer.Shutdown()
 	db.Close()
 }

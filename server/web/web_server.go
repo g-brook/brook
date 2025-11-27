@@ -24,6 +24,8 @@ import (
 
 	"github.com/brook/common/configs"
 	"github.com/brook/common/log"
+	"github.com/brook/common/pid"
+	"github.com/brook/common/stringx"
 	"github.com/brook/common/threading"
 	"github.com/brook/server/web/api"
 	"github.com/brook/server/web/db"
@@ -65,6 +67,23 @@ func NewWebServer(port int) {
 			panic("start web server err: " + err.Error())
 		}
 	})
+	//writer cli token
+	writerCliToken()
+}
+
+func writerCliToken() {
+	currentToken := pid.CurrentCliToken()
+	if currentToken == "" {
+		currentToken = stringx.RandomString(32)
+	}
+	pid.CreateCliTokenFile(currentToken)
+	err := db.Put(currentToken, &api.UserInfo{
+		Username: "cli",
+		Password: "cli",
+	})
+	if err != nil {
+		log.Error("write cli token err: %v", err)
+	}
 }
 
 func doRoute() {
@@ -77,7 +96,7 @@ func doRoute() {
 		apiRouter.Handle(item.Url, item.Handler).Methods(item.Method)
 		log.Debug("register route: %s %s", item.Method, "/api"+item.Url)
 	}
-	//static source
+	// static source
 	r.PathPrefix("/assets/").Handler(http.FileServer(http.FS(staticFs)))
 	r.NotFoundHandler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		//http.ServeFile(w, r, filepath.Join(root, "index.html"))

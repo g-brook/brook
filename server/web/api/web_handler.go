@@ -115,8 +115,10 @@ func (w *WebHandler[T]) ServeHTTP(writer http.ResponseWriter, request *http.Requ
 			writeAuthError(writer)
 			return
 		}
-		//update ttl
-		updateTtl(auth)
+		if info.Username != "cli" {
+			//update ttl
+			updateTtl(auth)
+		}
 	}
 	// 读取请求 body
 	body, err := io.ReadAll(request.Body)
