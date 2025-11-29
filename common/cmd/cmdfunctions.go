@@ -38,5 +38,5 @@ func srvStatus(cmd *cobra.Command, args []string) {
 }
 
 func versionFun(cmd *cobra.Command, args []string) {
-	fmt.Println(version2.GetBuildVersion())
+	fmt.Println("v" + version2.GetBuildVersion())
 }

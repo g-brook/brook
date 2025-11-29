@@ -54,7 +54,7 @@ var (
 
 	version = &cobra.Command{
 		Use:   "version",
-		Short: "Get Brook server status. Requires systemd installation and only supported on Linux",
+		Short: "Get Brook version.",
 		Run:   versionFun,
 	}
 )

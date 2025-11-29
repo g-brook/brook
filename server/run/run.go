@@ -28,6 +28,7 @@ import (
 	"github.com/brook/common/log"
 	"github.com/brook/common/notify"
 	"github.com/brook/common/pid"
+	"github.com/brook/common/version"
 	"github.com/brook/server/defin"
 	"github.com/brook/server/remote"
 	"github.com/brook/server/tunnel/base"
@@ -55,10 +56,10 @@ func init() {
 }
 
 var rootCmd = &cobra.Command{
-	Use:   "start",
-	Short: "Brook is a cross-platform(Linux/Mac/Windows) proxy software",
-	Long:  "Brook is a cross-platform, high-performance network tunneling and proxy toolkit implemented in Go.\nIt supports a wide range of transport protocols, including TCP, UDP, HTTP(S), and WebSocket, ensuring compatibility with popular application protocols such as SSH, HTTP, Redis, and MySQL.\nA built-in web UI simplifies configuration.",
-	Run:   rootRun,
+	Use:     "start",
+	Version: version.GetBuildVersion(),
+	Long:    "Brook is a cross-platform, high-performance network tunneling and proxy toolkit implemented in Go.\nIt supports a wide range of transport protocols, including TCP, UDP, HTTP(S), and WebSocket, ensuring compatibility with popular application protocols such as SSH, HTTP, Redis, and MySQL.\nA built-in web UI simplifies configuration.",
+	Run:     rootRun,
 }
 
 func rootRun(_ *cobra.Command, _ []string) {
