@@ -14,7 +14,7 @@
 # limitations under the License.
 #
 
-#!/bin/bash
+#!/bin/sh
 # build.sh
 
 set -e
@@ -22,10 +22,12 @@ set -e
 # =========================
 # User input
 # =========================
-read -p "Enter application name (default: brook-sev): " APP_NAME
+printf "Enter application name (default: brook-sev): "
+read APP_NAME
 APP_NAME=${APP_NAME:-brook-sev}
 
-read -p "Enter version number (default: 1.0.0): " VERSION
+printf "Enter version number (default: 1.0.0): "
+read VERSION
 VERSION=${VERSION:-1.0.0}
 
 echo "Select target OS (multiple choices allowed, e.g. 1,2,5):"
@@ -36,22 +38,24 @@ echo "4) macOS Intel"
 echo "5) Windows x86_64"
 echo "6) Docker ARM64"
 echo "7) Docker AMD64"
-read -p "Choose [1-7, comma separated]: " OS_CHOICES
+printf "Choose [1-7, comma separated]: "
+read OS_CHOICES
 
-read -p "Copy resource directories? (y/n, default y): " COPY_RES
+printf "Copy resource directories? (y/n, default y): "
+read COPY_RES
 COPY_RES=${COPY_RES:-y}
 
-read -p "Copy database file? (y/n, default y): " COPY_DB
+printf "Copy database file? (y/n, default y): "
+read COPY_DB
 COPY_DB=${COPY_DB:-y}
 
 # =========================
-# Build target mapping (bash 3.2 compatible)
+# Build target mapping (POSIX compatible)
 # =========================
-# macOS default bash (3.2) does not support associative arrays.
-# Use a case statement to map choices to build params.
+# Use case statement to map choices to build params.
 
 resolve_target() {
-    local choice="$1"
+    choice="$1"
     case "$choice" in
         1)
             BUILD_OS="linux"; BUILD_ARCH="amd64"; FILE_DESC="Linux-x86_64(amd64)"; DOCKER_BUILD=""; PLATFORM="" ;;
@@ -77,7 +81,7 @@ resolve_target() {
 # Helper: Build for one target
 # =========================
 build_target() {
-    local i="$1"
+    i="$1"
     # resolve params for this choice
     resolve_target "$i" || { echo "Skipping choice $i"; return; }
 
@@ -90,12 +94,13 @@ build_target() {
     TAR_NAME="dist/${APP_NAME}_${FILE_DESC}.tar.gz"
 
     rm -rf "$OUTPUT_DIR"
-    mkdir -p "$OUTPUT_DIR"/{logs,fdb}
+    mkdir -p "$OUTPUT_DIR/logs"
+    mkdir -p "$OUTPUT_DIR/fdb"
 
     cp server.json "$OUTPUT_DIR"
 
     # Optional DB
-    if [[ "$COPY_DB" == "y" || "$COPY_DB" == "Y" ]]; then
+    if [ "$COPY_DB" = "y" ] || [ "$COPY_DB" = "Y" ]; then
         if [ -f db-emp.db ]; then
             cp db-emp.db "$OUTPUT_DIR/db.db"
             echo "Database copied."
@@ -107,27 +112,28 @@ build_target() {
     # Build Go binary
     echo "→ Building Go executable..."
     OUTPUT_FILE="$OUTPUT_DIR/$APP_NAME"
-    [ "$BUILD_OS" == "windows" ] && OUTPUT_FILE="$OUTPUT_FILE.exe"
+    [ "$BUILD_OS" = "windows" ] && OUTPUT_FILE="$OUTPUT_FILE.exe"
 
     BUILD_ARGS=""
-    if [ "$BUILD_OS" == "windows" ]; then
-      # shellcheck disable=SC2140
-      BUILD_ARGS="-ldflags="-H=windowsgui""
-      GOOS=$BUILD_OS GOARCH=$BUILD_ARCH go build "$BUILD_ARGS" -o "$OUTPUT_FILE" ./main.go
-      else
+    if [ "$BUILD_OS" = "windows" ]; then
+      BUILD_ARGS="-ldflags=-H=windowsgui"
+      GOOS=$BUILD_OS GOARCH=$BUILD_ARCH go build $BUILD_ARGS -o "$OUTPUT_FILE" ./main.go
+    else
       GOOS=$BUILD_OS GOARCH=$BUILD_ARCH go build -o "$OUTPUT_FILE" ./main.go
     fi
 
 
     # Copy resources
-    if [[ "$COPY_RES" == "y" || "$COPY_RES" == "Y" ]]; then
+    if [ "$COPY_RES" = "y" ] || [ "$COPY_RES" = "Y" ]; then
         for r in config static; do
-            [ -d "$r" ] && cp -r "$r" "$OUTPUT_DIR/" && echo "Copied: $r"
+            if [ -d "$r" ]; then
+                cp -r "$r" "$OUTPUT_DIR/" && echo "Copied: $r"
+            fi
         done
     fi
 
     # Package
-    if [ "$DOCKER_BUILD" = true ]; then
+    if [ "$DOCKER_BUILD" = "true" ]; then
         echo "→ Building Docker image..."
         docker buildx build --build-arg APP_PATH=$OUTPUT_DIR --platform "$PLATFORM" -t "$APP_NAME:$VERSION-$BUILD_ARCH" -f Dockerfile .
     else
@@ -141,9 +147,13 @@ build_target() {
 # =========================
 # Build multiple targets
 # =========================
-IFS=',' read -ra CHOICES <<< "$OS_CHOICES"
-for choice in "${CHOICES[@]}"; do
-    choice=$(echo "$choice" | xargs) # trim spaces
+OLD_IFS="$IFS"
+IFS=','
+set -- $OS_CHOICES
+IFS="$OLD_IFS"
+
+for choice in "$@"; do
+    choice=$(echo "$choice" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
     build_target "$choice"
 done
 
