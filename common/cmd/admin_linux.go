@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/brook/common/log"
 	"github.com/coreos/go-systemd/v22/dbus"
@@ -16,28 +17,100 @@ const (
 
 // start starts the specified systemd service
 func start(service string) {
+	execute(service, func(conn *dbus.Conn, serviceName string) error {
+		job := make(chan string, 1)
+		_, err := conn.StopUnitContext(context.Background(), serviceName, "replace", job)
+		if err != nil {
+			// Check if permission denied
+			if os.IsPermission(err) || strings.HasPrefix(err.Error(), "Interactive authentication required") {
+				fmt.Println("Permission denied, Please run with sudo")
+			} else {
+				log.Error("Failed to Started service %s: %v", service, err)
+			}
+			return err
+		}
+		// Wait for the start job to complete
+		<-job
+		log.Info("Service %s Started successfully", service)
+		return nil
+	})
+}
+
+func stop(service string) {
+	execute(service, func(conn *dbus.Conn, serviceName string) error {
+		job := make(chan string, 1)
+		_, err := conn.StopUnitContext(context.Background(), serviceName, "replace", job)
+		if err != nil {
+			// Check if permission denied
+			if os.IsPermission(err) || strings.HasPrefix(err.Error(), "Interactive authentication required") {
+				fmt.Println("Permission denied, Please run with sudo")
+			} else {
+				log.Error("Failed to stop service %s: %v", service, err)
+			}
+			return err
+		}
+		// Wait for the start job to complete
+		<-job
+		log.Info("Service %s stop successfully", service)
+		return nil
+	})
+}
+
+func execute(service string, fun func(conn *dbus.Conn, serviceName string) error) {
 	serviceName := service + ".service"
 	if !isSystemd() {
 		log.Error("System does not support systemd, please run `systemctl daemon-reload`")
 		return
 	}
-
 	conn, err := getConn(serviceName)
 	if err != nil {
 		log.Error("Failed to get dbus connection: %v", err)
 		return
 	}
 	defer conn.Close()
+	_ = fun(conn, serviceName)
 
-	job := make(chan string, 1)
-	_, err = conn.StartUnitContext(context.Background(), serviceName, "replace", job)
-	if err != nil {
-		log.Error("Failed to start service %s: %v", service, err)
-		return
-	}
-	// Wait for the start job to complete
-	<-job
-	log.Info("Service %s started successfully", service)
+}
+
+func restart(service string) {
+	execute(service, func(conn *dbus.Conn, serviceName string) error {
+		job := make(chan string, 1)
+		_, err := conn.RestartUnitContext(context.Background(), serviceName, "replace", job)
+		if err != nil {
+			// Check if permission denied
+			if os.IsPermission(err) || strings.HasPrefix(err.Error(), "Interactive authentication required") {
+				fmt.Println("Permission denied, Please run with sudo")
+			} else {
+				log.Error("Failed to Restart service %s: %v", service, err)
+			}
+			return err
+		}
+		// Wait for the start job to complete
+		<-job
+		log.Info("Service %s Restart successfully", service)
+		return nil
+	})
+}
+func status(service string) {
+	execute(service, func(conn *dbus.Conn, serviceName string) error {
+		props, err := conn.GetUnitPropertiesContext(context.Background(), serviceName)
+		if err != nil {
+			// Check if permission denied
+			if os.IsPermission(err) || strings.HasPrefix(err.Error(), "Interactive authentication required") {
+				fmt.Println("Permission denied, Please run with sudo")
+			} else {
+				log.Error("Get status failed %s: %v", service, err)
+			}
+			return err
+		}
+		active := props["ActiveState"].(string)
+		sub := props["SubState"].(string)
+		pid := props["ExecMainPID"].(uint32)
+
+		fmt.Printf("Status: %s (%s)\n", active, sub)
+		fmt.Printf("PID: %d\n", pid)
+		return nil
+	})
 }
 
 // getConn gets a systemd dbus connection, creates service file if not exists

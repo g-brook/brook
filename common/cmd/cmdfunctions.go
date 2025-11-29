@@ -14,18 +14,27 @@ import (
 )
 
 func cliStart(cmd *cobra.Command, args []string) {
-	if err := notify.NotifyReloading(); err != nil {
-		log.Error("start brook failed: %v", err)
-		return
-	}
-	defer func() {
-		if err := notify.NotifyReadiness(); err != nil {
-			log.Error("start brook failed: %v", err)
-		}
-	}()
+	//if err := notify.NotifyReloading(); err != nil {
+	//	log.Error("start brook failed: %v", err)
+	//	return
+	//}
+	//defer func() {
+	//	if err := notify.NotifyReadiness(); err != nil {
+	//		log.Error("start brook failed: %v", err)
+	//	}
+	//}()
+	start("brook-cli")
 }
 
 func cliRestart(cmd *cobra.Command, args []string) {
+	restart("brook-cli")
+}
+
+func cliStop(cmd *cobra.Command, args []string) {
+	restart("brook-cli")
+}
+func cliStatus(cmd *cobra.Command, args []string) {
+	status("brook-cli")
 }
 
 func sevRestart(cmd *cobra.Command, args []string) {
