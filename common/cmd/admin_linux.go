@@ -31,7 +31,11 @@ func start(service string) {
 		}
 		// Wait for the start job to complete
 		<-job
-		log.Info("Service %s Started successfully", service)
+		if !verifyStatus(conn, serviceName, service) {
+			log.Error("Failed to start service %s: %v", service, err)
+		} else {
+			log.Info("Service %s Started successfully", service)
+		}
 		return nil
 	})
 }
@@ -51,9 +55,44 @@ func stop(service string) {
 		}
 		// Wait for the start job to complete
 		<-job
-		log.Info("Service %s stop successfully", service)
+		if !verifyStatus(conn, serviceName, service) {
+			log.Error("Failed to stop service %s: %v", service, err)
+		} else {
+			log.Info("Service %s Stopped successfully", service)
+		}
 		return nil
 	})
+}
+
+func verifyStatus(conn *dbus.Conn, serviceName string, service string) bool {
+	// Verify service has stopped
+	props, err := conn.GetUnitPropertiesContext(context.Background(), serviceName)
+	if err != nil {
+		log.Error("Failed to verify service %s status: %v", service, err)
+		return false
+	}
+
+	var activeState, subState string
+	if activeVal, ok := props["ActiveState"]; ok {
+		if activeStr, ok := activeVal.(string); ok {
+			activeState = activeStr
+		}
+	}
+	if subVal, ok := props["SubState"]; ok {
+		if subStr, ok := subVal.(string); ok {
+			subState = subStr
+		}
+	}
+
+	if activeState != "" {
+		if (activeState == "inactive") && (subState == "dead" || subState == "failed") {
+			return false
+		}
+		if activeState == "failed" {
+			return false
+		}
+	}
+	return true
 }
 
 func execute(service string, fun func(conn *dbus.Conn, serviceName string) error) {
@@ -87,7 +126,11 @@ func restart(service string) {
 		}
 		// Wait for the start job to complete
 		<-job
-		log.Info("Service %s Restart successfully", service)
+		if !verifyStatus(conn, serviceName, service) {
+			log.Error("Failed to restart service %s: %v", service, err)
+		} else {
+			log.Info("Service %s Restart successfully", service)
+		}
 		return nil
 	})
 }
