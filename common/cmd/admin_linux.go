@@ -103,12 +103,31 @@ func status(service string) {
 			}
 			return err
 		}
-		active := props["ActiveState"].(string)
-		sub := props["SubState"].(string)
-		pid := props["ExecMainPID"].(uint32)
+		var active string
+		var sub string
+		var pid uint32
 
+		if activeVal, ok := props["ActiveState"]; ok {
+			if activeStr, ok := activeVal.(string); ok {
+				active = activeStr
+			}
+		}
+
+		if subVal, ok := props["SubState"]; ok {
+			if subStr, ok := subVal.(string); ok {
+				sub = subStr
+			}
+		}
+
+		if pidVal, ok := props["MainPID"]; ok {
+			if pidUint, ok := pidVal.(uint32); ok {
+				pid = pidUint
+			}
+		}
 		fmt.Printf("Status: %s (%s)\n", active, sub)
-		fmt.Printf("PID: %d\n", pid)
+		if pid != 0 {
+			fmt.Printf("PID: %d\n", pid)
+		}
 		return nil
 	})
 }

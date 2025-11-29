@@ -18,14 +18,14 @@ var (
 	}
 
 	stopCmdCli = &cobra.Command{
-		Use:   "start",
+		Use:   "stop",
 		Short: "Stop brook client",
 		Run:   cliStop,
 	}
 
 	StatusCmdCli = &cobra.Command{
-		Use:   "start",
-		Short: "Stop brook client",
+		Use:   "status",
+		Short: "Get brook client status",
 		Run:   cliStatus,
 	}
 
