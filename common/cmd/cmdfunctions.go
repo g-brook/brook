@@ -23,18 +23,18 @@ func cliStart(cmd *cobra.Command, args []string) {
 	//		log.Error("start brook failed: %v", err)
 	//	}
 	//}()
-	start("brook-cli")
+	Start("brook-cli")
 }
 
 func cliRestart(cmd *cobra.Command, args []string) {
-	restart("brook-cli")
+	Restart("brook-cli")
 }
 
 func cliStop(cmd *cobra.Command, args []string) {
-	restart("brook-cli")
+	Stop("brook-cli")
 }
 func cliStatus(cmd *cobra.Command, args []string) {
-	status("brook-cli")
+	Status("brook-cli")
 }
 
 func sevRestart(cmd *cobra.Command, args []string) {

@@ -18,9 +18,15 @@ var (
 	}
 
 	stopCmdCli = &cobra.Command{
-		Use:   "stop",
+		Use:   "start",
 		Short: "Stop brook client",
-		Run:   srvStop,
+		Run:   cliStop,
+	}
+
+	StatusCmdCli = &cobra.Command{
+		Use:   "start",
+		Short: "Stop brook client",
+		Run:   cliStatus,
 	}
 
 	restartCmdSrv = &cobra.Command{
@@ -48,6 +54,7 @@ func InitClientCmd(rootCmd *cobra.Command) {
 	rootCmd.AddCommand(restartCmdCli)
 	rootCmd.AddCommand(stopCmdCli)
 	rootCmd.AddCommand(startCmdCli)
+	rootCmd.AddCommand(StatusCmdCli)
 }
 
 func InitServerCmd(rootCmd *cobra.Command) {
