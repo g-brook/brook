@@ -28,39 +28,50 @@ import (
 	"github.com/brook/common/configs"
 	"github.com/brook/common/lang"
 	"github.com/brook/common/log"
+	"github.com/brook/common/notify"
 	"github.com/brook/common/pid"
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/mattn/go-isatty"
 	"github.com/spf13/cobra"
 )
 
 var (
-	config  *configs.ClientConfig
-	cfgPath string
+	config   *configs.ClientConfig
+	cmdValue = cmd.NewCliCmdValue()
+	service  *Service
 )
 
 func init() {
 	config = &configs.ClientConfig{}
-	rootCmd.PersistentFlags().StringVarP(&cfgPath, "configs", "c", "./client.json", "brook client configs")
+	rootCmd.PersistentFlags().StringVarP(&cmdValue.ConfigPath, "configs", "c", "./client.json", "brook client configs")
+	rootCmd.PersistentFlags().BoolVarP(&cmdValue.IsContainer, "container", "", false, "use container client")
 	cmd.InitClientCmd(rootCmd)
 }
 
 var rootCmd = &cobra.Command{
 	Use:   "start",
 	Short: "Brook is a cross-platform(Linux/Mac/Windows) proxy software",
-	Run: func(cmd *cobra.Command, args []string) {
-		if cfgPath == "" {
-			fmt.Println("configs is null, please use -c or --configs to set configs file")
-			os.Exit(1)
-		}
-		if err := configs.WriterConfig(cfgPath, config); err != nil {
-			fmt.Println(err)
-			os.Exit(1)
-		}
-		log.NewLogger(config.Logger)
-		LoadTunnel()
-		verilyBaseConfig(config)
-		run(config)
-	},
+	Run:   rootRun,
+}
+
+func rootRun(cmd *cobra.Command, args []string) {
+	sysCtx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM, syscall.SIGINT)
+	defer stop()
+	if cmdValue.ConfigPath == "" {
+		log.Error("configs is null, please use -c or --configs to set configs file")
+		os.Exit(1)
+	}
+	if err := configs.WriterConfig(cmdValue.ConfigPath, config); err != nil {
+		log.Error(err.Error())
+		os.Exit(1)
+	}
+	log.NewLogger(config.Logger)
+	LoadTunnel()
+	verilyBaseConfig(config)
+	startServer(config)
+	// wait for exit
+	<-sysCtx.Done()
+	shutdown()
 }
 
 func verilyBaseConfig(c *configs.ClientConfig) {
@@ -98,27 +109,37 @@ func Start() {
 	}
 }
 
-func run(config *configs.ClientConfig) {
-	sysCtx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM, syscall.SIGINT)
-	defer stop()
+func startServer(config *configs.ClientConfig) {
+	err := notify.NotifyReloading()
+	if err != nil {
+		log.Error("notify reloading error: %v", err)
+	}
+	defer func() {
+		err = notify.NotifyReadiness()
+		if err != nil {
+			log.Error("notify readiness error: %v", err)
+		}
+	}()
 	go OpenCli()
-	service := NewService()
+	service = NewService()
 	service.Run(config)
 	pid.CreatePidFile()
 	defer func() {
 		_ = pid.DeletePidFile()
 	}()
-	// wait for exit
-	<-sysCtx.Done()
-	shutdown(service)
 }
 
-func shutdown(s *Service) {
+func shutdown() {
 	log.Info("brook exiting; bye bye!! 👋")
-	s.manager.Close()
+	if service != nil {
+		service.manager.Close()
+	}
 }
 
 func OpenCli() {
+	if !isatty.IsTerminal(os.Stdin.Fd()) {
+		return
+	}
 	program := tea.NewProgram(cli.InitModel(), tea.WithInput(os.Stdin), tea.WithoutSignals(),
 		tea.WithOutput(os.Stdout))
 	_, err := program.Run()

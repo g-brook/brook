@@ -16,7 +16,7 @@
     },
     {
       "type": "tcp",
-      "proxyId": "Local-22"
+      "proxyId": "local_mysql"
     },
     {
       "type": "http",

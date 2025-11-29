@@ -12,11 +12,13 @@ func sdNotify(path, payload string) error {
 		Net:  "unixgram",
 		Name: path,
 	}
-	conn, err := net.DialUnix(socketAddr, nil, socketAddr)
+	conn, err := net.DialUnix(socketAddr.Net, nil, socketAddr)
 	if err != nil {
 		return err
 	}
-	defer conn.Close()
+	defer func(conn *net.UnixConn) {
+		_ = conn.Close()
+	}(conn)
 	_, err = io.Copy(conn, strings.NewReader(payload))
 	if err != nil {
 		return err

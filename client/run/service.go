@@ -25,6 +25,7 @@ import (
 	"github.com/brook/common/configs"
 	"github.com/brook/common/exchange"
 	"github.com/brook/common/log"
+	"github.com/brook/common/threading"
 )
 
 type Service struct {
@@ -48,25 +49,26 @@ func NewService() *Service {
 	}
 }
 
-func (receiver *Service) Run(cfg *configs.ClientConfig) context.Context {
-	//Connection to server.
-	receiver.manager = clis.NewTransport(cfg)
-	//init manager transport.
-	clis.InitManagerTransport(receiver.manager)
-	receiver.manager.Connection(
-		clis.WithTimeout(3*time.Second),
-		clis.WithKeepAlive(10*time.Second),
-		clis.WithClientHandler(receiver),
-		clis.WithPingTime(cfg.PingTime*time.Millisecond),
-		clis.WithClientHandler(clis.ManagerTransport),
-	)
-	<-receiver.connState
-	//Update cli status.
-	err := receiver.connectionTunnel(cfg)
-	if err != nil {
-		panic("Brook exit:%v" + err.Error())
-	}
-	return receiver.background()
+func (receiver *Service) Run(cfg *configs.ClientConfig) {
+	threading.GoSafe(func() {
+		//Connection to server.
+		receiver.manager = clis.NewTransport(cfg)
+		//init manager transport.
+		clis.InitManagerTransport(receiver.manager)
+		receiver.manager.Connection(
+			clis.WithTimeout(3*time.Second),
+			clis.WithKeepAlive(10*time.Second),
+			clis.WithClientHandler(receiver),
+			clis.WithPingTime(cfg.PingTime*time.Millisecond),
+			clis.WithClientHandler(clis.ManagerTransport),
+		)
+		<-receiver.connState
+		//Update cli status.
+		err := receiver.connectionTunnel(cfg)
+		if err != nil {
+			panic("Brook exit:%v" + err.Error())
+		}
+	})
 }
 
 func (receiver *Service) connectionTunnel(cfg *configs.ClientConfig) error {

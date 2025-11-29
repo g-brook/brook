@@ -38,7 +38,7 @@ import (
 
 var (
 	serverConfig configs.ServerConfig
-	cfgPath      string
+	cmdValue     *cmd.SevCmdValue
 )
 
 // init function is called automatically when the package is initialized
@@ -48,26 +48,34 @@ func init() {
 	// The flag can be referenced as "--configs" or "-c"
 	// Default value is "./server.json"
 	// The flag stores the configs file path in cfgPath variable
-	rootCmd.PersistentFlags().StringVarP(&cfgPath, "configs", "c", "./server.json", "configs file path")
+	rootCmd.PersistentFlags().StringVarP(&cmdValue.ConfigPath, "configs", "c", "./server.json", "configs file path")
+	rootCmd.PersistentFlags().BoolVarP(&cmdValue.IsContainer, "container", "", false, "use container client")
 	cmd.InitServerCmd(rootCmd)
 }
 
 var rootCmd = &cobra.Command{
-	Use: "server",
-	RunE: func(cmd *cobra.Command, args []string) error {
-		if cfgPath != "" {
-			config, err := configs.GetServerConfig(cfgPath)
-			if err != nil {
-				fmt.Println(err)
-				os.Exit(1)
-			}
-			serverConfig = config
+	Use:   "start",
+	Short: "start brook server",
+	Run:   rootRun,
+}
+
+func rootRun(_ *cobra.Command, _ []string) {
+	// Create a context that can be cancelled by interrupt signals (SIGINT, SIGTERM)
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer stop() // Ensure the signal notification is stopped when the function returns
+	if cmdValue.ConfigPath != "" {
+		config, err := configs.GetServerConfig(cmdValue.ConfigPath)
+		if err != nil {
+			log.Error("get configs error %v", err)
+			os.Exit(1)
 		}
-		initLogger(&serverConfig)
-		configCheck(&serverConfig)
-		run()
-		return nil
-	},
+		serverConfig = config
+	}
+	initLogger(&serverConfig)
+	configCheck(&serverConfig)
+	run()
+	<-ctx.Done()
+	shutdown()
 }
 
 func configCheck(config *configs.ServerConfig) {
@@ -87,9 +95,6 @@ func Start() {
 
 // run is the main entry point for the server application
 func run() {
-	// Create a context that can be cancelled by interrupt signals (SIGINT, SIGTERM)
-	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
-	defer stop() // Ensure the signal notification is stopped when the function returns
 	if serverConfig.EnableWeb {
 		web.NewWebServer(serverConfig.WebPort)
 	}
@@ -102,8 +107,6 @@ func run() {
 	defer func() {
 		_ = pid.DeletePidFile()
 	}()
-	<-ctx.Done()
-	shutdown(remote.Inserver)
 }
 
 // afterRun is a function that sets the authentication token based on the server configuration
@@ -119,8 +122,10 @@ func afterRun(config *configs.ServerConfig) {
 	defin.Set(defin.ServerPort, config.ServerPort)
 }
 
-func shutdown(inServer *remote.InServer) {
+func shutdown() {
 	log.Info("brook exiting; bye bye!! 👋")
-	inServer.Shutdown()
+	if remote.Inserver != nil {
+		remote.Inserver.Shutdown()
+	}
 	db.Close()
 }

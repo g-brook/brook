@@ -102,10 +102,11 @@ func WriterConfig(cfgPath string, cfg *ClientConfig) error {
 // ClientConfig
 // @Description: Description.
 type ClientConfig struct {
-	ServerPort int                   `json:"serverPort"`
-	ServerHost string                `json:"serverHost"`
-	Token      string                `json:"token"`
-	PingTime   time.Duration         `json:"pingTime"`
-	Tunnels    []*ClientTunnelConfig `json:"tunnels"`
-	Logger     *LoggerConfig         `json:"logger,omitempty"`
+	ServerPort  int                   `json:"serverPort"`
+	ServerHost  string                `json:"serverHost"`
+	ManagerPort int                   `json:"managerPort"`
+	Token       string                `json:"token"`
+	PingTime    time.Duration         `json:"pingTime"`
+	Tunnels     []*ClientTunnelConfig `json:"tunnels"`
+	Logger      *LoggerConfig         `json:"logger,omitempty"`
 }
