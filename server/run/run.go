@@ -56,7 +56,8 @@ func init() {
 
 var rootCmd = &cobra.Command{
 	Use:   "start",
-	Short: "start brook server",
+	Short: "Brook is a cross-platform(Linux/Mac/Windows) proxy software",
+	Long:  "Brook is a cross-platform, high-performance network tunneling and proxy toolkit implemented in Go.\nIt supports a wide range of transport protocols, including TCP, UDP, HTTP(S), and WebSocket, ensuring compatibility with popular application protocols such as SSH, HTTP, Redis, and MySQL.\nA built-in web UI simplifies configuration.",
 	Run:   rootRun,
 }
 

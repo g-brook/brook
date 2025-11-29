@@ -154,7 +154,7 @@ func status(service string) {
 				pid = pidUint
 			}
 		}
-		fmt.Printf("Status: %s (%s)\n", active, sub)
+		fmt.Printf("%s Status: %s (%s)\n", service, active, sub)
 		if pid != 0 {
 			fmt.Printf("PID: %d\n", pid)
 		}

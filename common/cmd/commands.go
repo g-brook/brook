@@ -7,44 +7,55 @@ import (
 var (
 	restartCmdCli = &cobra.Command{
 		Use:   "restart",
-		Short: "Restart brook client",
+		Short: "Restart Brook client. Requires systemd installation and only supported on Linux",
 		Run:   cliRestart,
 	}
 
 	startCmdCli = &cobra.Command{
 		Use:   "start",
-		Short: "Start daemon brook client",
+		Short: "Start daemon Brook client. Requires systemd installation and only supported on Linux",
 		Run:   cliStart,
 	}
 
 	stopCmdCli = &cobra.Command{
 		Use:   "stop",
-		Short: "Stop brook client",
+		Short: "Stop Brook client. Requires systemd installation and only supported on Linux",
 		Run:   cliStop,
 	}
 
-	StatusCmdCli = &cobra.Command{
+	statusCmdCli = &cobra.Command{
 		Use:   "status",
-		Short: "Get brook client status",
+		Short: "Get Brook client status. Requires systemd installation and only supported on Linux",
 		Run:   cliStatus,
 	}
 
 	restartCmdSrv = &cobra.Command{
 		Use:   "restart",
-		Short: "Restart brook server",
-		Run:   sevRestart,
+		Short: "Restart Brook server. Requires systemd installation and only supported on Linux",
+		Run:   srvRestart,
 	}
 
 	stopCmdSrv = &cobra.Command{
 		Use:   "stop",
-		Short: "Stop brook server",
+		Short: "Stop Brook server.Requires systemd installation and only supported on Linux",
 		Run:   srvStop,
 	}
 	startCmdSrv = &cobra.Command{
 		Use:     "start",
-		Short:   "Starts the Brook server in background mode. Supported on Linux and Windows only.",
+		Short:   "Starts the Brook server in background mode. Requires systemd installation and only supported on Linux.",
 		Example: "./brook start  || ./brook start -c xxxx.json",
 		Run:     srvStart,
+	}
+	statusCmdSrv = &cobra.Command{
+		Use:   "status",
+		Short: "Get Brook server status. Requires systemd installation and only supported on Linux",
+		Run:   srvStatus,
+	}
+
+	version = &cobra.Command{
+		Use:   "version",
+		Short: "Get Brook server status. Requires systemd installation and only supported on Linux",
+		Run:   versionFun,
 	}
 )
 
@@ -54,13 +65,16 @@ func InitClientCmd(rootCmd *cobra.Command) {
 	rootCmd.AddCommand(restartCmdCli)
 	rootCmd.AddCommand(stopCmdCli)
 	rootCmd.AddCommand(startCmdCli)
-	rootCmd.AddCommand(StatusCmdCli)
+	rootCmd.AddCommand(statusCmdCli)
+	rootCmd.AddCommand(version)
 }
 
 func InitServerCmd(rootCmd *cobra.Command) {
-	restartCmdSrv.Flags().AddFlagSet(rootCmd.Flags())
-	restartCmdSrv.PersistentFlags().AddFlagSet(rootCmd.PersistentFlags())
+	startCmdSrv.Flags().AddFlagSet(rootCmd.Flags())
+	startCmdSrv.PersistentFlags().AddFlagSet(rootCmd.PersistentFlags())
 	rootCmd.AddCommand(restartCmdSrv)
 	rootCmd.AddCommand(stopCmdSrv)
 	rootCmd.AddCommand(startCmdSrv)
+	rootCmd.AddCommand(statusCmdSrv)
+	rootCmd.AddCommand(version)
 }
