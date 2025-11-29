@@ -267,18 +267,6 @@ enable_service() {
     print_success "$(get_msg MSG_SERVICE_ENABLED)"
 }
 
-# 启动服务
-start_service() {
-    print_info "$(get_msg MSG_START_SERVICE)"
-    if sudo systemctl start "$APP_NAME"; then
-        print_success "$(get_msg MSG_SERVICE_STARTED)"
-    else
-        print_error "$(get_msg MSG_SERVICE_FAILED)"
-        sudo journalctl -u "$APP_NAME" -n 20 --no-pager
-        exit 1
-    fi
-}
-
 # 显示服务状态
 show_status() {
     print_info "$(get_msg MSG_SERVICE_STATUS)"
@@ -296,7 +284,6 @@ main() {
     create_service
     reload_systemd
     enable_service
-    start_service
     show_status
 
     echo ""
