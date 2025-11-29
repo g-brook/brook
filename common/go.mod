@@ -3,6 +3,7 @@ module github.com/brook/common
 go 1.24.0
 
 require (
+	github.com/coreos/go-systemd/v22 v22.6.0
 	github.com/google/uuid v1.6.0
 	github.com/panjf2000/gnet/v2 v2.9.5
 	github.com/spf13/cobra v1.10.1
@@ -13,6 +14,7 @@ require (
 )
 
 require (
+	github.com/godbus/dbus/v5 v5.1.0 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/panjf2000/ants/v2 v2.11.3 // indirect
 	github.com/spf13/pflag v1.0.10 // indirect
