@@ -26,6 +26,7 @@ import (
 	"github.com/brook/common/cmd"
 	"github.com/brook/common/configs"
 	"github.com/brook/common/log"
+	"github.com/brook/common/notify"
 	"github.com/brook/common/pid"
 	"github.com/brook/server/defin"
 	"github.com/brook/server/remote"
@@ -38,7 +39,7 @@ import (
 
 var (
 	serverConfig configs.ServerConfig
-	cmdValue     *cmd.SevCmdValue
+	cmdValue     = cmd.NewSevCmdValue()
 )
 
 // init function is called automatically when the package is initialized
@@ -95,6 +96,16 @@ func Start() {
 
 // run is the main entry point for the server application
 func run() {
+	err := notify.NotifyReloading()
+	if err != nil {
+		log.Error("notify reloading error: %v", err)
+	}
+	defer func() {
+		err = notify.NotifyReadiness()
+		if err != nil {
+			log.Error("notify readiness error: %v", err)
+		}
+	}()
 	if serverConfig.EnableWeb {
 		web.NewWebServer(serverConfig.WebPort)
 	}
