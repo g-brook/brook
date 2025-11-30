@@ -33,7 +33,6 @@ import (
 	"github.com/brook/server/remote"
 	"github.com/brook/server/tunnel/base"
 	"github.com/brook/server/web"
-	"github.com/brook/server/web/db"
 	"github.com/brook/server/web/service"
 	"github.com/spf13/cobra"
 )
@@ -140,5 +139,7 @@ func shutdown() {
 	if remote.Inserver != nil {
 		remote.Inserver.Shutdown()
 	}
-	db.Close()
+	if serverConfig.EnableWeb {
+		web.Close()
+	}
 }

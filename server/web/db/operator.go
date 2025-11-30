@@ -57,6 +57,9 @@ func Open() {
 }
 
 func Close() {
+	if DB == nil {
+		return
+	}
 	_ = DB.Close()
 }
 

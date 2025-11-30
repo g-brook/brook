@@ -111,3 +111,7 @@ func doRoute() {
 	})
 	http.Handle("/", r)
 }
+
+func Close() {
+	db.Close()
+}

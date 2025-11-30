@@ -16,6 +16,10 @@
 
 package version
 
+import (
+	"fmt"
+)
+
 const BuildVersion = "0.0.1"
 
 // GetBuildVersion application version.
@@ -26,4 +30,16 @@ func GetBuildVersion() string {
 // GetDbVersion db version.
 func GetDbVersion() int {
 	return 2
+}
+
+func Banner() string {
+	banner := `
+    __                     __  
+   / /__________________  / /__
+  / __  / ___/ __ \/ __ \/ //_/
+ / /_/ / /  / /_/ / /_/ / ,<   
+/_.___/_/   \____/\____/_/|_|  
+           v%s
+`
+	return fmt.Sprintf(banner, GetBuildVersion())
 }

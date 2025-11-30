@@ -17,37 +17,11 @@
 package main
 
 import (
-	"context"
-	"time"
+	"fmt"
 
-	"github.com/gobwas/ws"
-	"github.com/gobwas/ws/wsutil"
+	"github.com/brook/common/version"
 )
 
 func main() {
-	ctx := context.Background()
-	header := ws.HandshakeHeaderHTTP{
-		"Origin": {"http://127.0.0.1"},
-	}
-	dialer := ws.Dialer{
-		Header: header,
-	}
-	conn, _, _, err := dialer.Dial(ctx, "wss://127.0.0.1:30003/ws")
-	if err != nil {
-		panic(err)
-	}
-	defer conn.Close()
-
-	for {
-		// send
-		_ = wsutil.WriteClientText(conn, []byte("PING"))
-		// receive
-		msg, err := wsutil.ReadServerText(conn)
-		if err != nil {
-			println(err.Error())
-		} else {
-			println(string(msg))
-		}
-		<-time.After(2 * time.Second)
-	}
+	fmt.Println(version.Banner())
 }
