@@ -111,7 +111,8 @@ func restart(service string) {
 }
 
 func afterCheck(cmd string, conn *dbus.Conn, serviceName string, service string) {
-	if !verifyStatus(conn, serviceName, service) {
+	isStop := cmd == "stop"
+	if !verifyStatus(conn, serviceName, service) && !isStop {
 		printError(fmt.Sprintf("Failed to %s service %s", cmd, service))
 	} else {
 		printSuccess(fmt.Sprintf("Service %s %s  successfully", service, cmd))
@@ -203,7 +204,6 @@ ReadWritePaths=%s
 
 [Install]
 WantedBy=multi-user.target`
-
 	// Get executable path
 	execPath, err := os.Executable()
 	if err != nil {
