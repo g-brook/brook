@@ -155,9 +155,9 @@ cd brook-cli
 CLI 启动参数：
 
 - 服务端：`./brook-sev -c ./server.json` 或 `./brook-sev --configs ./server.json`
-- 服务端后台启动：`nohup ./brook-sev > app.log 2>&1 &`
+- 客户端后台启动（仅支持linux,需要systemd支持）：`sudo ./brook-serv start` 更多命令支持 ./brook-sev help查看
 - 客户端：`./brook-cli -c ./client.json` 或 `./brook-cli --configs ./client.json`
-- 客务端后台启动：`nohup ./brook-cli > app.log 2>&1 &`
+- 客户端后台启动（仅支持linux,需要systemd支持）：`sudo ./brook-cli start`　更多命令支持 ./brook-cli help查看
 
 ---
 
