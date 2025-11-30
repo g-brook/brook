@@ -192,15 +192,20 @@ Wants=network-online.target
 [Service]
 Type=notify
 ExecStart=%s
+
 Restart=on-failure
 RestartSec=5s
+
 WorkingDirectory=%s
 
 NoNewPrivileges=true
 PrivateTmp=true
-ProtectSystem=strict
-ProtectHome=read-only
+ProtectSystem=full
+ProtectHome=no
 ReadWritePaths=%s
+
+StandardOutput=journal
+StandardError=journal
 
 [Install]
 WantedBy=multi-user.target`
