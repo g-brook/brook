@@ -13,4 +13,4 @@ COPY $APP_PATH ./
 
 RUN chmod 755 /app && chmod -R 755 /app/*
 
-CMD ["./brook-cli --container true"]
+CMD ["./brook-cli","--container=true"]

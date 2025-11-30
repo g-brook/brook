@@ -15,4 +15,4 @@ RUN chmod 755 /app && chmod -R 755 /app/*
 
 EXPOSE 8000
 
-CMD ["./brook-sev --container true"]
+CMD ["./brook-sev","--container=true"]
