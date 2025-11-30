@@ -24,8 +24,6 @@ import (
 
 	"github.com/brook/common/configs"
 	"github.com/brook/common/log"
-	"github.com/brook/common/pid"
-	"github.com/brook/common/stringx"
 	"github.com/brook/common/threading"
 	"github.com/brook/server/web/api"
 	"github.com/brook/server/web/db"
@@ -67,23 +65,6 @@ func NewWebServer(port int) {
 			panic("start web server err: " + err.Error())
 		}
 	})
-	//writer cli token
-	writerCliToken()
-}
-
-func writerCliToken() {
-	currentToken := pid.CurrentCliToken()
-	if currentToken == "" {
-		currentToken = stringx.RandomString(32)
-	}
-	pid.CreateCliTokenFile(currentToken)
-	err := db.Put(currentToken, &api.UserInfo{
-		Username: "cli",
-		Password: "cli",
-	})
-	if err != nil {
-		log.Error("write cli token err: %v", err)
-	}
 }
 
 func doRoute() {

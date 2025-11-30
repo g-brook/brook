@@ -9,8 +9,7 @@ import (
 )
 
 var (
-	File      = "pid"
-	TokenFile = "cli_token"
+	File = "pid"
 )
 
 func CurrentPid() int {
@@ -43,22 +42,5 @@ func DeletePidFile() error {
 	} else {
 		log.Info("PID file removed: %s\n", File)
 		return nil
-	}
-}
-
-func CurrentCliToken() string {
-	file, err := os.ReadFile(TokenFile)
-	if err != nil {
-		log.Error("Failed to read token file: %v", err)
-		return ""
-	}
-	return string(file)
-}
-
-func CreateCliTokenFile(token string) {
-	if err := os.WriteFile(TokenFile, []byte(token), 0777); err != nil {
-		log.Error("Failed to write token file: %v\n", err)
-	} else {
-		log.Info("Token file created token: %d\n", token)
 	}
 }
