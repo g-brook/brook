@@ -111,7 +111,7 @@ func restart(service string) {
 }
 
 func afterCheck(cmd string, conn *dbus.Conn, serviceName string, service string) {
-	isStop := cmd == "stop"
+	isStop := strings.ToLower(cmd) == "stop"
 	if !verifyStatus(conn, serviceName, service) && !isStop {
 		printError(fmt.Sprintf("Failed to %s service %s", cmd, service))
 	} else {
