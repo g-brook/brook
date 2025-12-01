@@ -28,9 +28,9 @@ func Recover(cleanups ...func()) {
 		cleanup()
 	}
 
-	//if p := recover(); p != nil {
-	//	log.Error("%v", p)
-	//}
+	if p := recover(); p != nil {
+		log.Error("%v", p)
+	}
 }
 
 // RecoverCtx is used with defer to do cleanup on panics.
