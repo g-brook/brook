@@ -46,7 +46,6 @@ const (
 )
 
 type ClientControl struct {
-
 	//Current client state.
 	state chan ClientState
 
@@ -139,8 +138,6 @@ type Client struct {
 
 	cct *ClientControl
 
-	rw io.ReadWriter
-
 	state ClientState
 
 	network string
@@ -226,7 +223,6 @@ func (c *Client) pre(network string, option []ClientOption) {
 func (c *Client) doConnection() error {
 	if c.conn != nil {
 		c.conn = nil
-		c.rw = nil
 		c.session = nil
 	}
 	dialer := &net.Dialer{
@@ -244,9 +240,7 @@ func (c *Client) doConnection() error {
 		c.setTimeout(dial)
 		c.conn = dial
 		c.cct.state <- Active
-		c.cct.cli = c
 	}
-	c.rw = c.conn
 	if !c.isSmux() {
 		log.Info("👍---->Connection %s success OK.✅--->", c.getAddress())
 		return nil
@@ -312,7 +306,7 @@ func (c *Client) readLoop() {
 	}
 	<-c.cct.revRead
 	clientFunction := func() error {
-		protocol, err := exchange.Decoder(c.rw)
+		protocol, err := exchange.Decoder(c.conn)
 		if err != nil {
 			if err == io.EOF {
 				_ = c.error("Close connection:"+c.getAddress(), err)
@@ -418,7 +412,7 @@ func (c *Client) handleLoop() {
 			}
 		case bytes := <-c.cct.write:
 			// Handle outgoing data
-			_, _ = c.rw.Write(bytes)
+			_, _ = c.conn.Write(bytes)
 			// Write data to the connection
 		case <-c.cct.timeout:
 			// Handle timeout events
@@ -451,7 +445,7 @@ func (c *Client) sessionLoop() {
 }
 
 func (c *ClientControl) Write(bytes []byte) error {
-	if c.cli.rw == nil {
+	if c.cli.conn == nil {
 		log.Warn("Connection closed")
 		return errors.New("connection closed")
 	}

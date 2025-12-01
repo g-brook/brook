@@ -33,7 +33,6 @@ type Service struct {
 	ctx       context.Context
 	connState chan struct{}
 	connOnce  sync.Once
-	manager   *clis.Transport
 }
 
 func (receiver *Service) Connection(_ *clis.ClientControl) {
@@ -52,10 +51,10 @@ func NewService() *Service {
 func (receiver *Service) Run(cfg *configs.ClientConfig) {
 	threading.GoSafe(func() {
 		//Connection to server.
-		receiver.manager = clis.NewTransport(cfg)
+		manager := clis.NewTransport(cfg)
 		//init manager transport.
-		clis.InitManagerTransport(receiver.manager)
-		receiver.manager.Connection(
+		clis.InitManagerTransport(manager)
+		manager.Connection(
 			clis.WithTimeout(3*time.Second),
 			clis.WithKeepAlive(10*time.Second),
 			clis.WithClientHandler(receiver),

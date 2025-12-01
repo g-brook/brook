@@ -345,9 +345,9 @@ func (sever *Server) streamAssignment() {
 			}
 			threading.GoSafe(func() {
 				for {
-					stream, _ := session.AcceptStream()
-					if session.IsClosed() {
-						log.Error("session is close.")
+					stream, err := session.AcceptStream()
+					if err != nil || session.IsClosed() {
+						log.Error("session is close. %v", err.Error())
 						return
 					}
 					log.Info("Start server success stream. %s", stream.RemoteAddr())

@@ -77,12 +77,12 @@ func (receiver *TunnelClientControl) retry(f func() error) {
 			default:
 			}
 			if err := f(); err != nil {
-				log.Warn("Active tunnel error...", err)
+				log.Warn("Active tunnel error %v", err)
 				if errors.Is(err, sessionError) {
-					log.Warn("Active tunnel error, exit..", err)
+					log.Warn("Active tunnel error, exit,%v", err)
 					return
 				} else {
-					log.Warn("Active tunnel error, continue..", err)
+					log.Warn("Active tunnel error, continue,%v", err)
 				}
 			}
 			ticker.Reset(time.Second * 5)

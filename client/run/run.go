@@ -133,9 +133,7 @@ func startServer(config *configs.ClientConfig) {
 
 func shutdown() {
 	log.Info("brook exiting; bye bye!! 👋")
-	if service != nil {
-		service.manager.Close()
-	}
+	os.Exit(0)
 }
 
 func OpenCli() {
