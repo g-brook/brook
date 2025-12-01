@@ -125,6 +125,7 @@ func NewChannel(conn gnet.Conn, t *Server) *GChannel {
 		cancel:      cancelFunc,
 		protocol:    t.opts.network,
 		closeEvents: make([]trp.CloseEvent, 0),
+		isDatagram:  t.isDatagram(),
 	}
 	if !t.isDatagram() {
 		t.connections.Store(connContext.Id, v2)
@@ -152,7 +153,7 @@ type Server struct {
 
 	InitConnHandler InitConnHandler
 
-	startSmux func(conn *trp.SmuxAdapterConn, ctx context.Context, option *SmuxServerOption) error
+	startSmux func(conn *SmuxAdapterConn, ctx context.Context, option *SmuxServerOption) error
 }
 
 func NewServer(port int) *Server {
@@ -224,7 +225,8 @@ func (sever *Server) OnOpen(c gnet.Conn) (out []byte, action gnet.Action) {
 	defer sever.removeIfConnection(conn)
 	if sever.startSmux != nil {
 		conn.Context.isSmux = true
-		conn.PipeConn = trp.NewSmuxAdapterConn(c)
+		conn.StartWR()
+		conn.PipeConn = NewSmuxAdapterConn(conn)
 		_ = sever.startSmux(
 			conn.PipeConn,
 			conn.bgCtx,
@@ -335,7 +337,7 @@ func (sever *Server) Start(opt ...ServerOption) error {
 
 func (sever *Server) streamAssignment() {
 	if sever.opts.withSmux != nil && sever.opts.withSmux.enable {
-		sever.startSmux = func(conn *trp.SmuxAdapterConn, ctx context.Context, option *SmuxServerOption) error {
+		sever.startSmux = func(conn *SmuxAdapterConn, ctx context.Context, option *SmuxServerOption) error {
 			config := smux.DefaultConfig()
 			session, err := smux.Server(conn, config)
 			if err != nil {

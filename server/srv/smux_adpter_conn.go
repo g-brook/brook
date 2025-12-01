@@ -14,23 +14,21 @@
  * limitations under the License.
  */
 
-package transport
+package srv
 
 import (
 	"io"
 	"net"
 	"time"
-
-	"github.com/panjf2000/gnet/v2"
 )
 
 type SmuxAdapterConn struct {
 	reader  *io.PipeReader
 	writer  *io.PipeWriter
-	rawConn gnet.Conn
+	rawConn *GChannel
 }
 
-func NewSmuxAdapterConn(rawConn gnet.Conn) *SmuxAdapterConn {
+func NewSmuxAdapterConn(rawConn *GChannel) *SmuxAdapterConn {
 	pipe, writer := io.Pipe()
 	return &SmuxAdapterConn{
 		rawConn: rawConn,
@@ -44,7 +42,7 @@ func (s *SmuxAdapterConn) Read(p []byte) (int, error) {
 }
 
 func (s *SmuxAdapterConn) Write(p []byte) (int, error) {
-	return s.rawConn.Write(p)
+	return s.rawConn.WriteWR(p)
 }
 
 func (s *SmuxAdapterConn) Copy(p []byte) (n int, err error) {

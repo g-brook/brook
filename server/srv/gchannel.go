@@ -24,6 +24,9 @@ import (
 	"time"
 
 	"github.com/brook/common/lang"
+	"github.com/brook/common/log"
+	"github.com/brook/common/ringbuffer"
+	"github.com/brook/common/threading"
 	"github.com/brook/common/transport"
 	"github.com/panjf2000/gnet/v2"
 )
@@ -39,7 +42,7 @@ type GChannel struct {
 
 	Server *Server
 
-	PipeConn *transport.SmuxAdapterConn
+	PipeConn *SmuxAdapterConn
 
 	bgCtx context.Context
 
@@ -48,6 +51,12 @@ type GChannel struct {
 	closeEvents []transport.CloseEvent
 
 	protocol lang.Network
+
+	isDatagram bool
+
+	writerBuffer *ringbuffer.RingBuffer
+
+	writer chan int
 }
 
 func (c *GChannel) SendTo(by []byte, addr net.Addr) (int, error) {
@@ -72,6 +81,12 @@ func (c *GChannel) SetWriteDeadline(t time.Time) error {
 
 func (c *GChannel) GetConn() net.Conn {
 	return c.Conn
+}
+
+func (c *GChannel) StartWR() {
+	c.writerBuffer = ringbuffer.Get()
+	c.writer = make(chan int, 2048)
+	c.writeWRLoop()
 }
 
 // GetReader
@@ -127,6 +142,36 @@ func (c *GChannel) ReadFull(out []byte) (int, error) {
 	return io.ReadFull(c.GetReader(), out)
 }
 
+func (c *GChannel) WriteWR(out []byte) (int, error) {
+	n, err := c.writerBuffer.Write(out)
+	if err != nil {
+		return 0, err
+	}
+	c.writer <- n
+	return n, nil
+}
+
+func (c *GChannel) writeWRLoop() {
+	threading.GoSafe(func() {
+		for {
+			select {
+			case l := <-c.writer:
+				bytes := make([]byte, l)
+				_, err := c.writerBuffer.Read(bytes)
+				if err != nil {
+					log.Error("write error: %v", err)
+				}
+				_, err = c.Conn.Write(bytes)
+				if err != nil {
+					log.Error("write error: %v", err)
+				}
+			case <-c.Done():
+				return
+			}
+		}
+	})
+}
+
 // Writer
 //
 //	@Description:
@@ -164,6 +209,9 @@ func (c *GChannel) Close() error {
 		event(c)
 	}
 	clear(c.closeEvents)
+	if c.writerBuffer != nil {
+		ringbuffer.Put(c.writerBuffer)
+	}
 	return nil
 }
 
