@@ -27,7 +27,7 @@ import (
 var schannelWheel *wheel.TimingWheel
 
 const (
-	streamHealthyCheckInterval = 500 * time.Second
+	streamHealthyCheckInterval = 300 * time.Second
 )
 
 func init() {
