@@ -248,11 +248,9 @@ func (sever *Server) OnTraffic(c gnet.Conn) gnet.Action {
 	conn := NewChannel(c, sever)
 	conn.GetContext().LastActive()
 	defer sever.removeIfConnection(conn)
-	fmt.Println("读取到流量数据...:%s", sever.port)
 	if sever.startSmux != nil {
 		if conn.PipeConn != nil {
 			buf, err := c.Next(-1)
-			fmt.Println("读取：", len(buf))
 			if err != nil {
 				log.Error("pipeConn.Copy error: %s", err)
 			}

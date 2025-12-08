@@ -17,7 +17,6 @@
 package clis
 
 import (
-	"fmt"
 	"net"
 
 	"github.com/brook/common/iox"
@@ -40,7 +39,6 @@ func (c *CompressConn) Read(b []byte) (n int, err error) {
 }
 
 func (c *CompressConn) Write(b []byte) (n int, err error) {
-	fmt.Println("写入：", len(b))
 	return c.rw.Write(b)
 }
 
