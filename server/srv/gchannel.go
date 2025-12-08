@@ -21,12 +21,10 @@ import (
 	"errors"
 	"io"
 	"net"
+	"sync"
 	"time"
 
 	"github.com/brook/common/lang"
-	"github.com/brook/common/log"
-	"github.com/brook/common/ringbuffer"
-	"github.com/brook/common/threading"
 	"github.com/brook/common/transport"
 	"github.com/panjf2000/gnet/v2"
 )
@@ -34,15 +32,15 @@ import (
 // GChannel
 // @Description:
 type GChannel struct {
-	Conn gnet.Conn
+	conn gnet.Conn
 
-	Id string
+	id string
 
 	Context *ConnContext
 
 	Server *Server
 
-	PipeConn *SmuxAdapterConn
+	PipeConn *TChannel
 
 	bgCtx context.Context
 
@@ -54,39 +52,31 @@ type GChannel struct {
 
 	isDatagram bool
 
-	writerBuffer *ringbuffer.RingBuffer
-
-	writer chan int
+	once sync.Once
 }
 
 func (c *GChannel) SendTo(by []byte, addr net.Addr) (int, error) {
 	if c.protocol != lang.NetworkUdp {
 		return 0, nil
 	}
-	return c.Conn.SendTo(by, addr)
+	return c.conn.SendTo(by, addr)
 }
 
-// SetDeadline is a wrapper for gnet.Conn.SetDeadline.
+// SetDeadline is a wrapper for gnet.conn.SetDeadline.
 func (c *GChannel) SetDeadline(t time.Time) error {
-	return c.Conn.SetDeadline(t)
+	return c.conn.SetDeadline(t)
 }
 
 func (c *GChannel) SetReadDeadline(t time.Time) error {
-	return c.Conn.SetReadDeadline(t)
+	return c.conn.SetReadDeadline(t)
 }
 
 func (c *GChannel) SetWriteDeadline(t time.Time) error {
-	return c.Conn.SetWriteDeadline(t)
+	return c.conn.SetWriteDeadline(t)
 }
 
 func (c *GChannel) GetConn() net.Conn {
-	return c.Conn
-}
-
-func (c *GChannel) StartWR() {
-	c.writerBuffer = ringbuffer.Get()
-	c.writer = make(chan int, 2048)
-	c.writeWRLoop()
+	return c.conn
 }
 
 // GetReader
@@ -95,7 +85,7 @@ func (c *GChannel) StartWR() {
 //	@receiver receiver
 //	@return iox.Reader
 func (c *GChannel) GetReader() io.Reader {
-	return c.Conn
+	return c.conn
 }
 
 // GetWriter
@@ -104,7 +94,7 @@ func (c *GChannel) GetReader() io.Reader {
 //	@receiver receiver
 //	@return iox.Writer
 func (c *GChannel) GetWriter() io.Writer {
-	return c.Conn
+	return c.conn
 }
 
 // GetContext
@@ -127,7 +117,7 @@ func (c *GChannel) Read(out []byte) (int, error) {
 		return 0, io.EOF
 	}
 	//ErrShortBuffer
-	n, err := c.Conn.Read(out)
+	n, err := c.conn.Read(out)
 	if errors.Is(err, io.ErrShortBuffer) {
 		//try read.
 		if len(out) <= 4 {
@@ -142,36 +132,6 @@ func (c *GChannel) ReadFull(out []byte) (int, error) {
 	return io.ReadFull(c.GetReader(), out)
 }
 
-func (c *GChannel) WriteWR(out []byte) (int, error) {
-	n, err := c.writerBuffer.Write(out)
-	if err != nil {
-		return 0, err
-	}
-	c.writer <- n
-	return n, nil
-}
-
-func (c *GChannel) writeWRLoop() {
-	threading.GoSafe(func() {
-		for {
-			select {
-			case l := <-c.writer:
-				bytes := make([]byte, l)
-				_, err := c.writerBuffer.Read(bytes)
-				if err != nil {
-					log.Error("write error: %v", err)
-				}
-				_, err = c.Conn.Write(bytes)
-				if err != nil {
-					log.Error("write error: %v", err)
-				}
-			case <-c.Done():
-				return
-			}
-		}
-	})
-}
-
 // Writer
 //
 //	@Description:
@@ -182,7 +142,7 @@ func (c *GChannel) Write(out []byte) (int, error) {
 	if c.IsClose() {
 		return 0, io.EOF
 	}
-	return c.Conn.Write(out)
+	return c.conn.Write(out)
 }
 
 // Next
@@ -190,9 +150,9 @@ func (c *GChannel) Write(out []byte) (int, error) {
 //	@Description: Next()
 //	@receiver receiver
 //	@param pos
-//	@return net.Conn
+//	@return net.conn
 func (c *GChannel) Next(pos int) ([]byte, error) {
-	return c.Conn.Next(pos)
+	return c.conn.Next(pos)
 }
 
 func (c *GChannel) GetServer() *Server {
@@ -200,18 +160,17 @@ func (c *GChannel) GetServer() *Server {
 }
 
 func (c *GChannel) Close() error {
-	if c.Conn != nil {
-		_ = c.Conn.Close()
-	}
-	c.Context.IsClosed = true
-	c.cancel()
-	for _, event := range c.closeEvents {
-		event(c)
-	}
-	clear(c.closeEvents)
-	if c.writerBuffer != nil {
-		ringbuffer.Put(c.writerBuffer)
-	}
+	c.once.Do(func() {
+		if c.conn != nil {
+			_ = c.conn.Close()
+		}
+		c.Context.IsClosed = true
+		c.cancel()
+		for _, event := range c.closeEvents {
+			event(c)
+		}
+		clear(c.closeEvents)
+	})
 	return nil
 }
 
@@ -228,15 +187,15 @@ func (c *GChannel) IsClose() bool {
 }
 
 func (c *GChannel) RemoteAddr() net.Addr {
-	return c.Conn.RemoteAddr()
+	return c.conn.RemoteAddr()
 }
 
 func (c *GChannel) LocalAddr() net.Addr {
-	return c.Conn.LocalAddr()
+	return c.conn.LocalAddr()
 }
 
 func (c *GChannel) GetNetConn() net.Conn {
-	return c.Conn
+	return c.conn
 }
 
 func (c *GChannel) isConnection() bool {
@@ -250,7 +209,7 @@ func (c *GChannel) GetAttr(key lang.KeyType) (interface{}, bool) {
 
 // AddAttr
 //
-//	@Description: Add a attr info on Conn.
+//	@Description: Add a attr info on conn.
 //	@receiver receiver
 func (receiver *ConnContext) AddAttr(key lang.KeyType, value interface{}) {
 	receiver.attr[key] = value
@@ -291,7 +250,7 @@ func (receiver *ConnContext) GetLastActive() time.Time {
 }
 
 func (c *GChannel) GetId() string {
-	return c.Id
+	return c.id
 }
 
 func (c *GChannel) Done() <-chan struct{} {

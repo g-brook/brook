@@ -51,5 +51,6 @@ func NewConnContext(isUdp bool, addr string) *ConnContext {
 
 type GContext interface {
 	GetContext() *ConnContext
+
 	Next(pos int) ([]byte, error)
 }

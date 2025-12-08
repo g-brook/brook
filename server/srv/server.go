@@ -116,9 +116,9 @@ func NewChannel(conn gnet.Conn, t *Server) *GChannel {
 		return value
 	}
 	bgCtx, cancelFunc := context.WithCancel(context.Background())
-	v2 := &GChannel{
-		Conn:        conn,
-		Id:          connContext.Id,
+	gn := &GChannel{
+		conn:        conn,
+		id:          connContext.Id,
 		Context:     connContext,
 		Server:      t,
 		bgCtx:       bgCtx,
@@ -128,12 +128,12 @@ func NewChannel(conn gnet.Conn, t *Server) *GChannel {
 		isDatagram:  t.isDatagram(),
 	}
 	if !t.isDatagram() {
-		t.connections.Store(connContext.Id, v2)
+		t.connections.Store(connContext.Id, gn)
 	}
 	if t.InitConnHandler != nil {
-		t.InitConnHandler(v2)
+		t.InitConnHandler(gn)
 	}
-	return v2
+	return gn
 }
 
 // Server /*
@@ -153,7 +153,7 @@ type Server struct {
 
 	InitConnHandler InitConnHandler
 
-	startSmux func(conn *SmuxAdapterConn, ctx context.Context, option *SmuxServerOption) error
+	startSmux func(conn *TChannel, ctx context.Context, option *SmuxServerOption) error
 }
 
 func NewServer(port int) *Server {
@@ -225,8 +225,8 @@ func (sever *Server) OnOpen(c gnet.Conn) (out []byte, action gnet.Action) {
 	defer sever.removeIfConnection(conn)
 	if sever.startSmux != nil {
 		conn.Context.isSmux = true
-		conn.StartWR()
 		conn.PipeConn = NewSmuxAdapterConn(conn)
+		conn.PipeConn.StartWR()
 		_ = sever.startSmux(
 			conn.PipeConn,
 			conn.bgCtx,
@@ -248,9 +248,11 @@ func (sever *Server) OnTraffic(c gnet.Conn) gnet.Action {
 	conn := NewChannel(c, sever)
 	conn.GetContext().LastActive()
 	defer sever.removeIfConnection(conn)
+	fmt.Println("读取到流量数据...:%s", sever.port)
 	if sever.startSmux != nil {
 		if conn.PipeConn != nil {
-			buf, err := conn.Next(-1)
+			buf, err := c.Next(-1)
+			fmt.Println("读取：", len(buf))
 			if err != nil {
 				log.Error("pipeConn.Copy error: %s", err)
 			}
@@ -302,9 +304,9 @@ func (sever *Server) removeIfConnection(v2 *GChannel) {
 		//This use v2.id removing map element.
 		// v2.id eq context.id, so yet use v2.id.
 		//Because v2.context possible is nil.
-		_, ok := sever.connections.Load(v2.Id)
+		_, ok := sever.connections.Load(v2.GetId())
 		if ok {
-			sever.connections.Delete(v2.Id)
+			sever.connections.Delete(v2.GetId())
 		}
 		_ = v2.Close()
 	}
@@ -337,20 +339,21 @@ func (sever *Server) Start(opt ...ServerOption) error {
 
 func (sever *Server) streamAssignment() {
 	if sever.opts.withSmux != nil && sever.opts.withSmux.enable {
-		sever.startSmux = func(conn *SmuxAdapterConn, ctx context.Context, option *SmuxServerOption) error {
+		sever.startSmux = func(conn *TChannel, ctx context.Context, option *SmuxServerOption) error {
 			config := smux.DefaultConfig()
 			session, err := smux.Server(conn, config)
 			if err != nil {
 				log.Error("Start server error. %v", err)
+				return err
 			}
 			threading.GoSafe(func() {
 				for {
 					stream, err := session.AcceptStream()
 					if err != nil || session.IsClosed() {
-						log.Error("session is close. %v", err.Error())
+						log.Error("session is close.PORT:%v, %v", conn.LocalAddr(), err.Error())
 						return
 					}
-					log.Info("Start server success stream. %s", stream.RemoteAddr())
+					log.Info("Start server success stream. %s:%s", conn.LocalAddr(), stream.RemoteAddr())
 					channel := trp.NewSChannel(stream, ctx, false)
 					sever.next(func(s ServerHandler, _ trp.Channel) bool {
 						b := true

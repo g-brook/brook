@@ -15,13 +15,12 @@
  */
 
 // Package transport SChannel is a struct that represents a secure channel for communication
-// It implements the Conn interface from net package
+// It implements the conn interface from net package
 package transport
 
 import (
 	"bytes"
 	"context"
-	"errors"
 	"io"
 	"net"
 	"time"
@@ -64,7 +63,8 @@ func NewSChannel(
 		IsOpenTunnel: isOpenTunnel,
 		closeEvents:  make([]CloseEvent, 0),
 		lastTime:     time.Now(),
-		buf:          bytes.Buffer{}} // Initialize as pointer
+		buf:          bytes.Buffer{},
+	} // Initialize as pointer
 	return ch
 }
 
@@ -146,7 +146,7 @@ func (c *SChannel) Read(p []byte) (n int, err error) {
 	}
 	c.lastTime = time.Now()
 	if c.IsOpenTunnel {
-		return c.Stream.Read(p)
+		n, err = c.Stream.Read(p)
 	} else {
 		n, err = c.buf.Read(p)
 	}
@@ -162,11 +162,6 @@ func (c *SChannel) Write(p []byte) (n int, err error) {
 		return 0, io.EOF
 	default:
 		n, err = c.Stream.Write(p)
-		c.lastTime = time.Now()
-		if errors.Is(err, io.EOF) {
-			_ = c.Close()
-			return 0, err
-		}
 	}
 	return
 }

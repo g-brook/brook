@@ -10,19 +10,8 @@
   },
   "tunnels": [
     {
-      "type": "udp",
-      "destination": "127.0.0.1:9000",
-      "proxyId": "333223"
-    },
-    {
       "type": "tcp",
       "proxyId": "local_mysql"
-    },
-    {
-      "type": "http",
-      "destination": "127.0.0.1:8081",
-      "proxyId": "HttpLocal-2",
-      "httpId": "local"
     }
   ]
 }

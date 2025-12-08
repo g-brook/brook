@@ -37,7 +37,7 @@ type Channel interface {
 
 	io.Writer
 
-	// Conn net.Conn provides basic network connection functionality
+	// conn net.Conn provides basic network connection functionality
 	net.Conn
 
 	// GetReader returns the reader part of the channel

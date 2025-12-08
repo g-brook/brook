@@ -30,7 +30,7 @@ import (
 	srv2 "github.com/brook/server/srv"
 )
 
-const isTunnelConnKey = "TunnelServer-Conn"
+const isTunnelConnKey = "TunnelServer-conn"
 
 const tunnelPort = "TunnelServer-Port"
 

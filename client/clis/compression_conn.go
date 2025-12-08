@@ -14,14 +14,37 @@
  * limitations under the License.
  */
 
-package main
+package clis
 
 import (
 	"fmt"
+	"net"
 
-	"github.com/brook/common/version"
+	"github.com/brook/common/iox"
 )
 
-func main() {
-	fmt.Println(version.Banner())
+type CompressConn struct {
+	net.Conn
+	rw *iox.CompressionRw
+}
+
+func NewCompressConn(conn net.Conn) *CompressConn {
+	return &CompressConn{
+		Conn: conn,
+		rw:   iox.NewCompressionRw(conn, conn),
+	}
+}
+
+func (c *CompressConn) Read(b []byte) (n int, err error) {
+	return c.rw.Read(b)
+}
+
+func (c *CompressConn) Write(b []byte) (n int, err error) {
+	fmt.Println("写入：", len(b))
+	return c.rw.Write(b)
+}
+
+func (c *CompressConn) Close() error {
+	_ = c.Conn.Close()
+	return c.rw.Close()
 }

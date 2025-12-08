@@ -249,7 +249,8 @@ func (c *Client) doConnection() error {
 	openSmux := func() (*smux.Session, error) {
 		config := smux.DefaultConfig()
 		config.KeepAliveDisabled = !c.opts.Smux.KeepAlive
-		if session, err := smux.Client(c.conn, config); err != nil {
+		conn := NewCompressConn(c.GetConn())
+		if session, err := smux.Client(conn, config); err != nil {
 			return nil, c.error("New smux Client error", err)
 		} else {
 			log.Info("👍---->Open session[tunnel] %s success OK.✅--->", c.getAddress())

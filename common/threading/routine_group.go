@@ -1,5 +1,5 @@
 /*
- * Copyright ©  https://github.com/zeromicro/go-zero/blob/master/core/threading/routinegroup.go
+ * Copyright ©  sixh sixh@apache.org
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.

@@ -32,8 +32,8 @@ func Pipe(src io.ReadWriteCloser, dst io.ReadWriteCloser) (errors []error) {
 	copyData := func(index int, src io.ReadWriteCloser, dst io.ReadWriteCloser) {
 		defer func() {
 			wait.Done()
-			src.Close()
-			dst.Close()
+			_ = src.Close()
+			_ = dst.Close()
 		}()
 		errors2[index] = WithBuffer(func(buf []byte) error {
 			_, err := io.CopyBuffer(dst, src, buf)
@@ -62,8 +62,8 @@ func SinglePipe(src io.ReadWriteCloser, dst io.ReadWriteCloser) error {
 	// copyData transfers data from src to dst in a goroutine.
 	copyData := func(src io.ReadWriteCloser, dst io.ReadWriteCloser) {
 		defer func() {
-			src.Close()
-			dst.Close()
+			_ = src.Close()
+			_ = dst.Close()
 		}()
 		err := WithBuffer(func(buf []byte) error {
 			_, err := io.CopyBuffer(dst, src, buf)
