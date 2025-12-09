@@ -12,6 +12,10 @@
     {
       "type": "tcp",
       "proxyId": "local_mysql"
+    },
+    {
+      "type": "udp",
+      "proxyId": "333223"
     }
   ]
 }

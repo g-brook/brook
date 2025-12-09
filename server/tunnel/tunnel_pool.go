@@ -17,7 +17,9 @@
 package tunnel
 
 import (
+	"errors"
 	"fmt"
+	"net"
 	"sync"
 	"time"
 
@@ -40,9 +42,10 @@ type TunnelPool struct {
 
 var NewTunnelPool = func(factory GetFunction, size int) *TunnelPool {
 	return &TunnelPool{
-		channels: make(chan transport.Channel, size),
-		size:     size,
-		factory:  factory,
+		channels:        make(chan transport.Channel, size),
+		size:            size,
+		factory:         factory,
+		checkHealthFunc: DefaultCheckHealth,
 	}
 }
 
@@ -58,9 +61,9 @@ func (r *TunnelPool) Get() (sch transport.Channel, err error) {
 		if ok {
 			if r.checkHealthFunc != nil && !r.checkHealthFunc(sch) {
 				_ = sch.Close()
+			} else {
 				return
 			}
-			return
 		}
 	default:
 
@@ -84,6 +87,10 @@ func (r *TunnelPool) Get() (sch transport.Channel, err error) {
 
 // Put This function takes a pointer to a transport.SChannel and puts it into a channel
 func (r *TunnelPool) Put(sch transport.Channel) error {
+	if r.checkHealthFunc != nil && !r.checkHealthFunc(sch) {
+		_ = sch.Close()
+		return fmt.Errorf("tunnel pool check health fail")
+	}
 	// This deferred function will be called when the function returns
 	defer func() {
 		// If there is an error, it will be recovered and logged
@@ -104,4 +111,18 @@ func (r *TunnelPool) Put(sch transport.Channel) error {
 		log.Debug("tunnel pool put error")
 		return fmt.Errorf("tunnel pool put error")
 	}
+}
+
+func DefaultCheckHealth(ch transport.Channel) bool {
+	if ch == nil {
+		return false
+	}
+	_ = ch.SetReadDeadline(time.Now().Add(time.Millisecond * 10))
+	buf := make([]byte, 0)
+	_, err := ch.Write(buf)
+	var ne net.Error
+	if errors.As(err, &ne) && ne.Timeout() {
+		return true
+	}
+	return err == nil
 }
