@@ -17,9 +17,7 @@
 package tunnel
 
 import (
-	"errors"
 	"fmt"
-	"net"
 	"sync"
 	"time"
 
@@ -117,12 +115,12 @@ func DefaultCheckHealth(ch transport.Channel) bool {
 	if ch == nil {
 		return false
 	}
-	_ = ch.SetReadDeadline(time.Now().Add(time.Millisecond * 10))
-	buf := make([]byte, 0)
-	_, err := ch.Write(buf)
-	var ne net.Error
-	if errors.As(err, &ne) && ne.Timeout() {
-		return true
+	_, err := ch.Write([]byte{})
+	if err != nil {
+		return false
 	}
-	return err == nil
+	if ch.IsClose() {
+		return false
+	}
+	return true
 }
