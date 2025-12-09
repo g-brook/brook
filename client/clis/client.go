@@ -220,50 +220,77 @@ func (c *Client) pre(network string, option []ClientOption) {
 	c.cct.cli = c
 }
 
+// doConnection establishes a connection to the server and initializes the client session
+// It handles both regular connections and smux multiplexed connections
 func (c *Client) doConnection() error {
+	// Clean up existing connection and session if they exist
 	if c.conn != nil {
 		c.conn = nil
 		c.session = nil
 	}
+
+	// Create a dialer with configured keep-alive and timeout settings
 	dialer := &net.Dialer{
 		KeepAlive: c.opts.KeepAlive,
 		Timeout:   c.opts.Timeout,
 	}
+
+	// Create a context with 3-second timeout for the connection attempt
 	timeout, cancelFunc := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancelFunc()
+
+	// Attempt to establish connection to the server
 	if dial, err := dialer.DialContext(timeout, c.network, c.host+":"+fmt.Sprintf("%d", c.port)); err != nil {
+		// Return error if connection fails
 		return c.error(
 			fmt.Sprintf("Connection to %s:%d,error", c.host, c.port),
 			err,
 		)
 	} else {
+		// Set read timeout on the connection
 		c.setTimeout(dial)
+		// Store the established connection
 		c.conn = dial
+		// Update client state to active
 		c.cct.state <- Active
 	}
+
+	// If smux is not enabled, log success and return
 	if !c.isSmux() {
 		log.Info("👍---->Connection %s success OK.✅--->", c.getAddress())
 		return nil
 	}
-	//OpenStream smux
+	// Function to open smux session over the established connection
 	openSmux := func() (*smux.Session, error) {
+		// Get default smux configuration
 		config := smux.DefaultConfig()
+		// Configure keep-alive based on options
 		config.KeepAliveDisabled = !c.opts.Smux.KeepAlive
+		// Wrap connection with compression
 		conn := NewCompressConn(c.GetConn())
+		// Create smux client session
 		if session, err := smux.Client(conn, config); err != nil {
+			// Return error if smux client creation fails
 			return nil, c.error("New smux Client error", err)
 		} else {
+			// Log successful session creation
 			log.Info("👍---->Open session[tunnel] %s success OK.✅--->", c.getAddress())
 			return session, nil
 		}
 	}
+
+	// Open smux session
 	session, err := openSmux()
 	if err != nil {
+		// Log error and close client if smux session creation fails
 		log.Error("Active smux Client error %v", err)
 		c.cct.Close()
 		return err
 	}
+
+	// Store the smux session
 	c.session = session
+	// Start session monitoring in a separate goroutine
 	threading.GoSafe(c.sessionLoop)
 	return nil
 }
