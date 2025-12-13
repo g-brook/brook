@@ -1,5 +1,4 @@
-
-# <img src="document/svg.png" alt="svg.png" style="zoom:80%;" /> Brook
+# <img src="document/svg.png" alt="svg.png" style="zoom:80%;" /> Brook ![Latest Release](https://img.shields.io/github/v/release/g-brook/brook?label=Latest&style=flat-square)
 
 [English](document/README.en.md)
 
@@ -43,14 +42,11 @@ Brook 是一款跨平台（Linux / macOS / Windows）的高性能网络隧道与
 
 1) 解压下载的包并进入目录
 
-```sh
 mkdir -p ./brook-sev && tar -xzf brook-sev_Linux-arm64.tar.gz -C ./brook-sev
 cd brook-sev
-```
 
 2) 更新 `server.json`
 
-```json
 {
   "enableWeb": true,
   "webPort": 8000,
@@ -59,13 +55,10 @@ cd brook-sev
   "token": "", // 非 Web 模式下可在此直接设置令牌
   "logger": { "logLevel": "info", "logPath": "./", "outs": "file" }
 }
-```
 
 3) 启动服务
 
-```sh
 ./brook-sev -c ./server.json
-```
 
 4) 打开管理界面
 
@@ -85,14 +78,11 @@ cd brook-sev
 
 1) 解压下载的包并进入目录
 
-```sh
 mkdir -p ./brook-cli && tar -xzf brook-cli_Linux-arm64.tar.gz -C ./brook-cli
 cd brook-cli
-```
 
 2) 准备 `client.json`（可从服务端下载模板并更改）
 
-```json
 {
   "serverPort": 8909,
   "serverHost": "127.0.0.1",
@@ -112,13 +102,10 @@ cd brook-cli
     }
   ]
 }
-```
 
 3) 启动客户端
 
-```sh
 ./brook-cli -c ./client.json
-```
 
 4) 模板与标识获取
 
