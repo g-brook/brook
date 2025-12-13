@@ -1,4 +1,5 @@
-# <img src="svg.png" alt="logo" style="zoom:80%;" /> Brook
+# <img src="document/svg.png" alt="svg.png" style="zoom:80%;" /> Brook ![Latest Release](https://img.shields.io/github/v/release/g-brook/brook?label=Latest&style=flat-square)
+
 
 Brook is a cross-platform, high-performance network tunneling and proxy toolkit implemented in Go.
 It supports a wide range of transport protocols, including TCP, UDP, HTTP(S), and WebSocket, ensuring compatibility with popular application protocols such as SSH, HTTP, Redis, and MySQL.
