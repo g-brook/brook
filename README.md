@@ -53,7 +53,7 @@ mkdir -p ./brook-sev && tar -xzf brook-sev_Linux-arm64.tar.gz -C ./brook-sev
 cd brook-sev
 
 ### 步骤二：编辑 `server.json` 配置文件
-
+```json
 {
   "enableWeb": true,
   "webPort": 8000,
@@ -66,7 +66,7 @@ cd brook-sev
     "outs": "file"
   }
 }
-
+```
 ### 步骤三：启动服务端
 
 ./brook-sev -c ./server.json
