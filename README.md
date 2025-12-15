@@ -101,7 +101,7 @@ cd brook-cli
 ### 步骤二：准备 `client.json` 配置文件
 
 您可以从服务端管理界面下载模板并根据实际需求修改：
-
+```json
 {
   "serverPort": 8909,
   "serverHost": "127.0.0.1",
@@ -121,6 +121,7 @@ cd brook-cli
     }
   ]
 }
+```
 
 ### 步骤三：启动客户端
 
@@ -229,10 +230,10 @@ bash gobuild.sh
 
 ## 🗂️ 项目结构概览
 
-├── server/               # 服务端核心逻辑与 Web 管理界面
-├── client/               # 客户端核心逻辑与 CLI 接口
-├── common/               # 公共模块（配置解析、日志系统、传输封装等）
-├── portal/server/        # 前端管理页面（基于 Vite 构建）
-└── document/             # 文档资料、截图和其他辅助资源
+├── server/               # 服务端核心逻辑与 Web 管理界面</br>
+├── client/               # 客户端核心逻辑与 CLI 接口</br>
+├── common/               # 公共模块（配置解析、日志系统、传输封装等）</br>
+├── portal/server/        # 前端管理页面（基于 Vite 构建）</br>
+└── document/             # 文档资料、截图和其他辅助资源</br>
 
 如需进一步了解功能细节或扩展协议支持，请参阅各目录下的源代码及注释。
