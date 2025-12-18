@@ -91,11 +91,6 @@ const handleInit = async () => {
 
 <template>
   <div class="min-h-screen flex items-center justify-center bg-gradient-to-br from-sky-50 to-indigo-100">
-    <!-- 语言切换器 -->
-    <div class="absolute top-4 right-4">
-      <LanguageSwitcher />
-    </div>
-
     <div class="transform">
       <div class="card-container w-[480px] p-[2px] rounded-2xl relative">
         <!-- Logo 区域 -->

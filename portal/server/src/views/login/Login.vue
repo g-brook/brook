@@ -55,7 +55,7 @@ const handleLogin = () => {
 </style>
 
 <template>
-  <div class="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary/10 to-base-100">
+  <div class="min-h-screen flex items-center justify-center">
     <div class="transform">
       <div class="card-container w-96 p-[2px] rounded-2xl relative">
         <div class="absolute -top-12 left-1/2 -translate-x-1/2 flex items-center justify-center">
