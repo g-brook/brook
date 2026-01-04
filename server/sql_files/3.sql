@@ -14,32 +14,12 @@
  * limitations under the License.
  */
 
-package version
-
-import (
-	"fmt"
-)
-
-const BuildVersion = "0.1.1"
-
-// GetBuildVersion application version.
-func GetBuildVersion() string {
-	return BuildVersion
-}
-
-// GetDbVersion db version.
-func GetDbVersion() int {
-	return 3
-}
-
-func Banner() string {
-	banner := `
-    __                     __  
-   / /__________________  / /__
-  / __  / ___/ __ \/ __ \/ //_/
- / /_/ / /  / /_/ / /_/ / ,<   
-/_.___/_/   \____/\____/_/|_|  
-           v%s
-`
-	return fmt.Sprintf(banner, GetBuildVersion())
-}
+create table if not exists certificate
+(
+    id          integer
+        constraint certificate_pk
+            primary key autoincrement,
+    name        TEXT not null,
+    content     TEXT not null,
+    private_key TEXT not null
+);

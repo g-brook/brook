@@ -431,6 +431,19 @@ export default {
         confirmRevoke: "Are you sure to revoke the current token? Clients using this token will not be able to connect.",
         hideToken: "Hide Token",
         showToken: "Show Token",
+        tls: {
+            title: "Certificate",
+            subtitle: "Certificate information",
+            table: {
+                certName: "Certificate Name",
+                certStatus: "Status",
+                certExpireTime: "Expiration Time",
+                certActions: "Actions",
+            },
+            actions: {
+                create: "Create Certificate",
+            },
+        }
     },
 
     // System settings

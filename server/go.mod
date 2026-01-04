@@ -7,7 +7,7 @@ require (
 	github.com/google/uuid v1.6.0
 	github.com/panjf2000/gnet/v2 v2.9.5
 	github.com/spf13/cobra v1.10.2
-	github.com/xtaci/smux v1.5.44
+	github.com/xtaci/smux v1.5.48
 	modernc.org/sqlite v1.40.1
 )
 

@@ -71,6 +71,7 @@ type ClientTunnelConfig struct {
 	//default 1500
 	UdpSize    int `json:"udpSize,omitempty"`
 	RemotePort int `json:"-"`
+	MaxConn    int `json:"maxConn,omitempty"`
 }
 
 // GetServerConfig

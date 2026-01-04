@@ -40,3 +40,5 @@ go.work.sum
 /portal/.idea/
 /server/web/dist/!/server/db.db
 !/server/dist/
+
+.idea

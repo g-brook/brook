@@ -8,9 +8,9 @@ require (
 	github.com/klauspost/compress v1.18.2
 	github.com/panjf2000/gnet/v2 v2.9.5
 	github.com/spf13/cobra v1.10.2
-	github.com/xtaci/smux v1.5.44
+	github.com/xtaci/smux v1.5.47
 	go.uber.org/zap v1.27.1
-	golang.org/x/sys v0.38.0
+	golang.org/x/sys v0.39.0
 	gopkg.in/natefinch/lumberjack.v2 v2.2.1
 )
 

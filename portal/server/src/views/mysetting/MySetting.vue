@@ -20,6 +20,7 @@ import {computed, onMounted, ref} from 'vue'
 import ms, {AuthToken} from '@/service/mysetting'
 import Message from '@/components/message'
 import useI18n from '@/components/lang/useI18n'
+import TlsSetting from "@/views/mysetting/TlsSetting.vue";
 
 // Token 相关状态
 const showToken = ref(false)
@@ -102,7 +103,7 @@ const { t } = useI18n()
 
 <template>
   <div>
-    <div class="max-w-4xl mx-auto p-6 space-y-8 fade-in">
+    <div class="max-w-6xl mx-auto p-6 space-y-8 fade-in">
       <!-- Token 管理 - 简洁展示 -->
       <div class="space-y-4">
         <div class="flex items-center gap-3">
@@ -181,6 +182,7 @@ const { t } = useI18n()
           </div>
         </div>
       </div>
+      <TlsSetting/>
     </div>
   </div>
 </template>

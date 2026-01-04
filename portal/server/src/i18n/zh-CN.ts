@@ -432,6 +432,20 @@ export default {
         confirmRevoke: "确定要撤销当前令牌吗？撤销后所有使用此令牌的客户端将无法连接。",
         hideToken: "隐藏令牌",
         showToken: "显示令牌",
+        tls: {
+            title: "证书管理",
+            subtitle: "用于HTTPS证书管理",
+            table: {
+                certName: "名称",
+                certStatus: "状态",
+                certExpireTime: "过期时间",
+                certActions: "操作",
+            },
+            actions: {
+                create: "创建证书",
+            },
+
+        }
     },
 
     // 系统设置
