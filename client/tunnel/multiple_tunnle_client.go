@@ -17,6 +17,7 @@
 package tunnel
 
 import (
+	"errors"
 	"fmt"
 	"sync"
 	"time"
@@ -99,16 +100,18 @@ func (m *MultipleTunnelClient) messageListener() {
 				log.Warn("not found session %v", reqWorker.ProxyId)
 				return
 			}
-			client := newTunnelClient(config, m)
-			if client != nil {
-				_ = client.Open(session)
+			client, err := newTunnelClient(config, m)
+			if err != nil {
+				log.Error("newTunnelClient error: %v", err)
+				return
 			}
+			_ = client.Open(session)
 		})
 		return nil
 	})
 }
 
-func newTunnelClient(config *configs.ClientTunnelConfig, m *MultipleTunnelClient) clis.TunnelClient {
+func newTunnelClient(config *configs.ClientTunnelConfig, m *MultipleTunnelClient) (clis.TunnelClient, error) {
 	switch config.TunnelType {
 	case lang.Tcp:
 		return NewTcpTunnelClient(config, m)
@@ -117,7 +120,7 @@ func newTunnelClient(config *configs.ClientTunnelConfig, m *MultipleTunnelClient
 	case lang.Http, lang.Https:
 		return NewHttpTunnelClient(config)
 	}
-	return nil
+	return nil, errors.New("unknown tunnel type")
 }
 
 // Open This function opens a TCP tunnel server for a given session.

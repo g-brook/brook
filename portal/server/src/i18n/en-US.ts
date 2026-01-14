@@ -296,6 +296,7 @@ export default {
         atLeastOneProxy: "Please add at least one proxy configuration",
         noProxyTip: "No proxy configurations. Click \"Add Row\" to add",
         proxyIdTip: "Used by clients to connect",
+        certInfoEmpty: "No certificates available for selection, please go to my settings to add",
         form: {
             proxyIdPlaceholder: "Please enter ProxyId",
             namePlaceholder: "Please enter configuration name",
@@ -436,12 +437,14 @@ export default {
             subtitle: "Certificate information",
             table: {
                 certName: "Certificate Name",
-                certStatus: "Status",
+                desc: "Description",
                 certExpireTime: "Expiration Time",
                 certActions: "Actions",
             },
             actions: {
                 create: "Create Certificate",
+                view: "View",
+                delete: "Delete"
             },
         }
     },

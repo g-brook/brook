@@ -21,6 +21,7 @@ import (
 	"encoding/json"
 	"time"
 
+	"github.com/brook/common/transform"
 	"github.com/brook/server/web/sql"
 )
 
@@ -80,8 +81,7 @@ type ServerClientInfo struct {
 type WebConfigInfo struct {
 	Id         string `json:"id"`
 	RefProxyId int    `json:"RefProxyId"`
-	CertFile   string `json:"certFile"`
-	KeyFile    string `json:"keyFile"`
+	CertId     *int   `json:"certId"`
 	Proxy      []struct {
 		Id     string   `json:"id"`
 		Domain string   `json:"domain"`
@@ -104,8 +104,27 @@ type ProxyConfig struct {
 	Clients     int    `json:"clients"`
 }
 
+type Certificate struct {
+	ID         int     `json:"id" maps:"id"`
+	Name       string  `json:"name" maps:"name"`
+	Content    string  `json:"content" maps:"content"`
+	PrivateKey string  `json:"privateKey" maps:"private_key"`
+	Desc       string  `json:"desc" maps:"desc"`
+	ExpireTime *string `json:"expireTime" maps:"-"`
+}
+
 func (r *ProxyConfig) IsHttpOrHttps() bool {
 	return r.Protocol == "HTTP" || r.Protocol == "HTTPS"
+}
+
+func (r *Certificate) toDb() *sql.Certificate {
+	var target sql.Certificate
+	converter := transform.NewConverter()
+	err := converter.Convert(r, &target)
+	if err != nil {
+		return nil
+	}
+	return &target
 }
 
 func (r *ProxyConfig) toDb() *sql.ProxyConfig {
@@ -135,11 +154,21 @@ func newProxyConfig(config *sql.ProxyConfig) *ProxyConfig {
 
 func (r WebConfigInfo) toDb() *sql.WebProxyConfig {
 	j, _ := json.Marshal(r.Proxy)
+	var nullInt32 sql2.NullInt32
+	if r.CertId == nil {
+		nullInt32 = sql2.NullInt32{
+			Valid: false,
+		}
+	} else {
+		nullInt32 = sql2.NullInt32{
+			Valid: true,
+			Int32: int32(*r.CertId),
+		}
+	}
 	return &sql.WebProxyConfig{
 		Id:         r.Id,
 		RefProxyId: r.RefProxyId,
-		CertFile:   r.CertFile,
-		KeyFile:    r.KeyFile,
+		CertId:     nullInt32,
 		Proxy:      string(j),
 	}
 }

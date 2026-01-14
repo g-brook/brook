@@ -2,11 +2,13 @@ module mock
 
 go 1.24.0
 
-require github.com/pion/stun/v3 v3.0.1
+require (
+	github.com/gorilla/websocket v1.5.3
+	github.com/pion/stun/v3 v3.0.1
+	github.com/quic-go/quic-go v0.58.0
+)
 
 require (
-	github.com/golang/snappy v1.0.0 // indirect
-	github.com/gorilla/websocket v1.5.3 // indirect
 	github.com/pion/dtls/v3 v3.0.7 // indirect
 	github.com/pion/logging v0.2.4 // indirect
 	github.com/pion/transport/v3 v3.1.1 // indirect

@@ -97,8 +97,14 @@ func getTunnelWebConfig(stc *sf.ServerTunnelConfig, refProxyId int) bool {
 	config := sql.GetWebProxyConfig(refProxyId)
 	if config != nil {
 		proxy := config.Proxy
-		stc.KeyFile = config.KeyFile
-		stc.CertFile = config.CertFile
+		if config.CertId.Valid {
+			id, err := sql.GetCertificateByID(int(config.CertId.Int32))
+			if err == nil {
+				stc.CertContent = id.Content
+				stc.KeyContent = id.PrivateKey
+				stc.IsFileCert = false
+			}
+		}
 		_ = json.Unmarshal([]byte(proxy), &stc.Http)
 		return true
 	}

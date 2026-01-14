@@ -14,16 +14,12 @@
  * limitations under the License.
  */
 
-CREATE TABLE IF NOT EXISTS certificate(
-    id          integer
-        constraint certificate_pk
-            primary key autoincrement,
-    name        TEXT not null,
-    content     TEXT not null,
-    private_key TEXT not null,
-    desc        TEXT,
-    expire_time TEXT
-);
+package quic
 
-alter table web_proxy_config
-    add cert_id integer;
+import (
+	"github.com/brook/server/tunnel"
+)
+
+type TunnelQUICServer struct {
+	*tunnel.BaseTunnelServer
+}

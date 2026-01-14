@@ -35,13 +35,13 @@ type TcpTunnelClient struct {
 	*clis.BaseTunnelClient
 }
 
-func NewTcpTunnelClient(config *configs.ClientTunnelConfig, _ *MultipleTunnelClient) *TcpTunnelClient {
+func NewTcpTunnelClient(config *configs.ClientTunnelConfig, _ *MultipleTunnelClient) (*TcpTunnelClient, error) {
 	tunnelClient := clis.NewBaseTunnelClient(config, false)
 	client := TcpTunnelClient{
 		BaseTunnelClient: tunnelClient,
 	}
 	client.BaseTunnelClient.DoOpen = client.initOpen
-	return &client
+	return &client, nil
 }
 
 func (t *TcpTunnelClient) GetName() string {

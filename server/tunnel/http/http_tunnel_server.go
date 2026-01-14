@@ -101,21 +101,33 @@ func formatCfg(cfg *configs.ServerTunnelConfig, this *TunnelHttpServer) {
 }
 
 func loadTls(cfg *configs.ServerTunnelConfig, this *TunnelHttpServer) error {
-	kf := cfg.KeyFile
-	cf := cfg.CertFile
-	if kf == "" || cf == "" {
-		log.Error("certFile or KeyFile is nil")
-		return errors.New("certFile or KeyFile is nil")
-	}
-	if !filex.FileExists(cf) || !filex.FileExists(kf) {
-		log.Error("certFile or KeyFile is not exist")
-		return errors.New("certFile or KeyFile is not exist")
-	}
-	pair, _ := tls.LoadX509KeyPair(cf, kf)
-	this.tlsConfig = &tls.Config{
-		Certificates: []tls.Certificate{pair},
+	if cfg.IsFileCert {
+		kf := cfg.KeyFile
+		cf := cfg.CertFile
+		if kf == "" || cf == "" {
+			log.Error("certFile or KeyFile is nil")
+			return errors.New("certFile or KeyFile is nil")
+		}
+		if !filex.FileExists(cf) || !filex.FileExists(kf) {
+			log.Error("certFile or KeyFile is not exist")
+			return errors.New("certFile or KeyFile is not exist")
+		}
+		pair, _ := tls.LoadX509KeyPair(cf, kf)
+		this.tlsConfig = &tls.Config{
+			Certificates: []tls.Certificate{pair},
+		}
+	} else {
+		cert, err := tls.X509KeyPair([]byte(cfg.CertContent), []byte(cfg.KeyContent))
+		if err != nil {
+			log.Error("load tls error:", err)
+			return err
+		}
+		this.tlsConfig = &tls.Config{
+			Certificates: []tls.Certificate{cert},
+		}
 	}
 	return nil
+
 }
 
 // verifyCfg is a function that verifies the configuration of the HttpTunnelServer. It
@@ -126,13 +138,24 @@ func verifyCfg(cfg *configs.ServerTunnelConfig) error {
 		return errors.New("http is nil")
 	}
 	if cfg.Type == lang.Https {
-		if cfg.CertFile == "" {
-			log.Error("certFile is nil")
-			return errors.New("certFile is nil")
-		}
-		if cfg.KeyFile == "" {
-			log.Error("KeyFile is nil")
-			return errors.New("KeyFile is nil")
+		if cfg.IsFileCert {
+			if cfg.CertFile == "" {
+				log.Error("certFile is nil")
+				return errors.New("certFile is nil")
+			}
+			if cfg.KeyFile == "" {
+				log.Error("KeyFile is nil")
+				return errors.New("KeyFile is nil")
+			}
+		} else {
+			if cfg.CertContent == "" {
+				log.Error("certContent is nil")
+				return errors.New("certContent is nil")
+			}
+			if cfg.KeyContent == "" {
+				log.Error("KeyContent is nil")
+				return errors.New("KeyContent is nil")
+			}
 		}
 	}
 	for _, hcfg := range cfg.Http {

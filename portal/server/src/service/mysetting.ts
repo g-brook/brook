@@ -18,22 +18,36 @@ import Http from "@/components/request";
 import {Response} from "@/types/response";
 
 export class AuthToken {
-   public token !: string;
-   public createTime!: Date;
+    public token !: string;
+    public createTime!: Date;
 }
 
 const getAuthToken = <AuthToken>(): Promise<Response<AuthToken>> => {
-  return Http.post("/api/getToken");
+    return Http.post("/api/getToken");
 };
 
 const generateAuthToken = (): Promise<Response<AuthToken>> => {
-  return Http.post("/api/generateToken");
+    return Http.post("/api/generateToken");
 };
 
 const delToken = (): Promise<Response<void>> => {
-  return Http.post("/api/delToken");
+    return Http.post("/api/delToken");
 };
 
-const functions = { getAuthToken ,generateAuthToken,delToken};
+const getCertificates = <Q>(parmas: any): Promise<Response<Q>> => {
+    return Http.post("/api/getCertificates", parmas);
+};
+
+const addCertificate = <Q>(parmas: any): Promise<Response<Q>> => {
+    return Http.post("/api/addCertificate", parmas);
+};
+const deleteCertificate = <Q>(parmas: any): Promise<Response<Q>> => {
+    return Http.post("/api/deleteCertificate", parmas);
+};
+
+const getCertificateById = <Q>(parmas: any): Promise<Response<Q>> => {
+    return Http.post("/api/getCertificateById", parmas);
+};
+const functions = {getAuthToken, generateAuthToken, delToken, getCertificates, addCertificate, deleteCertificate,getCertificateById};
 
 export default functions;

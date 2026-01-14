@@ -106,17 +106,12 @@ const { t } = useI18n()
     <div class="max-w-6xl mx-auto p-6 space-y-8 fade-in">
       <!-- Token 管理 - 简洁展示 -->
       <div class="space-y-4">
-        <div class="flex items-center gap-3">
-          <div class="w-8 h-8 bg-base-200 rounded-md flex items-center justify-center">
+        <div class="border card border-base-300 rounded-lg p-6 w-full">
+          <div class="card-title">
             <i class="iconfont brook-token" style="font-size: 24px"></i>
-          </div>
-          <div>
-            <h2 class="text-base-content text-2xl">{{ t('mysetting.title') }}</h2>
+            <div class="text-base-content text-xl">{{ t('mysetting.title') }}</div>
             <p class="text-xs text-base-content/60">{{ t('mysetting.subtitle') }}</p>
           </div>
-        </div>
-
-        <div class="border border-base-300 rounded-lg p-6 w-full">
           <!-- Token 显示 -->
           <div v-if="tokenInfo.token" class="space-y-4">
             <div class="form-control">

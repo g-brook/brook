@@ -43,7 +43,7 @@ type UdpTunnelClient struct {
 	udpConnMap   *hash.SyncMap[string, *net.UDPConn]
 }
 
-func NewUdpTunnelClient(cfg *configs.ClientTunnelConfig, _ *MultipleTunnelClient) *UdpTunnelClient {
+func NewUdpTunnelClient(cfg *configs.ClientTunnelConfig, _ *MultipleTunnelClient) (*UdpTunnelClient, error) {
 	if cfg.UdpSize == 0 {
 		cfg.UdpSize = 1500
 	}
@@ -57,10 +57,10 @@ func NewUdpTunnelClient(cfg *configs.ClientTunnelConfig, _ *MultipleTunnelClient
 	client.localAddress, err = net.ResolveUDPAddr("udp", cfg.Destination)
 	if err != nil {
 		log.Error("NewUdpTunnelClient error %v", err)
-		return nil
+		return nil, err
 	}
 	client.BaseTunnelClient.DoOpen = client.initOpen
-	return &client
+	return &client, nil
 }
 
 func (t *UdpTunnelClient) GetName() string {

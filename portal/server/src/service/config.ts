@@ -53,6 +53,7 @@ const getWebConfigs = <Q>(parmas: any): Promise<Response<Q>> => {
   return Http.post("/api/getWebConfigs", parmas);
 };
 
+
 const functions = {
   genClientConfig,
   getProxyConfigs,

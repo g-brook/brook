@@ -18,6 +18,7 @@ package tunnel
 
 import (
 	"context"
+	"errors"
 	"io"
 
 	"github.com/brook/client/clis"
@@ -28,10 +29,10 @@ import (
 	"github.com/gobwas/ws"
 )
 
-func NewHttpTunnelClient(config *configs.ClientTunnelConfig) *HttpTunnelClient {
+func NewHttpTunnelClient(config *configs.ClientTunnelConfig) (*HttpTunnelClient, error) {
 	if config.HttpId == "" {
 		log.Warn("HttpId is empty,http tunnel client will not connect")
-		return nil
+		return nil, errors.New("HttpId is empty,http tunnel client will not connect")
 	}
 	tunnelClient := clis.NewBaseTunnelClient(config, true)
 	client := HttpTunnelClient{
@@ -40,7 +41,7 @@ func NewHttpTunnelClient(config *configs.ClientTunnelConfig) *HttpTunnelClient {
 		http:             NewHttpClientManager(),
 	}
 	tunnelClient.DoOpen = client.initOpen
-	return &client
+	return &client, nil
 }
 
 // HttpTunnelClient is a tunnel client that handles HTTP connections.

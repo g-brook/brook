@@ -20,8 +20,10 @@ import {useI18n} from '@/components/lang/useI18n';
 import Icon from '@/components/icon/Index.vue';
 import config from '@/service/config';
 import message from "@/components/message";
+import fun from "@/service/mysetting";
+import {inflate} from "node:zlib";
 
-const { t } = useI18n();
+const {t} = useI18n();
 
 const props = defineProps({
   refProxyId: {
@@ -32,16 +34,19 @@ const props = defineProps({
     type: String,
     default: ""
   },
-
 })
 
 const properties = ref<{
   keyFile: string,
   certFile: string
+  certId : number
 }>({
   keyFile: "",
-  certFile: ""
+  certFile: "",
+  certId:0
 })
+
+const itmes = ref([])
 
 // 代理列表
 interface ProxyItem {
@@ -51,6 +56,7 @@ interface ProxyItem {
   isEditing: Boolean;
   isNew: Boolean;
 }
+
 const proxyList = ref<ProxyItem[]>([]);
 
 // 添加新行
@@ -137,6 +143,7 @@ const saveProxyToRemote = () => {
     refProxyId: props.refProxyId,
     certFile: properties.value.certFile,
     keyFile: properties.value.keyFile,
+    certId: properties.value.certId,
     proxy: proxyList.value
   }).then((res) => {
     if (res.success()) {
@@ -150,14 +157,27 @@ const getWebConfigs = () => {
   config.getWebConfigs({
     refProxyId: props.refProxyId,
   }).then((res) => {
-      var rt = res.data;
-      proxyList.value = rt.proxy || [];
-      properties.value.certFile = rt.certFile || "";
-      properties.value.keyFile = rt.keyFile || "";
+    var rt = res.data;
+    proxyList.value = rt.proxy || [];
+    properties.value.certFile = rt.certFile || "";
+    properties.value.keyFile = rt.keyFile || "";
+    properties.value.certId = rt.certId || 0;
   })
 }
+
+const getCertificates = () => {
+  try {
+    fun.getCertificates({}).then(e => {
+      itmes.value = e.data;
+    });
+  } catch (error) {
+    console.error('加载证书信息失败:', error)
+  }
+};
+
 onMounted(() => {
   getWebConfigs()
+  getCertificates()
 })
 </script>
 
@@ -165,25 +185,25 @@ onMounted(() => {
   <div class="container mx-auto p-4">
     <!-- HTTPS配置区域 -->
     <div class="card bg-base-100 shadow-sm hover:shadow-md transition-shadow duration-300 mb-6"
-     >
+    >
       <div class="card-body p-4">
         <h2 class="card-title text-sm mb-2">{{ t('configuration.httpsCertConfig') }}</h2>
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div class="form-control">
-            <label class="label">
-              <span class="label-text">CertFile:</span>
-            </label>
-            <input type="text" :placeholder="t('configuration.inputCertFilePath')"
-              class="input input-bordered w-full"
-              v-model="properties.certFile" />
-          </div>
-          <div class="form-control">
-            <label class="label">
-              <span class="label-text">KeyFile</span>
-            </label>
-            <input type="text" :placeholder="t('configuration.inputKeyFilePath')"
-              class="input input-bordered w-full"
-              v-model="properties.keyFile" />
+        <div class="form-control">
+          <label class="label">
+            <span class="label-text">Select Certificate </span>
+          </label>
+          <div class="control grid items-center gap-2 grid-cols-2 ">
+            <select
+                class="select select-bordered w-full"
+                v-model="properties.certId">
+              <option v-for="item in itmes" :class="properties.certId === item.id ? 'selected' : ''" :value="item.id" :key="item.id">
+               {{ item.name }} - {{ item.expireTime }}
+              </option>
+            </select>
+            <div class="flex-1">
+              <span v-if="itmes.length === 0" class="text-sm text-red-500">
+            {{ t('configuration.certInfoEmpty') }}</span>
+            </div>
           </div>
         </div>
       </div>
@@ -196,8 +216,8 @@ onMounted(() => {
           <h2 class="card-title text-sm">{{ t('configuration.proxyList') }}</h2>
           <div class="flex gap-2">
             <button @click="saveProxyToRemote"
-              class="btn btn-primary btn-sm gap-1 transition-transform duration-200 hover:scale-105">
-              <Icon icon="brook-add" style="font-size: 14px;" />
+                    class="btn btn-primary btn-sm gap-1 transition-transform duration-200 hover:scale-105">
+              <Icon icon="brook-add" style="font-size: 14px;"/>
               {{ t('configuration.saveConfig') }}
             </button>
           </div>
@@ -206,91 +226,91 @@ onMounted(() => {
         <div class="overflow-x-auto rounded-lg">
           <table class="table table-zebra w-full">
             <thead>
-              <tr class="bg-base-200/70">
-                <th class="w-1/6 rounded-tl-lg">ID</th>
-                <th class="w-1/4">{{ t('configuration.domain') }}</th>
-                <th>{{ t('configuration.paths') }}</th>
-                <th class="w-48 rounded-tr-lg">
-                  {{ t('configuration.actions') }}
-                  <button @click="addNewRow" class="btn btn-outline btn-xs">
-                    <Icon icon="brook-add" style="font-size: 12px;" />
-                    {{ t('configuration.addRow') }}
-                  </button>
-                </th>
-              </tr>
+            <tr class="bg-base-200/70">
+              <th class="w-1/6 rounded-tl-lg">ID</th>
+              <th class="w-1/4">{{ t('configuration.domain') }}</th>
+              <th>{{ t('configuration.paths') }}</th>
+              <th class="w-48 rounded-tr-lg">
+                {{ t('configuration.actions') }}
+                <button @click="addNewRow" class="btn btn-outline btn-xs">
+                  <Icon icon="brook-add" style="font-size: 12px;"/>
+                  {{ t('configuration.addRow') }}
+                </button>
+              </th>
+            </tr>
             </thead>
             <tbody>
-              <tr v-for="(proxy, index) in proxyList" :key="index"
+            <tr v-for="(proxy, index) in proxyList" :key="index"
                 class="hover:bg-base-200/50 transition-colors duration-200">
-                <!-- 编辑模式 -->
-                <template v-if="proxy.isEditing">
-                  <td>
-                    <input type="text" v-model="proxy.id" :placeholder="t('configuration.egProxyId')"
-                      class="input input-bordered input-sm w-full focus:ring focus:ring-primary/20 transition-all duration-200" />
-                  </td>
-                  <td>
-                    <input type="text" v-model="proxy.domain" :placeholder="t('configuration.egDomain')"
-                      class="input input-bordered input-sm w-full focus:ring focus:ring-primary/20 transition-all duration-200" />
-                  </td>
-                  <td>
-                    <div class="flex flex-col gap-2">
-                      <div v-for="(path, pathIndex) in proxy.paths" :key="pathIndex" class="flex gap-2 items-center">
-                        <input type="text" v-model="proxy.paths[pathIndex]" :placeholder="t('configuration.egPath')"
-                          class="input input-bordered input-sm flex-1 focus:ring focus:ring-primary/20 transition-all duration-200" />
-                        <button @click="removePath(proxy, pathIndex)" class="btn btn-ghost btn-circle btn-sm">
-                          <Icon icon="brook-delete" style="font-size: 12px;" />
-                        </button>
-                      </div>
-                      <button @click="addPath(proxy)"
-                        class="btn btn-outline btn-sm gap-1 self-start mt-1 hover:bg-primary/10 transition-colors duration-200">
-                        <Icon icon="brook-add" style="font-size: 12px;" />
-                        {{ t('configuration.addPath') }}
+              <!-- 编辑模式 -->
+              <template v-if="proxy.isEditing">
+                <td>
+                  <input type="text" v-model="proxy.id" :placeholder="t('configuration.egProxyId')"
+                         class="input input-bordered input-sm w-full focus:ring focus:ring-primary/20 transition-all duration-200"/>
+                </td>
+                <td>
+                  <input type="text" v-model="proxy.domain" :placeholder="t('configuration.egDomain')"
+                         class="input input-bordered input-sm w-full focus:ring focus:ring-primary/20 transition-all duration-200"/>
+                </td>
+                <td>
+                  <div class="flex flex-col gap-2">
+                    <div v-for="(path, pathIndex) in proxy.paths" :key="pathIndex" class="flex gap-2 items-center">
+                      <input type="text" v-model="proxy.paths[pathIndex]" :placeholder="t('configuration.egPath')"
+                             class="input input-bordered input-sm flex-1 focus:ring focus:ring-primary/20 transition-all duration-200"/>
+                      <button @click="removePath(proxy, pathIndex)" class="btn btn-ghost btn-circle btn-sm">
+                        <Icon icon="brook-delete" style="font-size: 12px;"/>
                       </button>
                     </div>
-                  </td>
-                  <td>
-                    <div class="flex gap-2">
-                      <button @click="saveProxy(proxy)" class="btn btn-sm btn-soft">
-                        {{ t('common.confirm') }}
-                      </button>
-                      <button @click="cancelEdit(proxy, index)" class="btn btn-sm btn-soft">
-                        {{ t('common.cancel') }}
-                      </button>
-                    </div>
-                  </td>
-                </template>
+                    <button @click="addPath(proxy)"
+                            class="btn btn-outline btn-sm gap-1 self-start mt-1 hover:bg-primary/10 transition-colors duration-200">
+                      <Icon icon="brook-add" style="font-size: 12px;"/>
+                      {{ t('configuration.addPath') }}
+                    </button>
+                  </div>
+                </td>
+                <td>
+                  <div class="flex gap-2">
+                    <button @click="saveProxy(proxy)" class="btn btn-sm btn-soft">
+                      {{ t('common.confirm') }}
+                    </button>
+                    <button @click="cancelEdit(proxy, index)" class="btn btn-sm btn-soft">
+                      {{ t('common.cancel') }}
+                    </button>
+                  </div>
+                </td>
+              </template>
 
-                <!-- 查看模式 -->
-                <template v-else>
-                  <td class="font-medium">{{ proxy.id }}</td>
-                  <td>{{ proxy.domain }}</td>
-                  <td>
-                    <div class="flex flex-wrap gap-2">
+              <!-- 查看模式 -->
+              <template v-else>
+                <td class="font-medium">{{ proxy.id }}</td>
+                <td>{{ proxy.domain }}</td>
+                <td>
+                  <div class="flex flex-wrap gap-2">
                       <span v-for="(path, pathIndex) in proxy.paths" :key="pathIndex"
-                        class="badge badge-outline hover:badge-primary transition-colors duration-200">
+                            class="badge badge-outline hover:badge-primary transition-colors duration-200">
                         {{ path }}
                       </span>
-                    </div>
-                  </td>
-                  <td>
-                    <div class="flex flex-row">
-                      <button @click="editProxy(proxy)" class="btn  btn-sm btn-ghost">
-                        <Icon icon="brook-setting" style="font-size: 12px;" />
-                        {{ t('common.edit') }}
-                      </button>
-                      <button @click="deleteProxy(index)" class="btn  btn-sm btn-ghost">
-                        <Icon icon="brook-delete" style="font-size: 12px;" />
-                        {{ t('common.delete') }}
-                      </button>
-                    </div>
-                  </td>
-                </template>
-              </tr>
-              <tr v-if="proxyList.length === 0">
-                <td colspan="4" class="text-center py-4 text-base-content/60">
-                  {{ t('configuration.noProxyTip') }}
+                  </div>
                 </td>
-              </tr>
+                <td>
+                  <div class="flex flex-row">
+                    <button @click="editProxy(proxy)" class="btn  btn-sm btn-ghost">
+                      <Icon icon="brook-setting" style="font-size: 12px;"/>
+                      {{ t('common.edit') }}
+                    </button>
+                    <button @click="deleteProxy(index)" class="btn  btn-sm btn-ghost">
+                      <Icon icon="brook-delete" style="font-size: 12px;"/>
+                      {{ t('common.delete') }}
+                    </button>
+                  </div>
+                </td>
+              </template>
+            </tr>
+            <tr v-if="proxyList.length === 0">
+              <td colspan="4" class="text-center py-4 text-base-content/60">
+                {{ t('configuration.noProxyTip') }}
+              </td>
+            </tr>
             </tbody>
           </table>
         </div>

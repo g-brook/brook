@@ -1,7 +1,7 @@
 {
   "serverPort": 8909,
   "serverHost": "127.0.0.1",
-  "token": "3552724b41526553325323622831735366665e4a4e6f41536442736c40414761",
+  "token": "35627246734851322575625e51695221794b6b366f4d366b425a6f4c52734271",
   "pingTime": 30000,
   "logger": {
     "logLevel": "debug",
@@ -14,8 +14,9 @@
       "proxyId": "local_mysql"
     },
     {
-      "type": "udp",
-      "proxyId": "333223"
+      "type": "http",
+      "proxyId": "HttpLocal-2",
+      "httpId": "local"
     }
   ]
 }

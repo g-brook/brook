@@ -28,7 +28,7 @@
     "@vitejs/plugin-vue": "^6.0.1",
     "@vue/tsconfig": "^0.7.0",
     "autoprefixer": "^10",
-    "daisyui": "^5.2.3",
+    "daisyui": "^5.5.14",
     "tailwindcss": "^4",
     "tailwindcss-animate": "^1.0.7",
     "typescript": "~5.8.3",

@@ -85,8 +85,75 @@ body {
 /*  transition: box-shadow 0.3s ease, border-color 0.3s ease;*/
 /*}*/
 
-.input:focus {
-  /*border-color: var(--color-primary); !* 使用颜色变量 *!*/
-  outline: none;transform: scale(1.00);
-  transition: transform 0.4s ease;
+/* 为所有 DaisyUI 输入元素应用焦点样式 */
+.input:focus,
+.select:focus,
+.textarea:focus,
+.checkbox:focus,
+.radio:focus,
+.range:focus,
+.toggle:focus,
+.file-input:focus,
+.rating:focus {
+    /* 统一边框样式 */
+    border-color: var(--color-primary);
+    outline: none;
+    /* 平滑过渡效果 */
+    transition: all 0.2s ease;
+    /* 可选的阴影效果（增强视觉层次） */
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-primary) 20%, transparent);
+}
+
+.select {
+    &:focus, &:focus-within {
+        outline: none;
+        outline-offset: 2px;
+        isolation: isolate;
+        z-index: 1;
+    }
+}
+
+/* 移除某些元素的缩放效果（保持布局稳定） */
+.range:focus,
+.toggle:focus,
+.rating:focus {
+    transform: none;
+}
+
+/* 为文件输入添加额外样式 */
+.file-input:focus {
+    background-color: color-mix(in srgb, var(--color-primary) 5%, transparent);
+}
+
+/* 复选框和单选框的特殊样式 */
+.checkbox:focus,
+.radio:focus {
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-primary) 30%, transparent);
+}
+
+/* 可选的：为所有输入元素添加基础的过渡效果 */
+.input,
+.select,
+.textarea,
+.checkbox,
+.radio,
+.range,
+.toggle,
+.file-input,
+.rating {
+    transition: all 0.1s ease;
+}
+
+/* 可选的：为焦点状态添加动画关键帧 */
+@keyframes gentlePulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.01); }
+    100% { transform: scale(1); }
+}
+
+/* 应用动画到需要更明显反馈的元素 */
+.input:focus,
+.textarea:focus {
+    animation: gentlePulse 0.3s ease;
 }

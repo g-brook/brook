@@ -297,6 +297,7 @@ export default {
         atLeastOneProxy: "请添加至少一个代理配置",
         noProxyTip: "暂无代理配置，请点击\"增加行\"按钮添加",
         proxyIdTip: "用于客户端连接时需要使用",
+        certInfoEmpty: "当前没有可选择的证书，请前往我的设置中进行增加",
         form: {
             proxyIdPlaceholder: "请输入代理ID",
             namePlaceholder: "请输入配置名称",
@@ -437,12 +438,14 @@ export default {
             subtitle: "用于HTTPS证书管理",
             table: {
                 certName: "名称",
-                certStatus: "状态",
+                desc: "描述",
                 certExpireTime: "过期时间",
                 certActions: "操作",
             },
             actions: {
                 create: "创建证书",
+                view: "详情",
+                delete: "删除",
             },
 
         }

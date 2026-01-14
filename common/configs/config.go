@@ -55,6 +55,9 @@ type ServerTunnelConfig struct {
 	CertFile    string            `json:"certFile"`
 	Http        []HttpRunnelProxy `json:"http"`
 	Destination string            `json:"destination"`
+	KeyContent  string            `json:"-"`
+	CertContent string            `json:"-"`
+	IsFileCert  bool              `json:"-"`
 }
 
 type HttpRunnelProxy struct {

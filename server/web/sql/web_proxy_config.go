@@ -16,37 +16,40 @@
 
 package sql
 
+import (
+	"database/sql"
+)
+
 type WebProxyConfig struct {
-	Id         string `db:"id" json:"id"`
-	RefProxyId int    `db:"ref_proxy_id" json:"refProxyId"`
-	CertFile   string `db:"cert_file" json:"certFile"`
-	KeyFile    string `db:"key_file" json:"keyFile"`
-	Proxy      string `db:"proxy" json:"proxy"`
+	Id         string        `db:"id" json:"id"`
+	RefProxyId int           `db:"ref_proxy_id" json:"refProxyId"`
+	Proxy      string        `db:"proxy" json:"proxy"`
+	CertId     sql.NullInt32 `db:"cert_id" json:"certId"`
 }
 
 func AddWebProxyConfig(p *WebProxyConfig) error {
 	err := Exec(`
-				INSERT INTO web_proxy_config("ref_proxy_id","cert_file","key_file","proxy")
-				VALUES (?, ?, ?, ?);
-			`, p.RefProxyId, p.CertFile, p.KeyFile, p.Proxy)
+				INSERT INTO web_proxy_config("ref_proxy_id","proxy","cert_id")
+				VALUES (?, ?, ?);
+			`, p.RefProxyId, p.Proxy)
 	return err
 }
 
 func UpdateWebProxyConfig(p *WebProxyConfig) error {
 	return Exec(`
-				UPDATE web_proxy_config SET "cert_file"=?, "key_file"=?, "proxy"=? WHERE "ref_proxy_id"=?;
-			`, p.CertFile, p.KeyFile, p.Proxy, p.RefProxyId)
+				UPDATE web_proxy_config SET  "proxy"=?,"cert_id"=? WHERE "ref_proxy_id"=?;
+			`, p.Proxy, p.CertId, p.RefProxyId)
 }
 
 func GetWebProxyConfig(refProxyId int) *WebProxyConfig {
-	res, err := Query("select id,ref_proxy_id,cert_file,key_file,proxy from web_proxy_config where ref_proxy_id=?", refProxyId)
+	res, err := Query("select id,ref_proxy_id,proxy,cert_id from web_proxy_config where ref_proxy_id=?", refProxyId)
 	if err != nil {
 		return nil
 	}
 	defer res.Close()
 	for res.rows.Next() {
 		var p WebProxyConfig
-		if err := res.rows.Scan(&p.Id, &p.RefProxyId, &p.CertFile, &p.KeyFile, &p.Proxy); err != nil {
+		if err := res.rows.Scan(&p.Id, &p.RefProxyId, &p.Proxy, &p.CertId); err != nil {
 			return nil
 		}
 		return &p

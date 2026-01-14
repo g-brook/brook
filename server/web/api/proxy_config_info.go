@@ -166,8 +166,7 @@ func getWebConfig(refProxyId int) (*WebConfigInfo, bool) {
 	wf := &WebConfigInfo{
 		RefProxyId: item.RefProxyId,
 		Id:         item.Id,
-		KeyFile:    item.KeyFile,
-		CertFile:   item.CertFile,
+		CertId:     convertInt32ToPointer(item.CertId),
 	}
 	_ = json.Unmarshal([]byte(item.Proxy), &wf.Proxy)
 	return wf, true
