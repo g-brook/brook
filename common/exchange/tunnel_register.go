@@ -32,6 +32,8 @@ type TRegister interface {
 	GetTunnelPort() int
 
 	GetBindId() string
+
+	IsOpen() bool
 }
 
 // RegisterReqAndRsp
@@ -50,6 +52,8 @@ type RegisterReqAndRsp struct {
 
 	//proxyId.
 	ProxyId string `json:"proxyId"`
+
+	Open bool `json:"open"`
 }
 
 func (r RegisterReqAndRsp) GetTunnelPort() int {
@@ -72,8 +76,12 @@ func (r RegisterReqAndRsp) GetProxyId() string {
 	return r.ProxyId
 }
 
+func (r RegisterReqAndRsp) IsOpen() bool {
+	return r.Open
+}
+
 type UdpRegisterReqAndRsp struct {
-	RegisterReqAndRsp
+	*RegisterReqAndRsp
 	RemoteAddress string `json:"remote_address"`
 }
 

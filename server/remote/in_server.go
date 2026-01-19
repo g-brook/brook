@@ -119,6 +119,9 @@ func inProcess(p *exchange.Protocol, conn transport.Channel) {
 	response, _ := exchange.NewResponse(p.Cmd, p.ReqId)
 	// Process the request and get the response data
 	data, err := entry.process(req, conn)
+	if !entry.isResponse() {
+		return
+	}
 	if data != nil {
 		// If there is data in the response, marshal it into bytes
 		byts, err := json.Marshal(data)
@@ -203,6 +206,7 @@ func (t *InServer) onStartTunnelServer(cf *configs.ServerConfig) {
 type handlerEntry struct {
 	newRequest func(data []byte) (exchange.InBound, error)
 	process    func(request exchange.InBound, conn transport.Channel) (any, error)
+	isResponse func() bool
 }
 
 var handlers = make(map[exchange.Cmd]handlerEntry)
@@ -212,7 +216,7 @@ var handlers = make(map[exchange.Cmd]handlerEntry)
 //	@Description: register process.
 //	@param cmd
 //	@param process
-func Register[T exchange.InBound](cmd exchange.Cmd, process InProcess[T]) {
+func Register[T exchange.InBound](cmd exchange.Cmd, process InProcess[T], isResponse bool) {
 	handlers[cmd] = handlerEntry{
 		newRequest: func(data []byte) (exchange.InBound, error) {
 			var req T
@@ -222,6 +226,9 @@ func Register[T exchange.InBound](cmd exchange.Cmd, process InProcess[T]) {
 		process: func(r exchange.InBound, conn transport.Channel) (any, error) {
 			req := r.(T)
 			return process(req, conn)
+		},
+		isResponse: func() bool {
+			return isResponse
 		},
 	}
 }

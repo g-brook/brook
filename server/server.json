@@ -3,7 +3,7 @@
   "webPort": 8000,
   "serverPort": 8909,
   "logger": {
-    "logLevel": "debug",
+    "logLevel": "INFO",
     "logPath": "./",
     "outs": "file,stdout"
   }

@@ -65,6 +65,8 @@ const (
 	WorkerConnReq Cmd = 6
 
 	UdpRegister Cmd = 7
+
+	ClientWorkerConnReq Cmd = 8
 )
 
 // RspSuccess RspCode.

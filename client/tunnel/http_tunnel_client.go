@@ -63,18 +63,31 @@ func (h *HttpTunnelClient) GetName() string {
 // Returns:
 //   - error: An error if the registration fails.
 func (h *HttpTunnelClient) initOpen(*transport.SChannel) error {
-	h.BaseTunnelClient.AddReadHandler(exchange.WorkerConnReq, h.bindHandler)
-	rsp, err := h.Register(h.GetRegisterReq())
+	registerReq := h.GetRegisterReq()
+	// http cannot open by default . it open by ClientWorkConnReq function.
+	registerReq.Open = false
+	rsp, err := h.Register(registerReq)
 	if err != nil {
 		log.Error("Register fail %v", err)
 		return err
 	}
 	log.Info("Register success:PORT-%v", rsp.TunnelPort)
-	return nil
+	h.BaseTunnelClient.AddReadHandler(exchange.ClientWorkerConnReq, h.bindHandler)
+	req := exchange.ClientWorkConnReq{
+		ProxyId:    rsp.ProxyId,
+		HttpId:     rsp.HttpId,
+		TunnelPort: rsp.TunnelPort,
+	}
+	return h.TcControl.Bucket.PushWitchRequest(req)
 }
 
 // bindHandler handles the binding of HTTP tunnel client requests
-func (h *HttpTunnelClient) bindHandler(_ *exchange.Protocol, rw io.ReadWriteCloser, ctx context.Context) error {
+func (h *HttpTunnelClient) bindHandler(p *exchange.Protocol, rw io.ReadWriteCloser, ctx context.Context) error {
+	if !p.IsSuccess() {
+		return exchange.CloseError
+	}
+	cwc, _ := exchange.Parse[exchange.ClientWorkConnReq](p.Data)
+	log.Info("Open worker success. %s:%s:%v", cwc.ProxyId, cwc.HttpId, cwc.TunnelPort)
 	loopRead := func() error {
 		pt := exchange.NewTunnelRead()
 		err := pt.Read(rw)

@@ -15,6 +15,7 @@
     },
     {
       "type": "http",
+      "destination": "127.0.0.1:8080",
       "proxyId": "HttpLocal-2",
       "httpId": "local"
     }

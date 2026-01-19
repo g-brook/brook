@@ -52,20 +52,19 @@ func OpenTunnelServer(request exchange.OpenTunnelReq, manager Channel) (*remote.
 	if b {
 		t.PutManager(manager)
 		return remote.NewTunnelCfg(cfgNode.config.Port, cfgNode.config.Destination), nil
-	} else {
-		baseServer, err := running(cfgNode.config)
-		if err != nil {
-			return nil, err
-		}
-		t, b := servers.Load(cfgNode.config.Id)
-		if b {
-			TunnelCfm.AddListen(cfgNode.config.Id, func(cfg *ConfigNode) {
-				baseServer.UpdateConfig(cfg.config)
-			})
-			t.PutManager(manager)
-		}
-		return remote.NewTunnelCfg(baseServer.Port(), baseServer.Cfg.Destination), err
 	}
+	baseServer, err := running(cfgNode.config)
+	if err != nil {
+		return nil, err
+	}
+	t, b = servers.Load(cfgNode.config.Id)
+	if b {
+		TunnelCfm.AddListen(cfgNode.config.Id, func(cfg *ConfigNode) {
+			baseServer.UpdateConfig(cfg.config)
+		})
+		t.PutManager(manager)
+	}
+	return remote.NewTunnelCfg(baseServer.Port(), baseServer.Cfg.Destination), err
 }
 
 func running(config *configs.ServerTunnelConfig) (*tunnel.BaseTunnelServer, error) {

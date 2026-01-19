@@ -72,7 +72,7 @@ func (t *TunnelBucket) Run() *TunnelBucket {
 }
 
 // read is a method of TunnelBucket that processes incoming bytes through a tunnel read operation
-func (t *TunnelBucket) read(_, bytes []byte, _ io.ReadWriteCloser, ctx context.Context) {
+func (t *TunnelBucket) read(_, bytes []byte, _ io.ReadWriteCloser, ctx context.Context) error {
 	tp := NewTunnelRead()
 	tp.Decode(bytes)
 	var ok bool
@@ -88,6 +88,7 @@ func (t *TunnelBucket) read(_, bytes []byte, _ io.ReadWriteCloser, ctx context.C
 			t.defaultRead(tp)
 		}
 	}
+	return nil
 }
 
 func (t *TunnelBucket) Done() <-chan struct{} {

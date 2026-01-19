@@ -73,6 +73,8 @@ type TunnelServer interface {
 	//
 	RegisterConn(ch transport.Channel, request exchange.TRegister)
 
+	OpenWorker(ch transport.Channel, request *exchange.ClientWorkConnReq) error
+
 	// PutManager put tunnel manager.
 	PutManager(ch transport.Channel)
 

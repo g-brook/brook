@@ -312,31 +312,22 @@ func (htl *TunnelHttpServer) RegisterConn(ch Channel, request exchange.TRegister
 	}
 	htl.registerLock.Lock()
 	htl.BaseTunnelServer.RegisterConn(ch, request)
-	proxies, ok := htl.proxyToConn.Load(request.GetHttpId())
-	if ok {
-		log.Info("Register http tunnel, proxyId: %s,httpId:%s", request.GetProxyId(), request.GetHttpId())
-		tracker := NewHttpTracker(ch)
-		proxies.Store(ch.GetId(), tracker)
-		tracker.Run()
-		threading.GoSafe(func() {
-			_ = htl.createConn(ch)
-		})
-	} else {
-		log.Warn("Register %v:%v not exists by http tunnelServer.", request.GetProxyId(), request.GetHttpId())
-	}
 	htl.registerLock.Unlock()
+	log.Info("Register http tunnel, proxyId: %s,httpId:%s, waiting for open worker", request.GetTunnelPort(), request.GetHttpId())
 }
+func (htl *TunnelHttpServer) OpenWorker(ch Channel, request *exchange.ClientWorkConnReq) error {
+	proxies, ok := htl.proxyToConn.Load(request.HttpId)
+	if ok {
+		log.Info("Open Worker http tunnel, proxyId: %s,httpId:%s", request.ProxyId, request.HttpId)
 
-func (htl *TunnelHttpServer) createConn(ch Channel) (err error) {
-	req := &exchange.WorkConnReq{
-		ProxyId: htl.Cfg.Id,
+	} else {
+		log.Warn("Open Worker %v:%v not exists by http tunnelServer.", request.ProxyId, request.HttpId)
+		return errors.New("Open Worker " + request.ProxyId + ":" + request.HttpId + " not exists by http tunnelServer.")
 	}
-	request, err := exchange.NewRequest(req)
-	if err != nil {
-		return err
-	}
-	_, err = ch.Write(request.Bytes())
-	return
+	tracker := NewHttpTracker(ch)
+	proxies.Store(ch.GetId(), tracker)
+	tracker.Run()
+	return nil
 }
 
 // unRegisterConn is a method of HttpTunnelServer, which is used to unregister a connection.

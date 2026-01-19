@@ -179,13 +179,12 @@ func (b *BaseTunnelClient) OpenStream() error {
 		return fmt.Errorf("tunnel is open")
 	}
 	openFunction := func() error {
-		stream, err := b.session.OpenStream()
 		if b.session.IsClosed() {
-			_ = b.session.Close()
 			log.Debug("session is close, exit")
 			b.TcControl.Cancel()
 			return sessionError
 		}
+		stream, err := b.session.OpenStream()
 		if err != nil {
 			log.Error("Active session fail %v", err)
 			return sessionError
@@ -251,12 +250,13 @@ func (b *BaseTunnelClient) Close() {
 
 // GetRegisterReq returns a RegisterReqAndRsp struct with configuration data from the BaseTunnelClient
 // This method is used to prepare registration request parameters for the tunnel connection
-func (b *BaseTunnelClient) GetRegisterReq() exchange.RegisterReqAndRsp {
-	return exchange.RegisterReqAndRsp{
+func (b *BaseTunnelClient) GetRegisterReq() *exchange.RegisterReqAndRsp {
+	return &exchange.RegisterReqAndRsp{
 		TunnelPort: b.GetCfg().RemotePort, // Set the tunnel port from configuration
 		ProxyId:    b.GetCfg().ProxyId,    // Set the proxy identifier from configuration
 		TunnelType: b.GetCfg().TunnelType, // Set the tunnel type from configuration
 		HttpId:     b.GetCfg().HttpId,
+		Open:       true,
 	}
 }
 
@@ -272,7 +272,7 @@ func (b *BaseTunnelClient) Register(req exchange.InBound) (*exchange.RegisterReq
 		// Return error if the request fails
 		return nil, err
 	}
-	if p.RspCode != exchange.RspSuccess {
+	if !p.IsSuccess() {
 		// Return error if the response code is not success
 		return nil, errors.New(fmt.Sprintf("register error: %d", p.RspCode))
 	}

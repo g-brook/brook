@@ -28,11 +28,12 @@ import (
 )
 
 func init() {
-	Register(exchange.Heart, pingProcess)
-	Register(exchange.Register, registerProcess)
-	Register(exchange.LoginTunnel, loginProcess)
-	Register(exchange.OpenTunnel, openTunnelProcess)
-	Register(exchange.UdpRegister, dupRegisterProcess)
+	Register(exchange.Heart, pingProcess, true)
+	Register(exchange.Register, registerProcess, true)
+	Register(exchange.LoginTunnel, loginProcess, true)
+	Register(exchange.OpenTunnel, openTunnelProcess, true)
+	Register(exchange.UdpRegister, dupRegisterProcess, true)
+	Register(exchange.ClientWorkerConnReq, clientWorkConnProcess, true)
 }
 
 type InProcess[T exchange.InBound] func(request T, ch transport.Channel) (any, error)
@@ -68,7 +69,7 @@ func doRegister(request exchange.TRegister, ch transport.Channel) (any, error) {
 	switch sch := ch.(type) {
 	case *transport.SChannel:
 		// If it's a secure channel, mark it as a tunnel and add the proxy ID attribute
-		sch.IsOpenTunnel = true
+		sch.IsOpenTunnel = request.IsOpen()
 		sch.AddAttr(defin.HttpIdKey, request.GetHttpId())
 		sch.AddAttr(defin.ProxyIdKey, request.GetProxyId())
 	default:
@@ -117,4 +118,24 @@ func openTunnelProcess(req exchange.OpenTunnelReq, ch transport.Channel) (any, e
 		RemotePort:  cfg.RemotePort,
 		Destination: cfg.Destination,
 	}, nil
+}
+
+func clientWorkConnProcess(request exchange.ClientWorkConnReq, ch transport.Channel) (any, error) {
+	switch sch := ch.(type) {
+	case *transport.SChannel:
+		// If it's a secure channel, mark it as a tunnel and add the proxy ID attribute
+		sch.IsOpenTunnel = true
+	default:
+		// Log error and return error for unsupported channel types
+		log.Error("Not support channel type: %T", ch)
+		return nil, fmt.Errorf("not support channel type:%T", ch)
+	}
+	port := request.TunnelPort
+	t := tunnel.GetTunnel(port)
+	if t == nil {
+		// Log error and return error if tunnel is not found
+		log.Error("Not found tunnel: %d", port)
+		return nil, fmt.Errorf("not found tunnel:%d", port)
+	}
+	return request, t.OpenWorker(ch, &request)
 }

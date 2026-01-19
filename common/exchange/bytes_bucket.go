@@ -18,12 +18,18 @@ package exchange
 
 import (
 	"context"
+	"errors"
 	"io"
 
+	"github.com/brook/common/log"
 	"github.com/brook/common/threading"
 )
 
-type BytesBucketRead func(heads, bodies []byte, rw io.ReadWriteCloser, ctx context.Context)
+var (
+	CloseError = errors.New("close error")
+)
+
+type BytesBucketRead func(heads, bodies []byte, rw io.ReadWriteCloser, ctx context.Context) error
 
 type ReadFunction func(sch io.ReadWriteCloser) error
 
@@ -53,7 +59,7 @@ func NewBytesBucket(rw io.ReadWriteCloser,
 	return &BytesBucket{
 		headerLength:  headerLength,
 		rw:            rw,
-		bucketPush:    make(chan []byte, 1000),
+		bucketPush:    make(chan []byte, 1024),
 		bucketHandler: make(map[any]BytesBucketRead),
 		cannel:        cancelFunc,
 		cannelCtx:     cancelCtx,
@@ -92,7 +98,7 @@ func (m *BytesBucket) SetReadFunction(fun ReadFunction) {
 func (m *BytesBucket) revLoop() {
 	closeFunc := func() {
 		if m.rw != nil {
-			m.rw.Close()
+			_ = m.rw.Close()
 		}
 	}
 	for {
@@ -101,7 +107,10 @@ func (m *BytesBucket) revLoop() {
 			closeFunc()
 			return
 		case message := <-m.bucketPush:
-			_, _ = m.rw.Write(message)
+			_, err := m.rw.Write(message)
+			if err != nil {
+				log.Info("write error:", err)
+			}
 		}
 	}
 
@@ -121,7 +130,7 @@ func (m *BytesBucket) readLoop() {
 			if err != nil {
 				return err
 			}
-			handler(maybeHeader, body, m.rw, m.cannelCtx)
+			return handler(maybeHeader, body, m.rw, m.cannelCtx)
 		}
 		return nil
 	}
@@ -133,6 +142,10 @@ func (m *BytesBucket) readLoop() {
 			err = defaultFunction()
 		}
 		if err == io.EOF {
+			m.cannel()
+			return
+		}
+		if errors.Is(err, CloseError) {
 			m.cannel()
 			return
 		}

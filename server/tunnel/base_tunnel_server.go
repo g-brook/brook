@@ -200,6 +200,11 @@ func (b *BaseTunnelServer) UpdateConfig(config *configs.ServerTunnelConfig) {
 	}
 }
 
+func (b *BaseTunnelServer) OpenWorker(ch transport.Channel, request *exchange.ClientWorkConnReq) error {
+	// Open a new goroutine to handle the channel
+	return nil
+}
+
 func (b *BaseTunnelServer) Done() <-chan struct{} {
 	return b.closeCtx.Done()
 }

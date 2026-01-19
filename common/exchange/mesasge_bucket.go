@@ -57,25 +57,25 @@ func (m *MessageBucket) SetDefaultHandler(def BucketRead) {
 }
 
 // read is a function that takes a pointer to a Protocol struct, a byte slice, and an io.ReadWriteCloser as parameters
-func (m *MessageBucket) read(_, bytes []byte, rw io.ReadWriteCloser, ctx context.Context) {
+func (m *MessageBucket) read(_, bytes []byte, rw io.ReadWriteCloser, ctx context.Context) error {
 	body, err := GetBody(bytes)
 	if err != nil {
 		log.Warn("error.")
-		return
+		return err
 	}
 	// Sync request complete.
 	completeOk := Tracker.Complete(body)
 	if completeOk {
-		return
+		return nil
 	}
 	// Check if the Cmd field of the Protocol struct is in the bucketHandler map
 	if handler, ok := m.bucketHandler[body.Cmd]; ok {
-		_ = handler(body, rw, m.bytesBucket.cannelCtx)
-	} else {
-		if m.defaultHandler != nil {
-			_ = m.defaultHandler(body, rw, m.bytesBucket.cannelCtx)
-		}
+		return handler(body, rw, m.bytesBucket.cannelCtx)
 	}
+	if m.defaultHandler != nil {
+		return m.defaultHandler(body, rw, m.bytesBucket.cannelCtx)
+	}
+	return nil
 }
 
 func (m *MessageBucket) SetReaderFunction(fun ReadFunction) {

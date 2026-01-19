@@ -23,6 +23,7 @@ import (
 
 	"github.com/brook/common/exchange"
 	"github.com/brook/common/hash"
+	"github.com/brook/common/log"
 	"github.com/brook/common/ringbuffer"
 	"github.com/brook/common/threading"
 	"github.com/brook/common/transport"
@@ -179,13 +180,14 @@ func (receiver *Tracker) PutRequest(future Future) {
 }
 
 func (receiver *Tracker) readRev() {
-	readResponse := func() {
+	readResponse := func() error {
 		pt := exchange.NewTunnelRead()
 		err := pt.Read(receiver.channel)
 		if err != nil {
-			return
+			return err
 		}
 		receiver.send(pt)
+		return nil
 	}
 	for {
 		select {
@@ -193,7 +195,11 @@ func (receiver *Tracker) readRev() {
 			return
 		default:
 		}
-		readResponse()
+		err := readResponse()
+		if err == io.EOF {
+			log.Error("readResponse error: %v", err)
+			return
+		}
 	}
 }
 

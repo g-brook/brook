@@ -23,3 +23,13 @@ type WorkConnReq struct {
 func (r *WorkConnReq) Cmd() Cmd {
 	return WorkerConnReq
 }
+
+type ClientWorkConnReq struct {
+	ProxyId    string `json:"proxyId"`
+	HttpId     string `json:"httpId"`
+	TunnelPort int    `json:"tunnelPort"`
+}
+
+func (r ClientWorkConnReq) Cmd() Cmd {
+	return ClientWorkerConnReq
+}
