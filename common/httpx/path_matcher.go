@@ -16,7 +16,11 @@
 
 package httpx
 
-import "strings"
+import (
+	"strings"
+
+	"github.com/brook/common/log"
+)
 
 type PathMatcher struct {
 	Root *node
@@ -30,15 +34,25 @@ type node struct {
 	handler    interface{}
 }
 
-func NewPathMatcher() *PathMatcher {
+func NewPathMatcher(handler interface{}) *PathMatcher {
 	return &PathMatcher{
-		Root: &node{},
+		Root: &node{
+			segment:    "",
+			children:   make([]*node, 0),
+			isParam:    false,
+			isWildcard: false,
+			handler:    handler,
+		},
 	}
 }
 
 // AddPathMatcher adds a new path matcher to the tree
 // It takes a path string and a handler interface as parameters
 func (r *PathMatcher) AddPathMatcher(path string, handler interface{}) {
+	if r.Root == nil {
+		log.Info("AddPathMatcher: root node is nil")
+		return
+	}
 	// Split the path into parts
 	parts := splitPath(path)
 	// Start from the root node
@@ -158,5 +172,12 @@ func splitPath(path string) []string {
 	if path == "" {
 		return []string{}
 	}
-	return strings.Split(path, "/")
+	parts := strings.Split(path, "/")
+
+	// 处理根路径的特殊情况
+	if len(parts) == 1 && parts[0] == "" {
+		return []string{}
+	}
+
+	return parts
 }

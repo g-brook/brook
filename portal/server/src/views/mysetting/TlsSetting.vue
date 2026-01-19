@@ -4,6 +4,10 @@ import Drawer from "@/components/drawer/Index.vue";
 import CertInfo from "@/views/mysetting/CertInfo.vue";
 import {onMounted, ref} from "vue";
 import fun from "@/service/mysetting";
+import Modal from "@/components/modal";
+import config from "@/service/config";
+import message from "@/components/message";
+import Icon from "@/components/icon/Index.vue";
 
 const {t} = useI18n()
 
@@ -25,14 +29,19 @@ const openDetailCert = (item) => {
 
 
 const deleteCert = (item) => {
-  try {
-    fun.deleteCertificate({id: item.id}).then(() => {
-      getAll();
-    });
+  Modal.confirm({
+    onConfirm: async () => {
+      try {
+        fun.deleteCertificate({id: item.id}).then(() => {
+          getAll();
+        });
 
-  } catch (error) {
-    console.error('删除证书失败:', error)
-  }
+      } catch (error) {
+        console.error('删除证书失败:', error)
+      }
+      return true
+    }
+  })
 };
 
 const getAll = () => {
@@ -53,7 +62,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <Drawer ref="drawerRef" :title="t('mysetting.tls.title')" icon="brook-web" width="50%">
+  <Drawer ref="drawerRef" :title="t('mysetting.tls.title')" icon="brook-Certificate-1" width="50%">
     <CertInfo :cert-id="selectCertItem?.id" />
   </Drawer>
   <div class="space-y-4">
@@ -61,11 +70,14 @@ onMounted(() => {
       <div class="card-title">
         <div class="flex w-full items-center p-4">
           <div class="flex-1 flex space-x-2 flex-row items-center ">
-            <i class="iconfont brook-token" style="font-size: 24px"></i>
+            <i class="iconfont brook-Certificate-1" style="font-size: 24px"></i>
             <h2 class="text-base-content text-xl">{{ t('mysetting.tls.title') }}</h2>
             <p class="text-xs text-base-content/60">{{ t('mysetting.tls.subtitle') }}</p>
           </div>
-          <div class=" flex-row items-center">
+          <div class=" flex-row items-center space-x-2">
+            <button class="btn btn-circle " @click="getAll">
+              <Icon icon="brook-refresh"/>
+            </button>
             <button class="btn btn-primary btn-sm" @click="openAddCert">
               <i class="iconfont brook-plus"></i>
               {{ t('mysetting.tls.actions.create') }}

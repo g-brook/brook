@@ -22,6 +22,7 @@ import config from '@/service/config';
 import message from "@/components/message";
 import fun from "@/service/mysetting";
 import {inflate} from "node:zlib";
+import Modal from "@/components/modal";
 
 const {t} = useI18n();
 
@@ -85,9 +86,13 @@ const removePath = (proxy, index) => {
 
 // 删除代理
 const deleteProxy = (index) => {
-  if (confirm(t('configuration.confirmDeleteProxy'))) {
-    proxyList.value.splice(index, 1);
-  }
+
+  Modal.confirm({
+    onConfirm: async () => {
+      proxyList.value.splice(index, 1);
+      return true
+    }
+  })
 };
 
 // 编辑代理

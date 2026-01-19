@@ -25,6 +25,7 @@ import {useI18n} from '@/components/lang/useI18n';
 import WebConfiguration from "./WebConfiguration.vue";
 import Message from '@/components/message';
 import DownloadConfig from "./DownloadConfig.vue";
+import message from "@/components/message";
 
 // 定义配置项的类型
 interface ConfigItem {
@@ -254,7 +255,7 @@ const handleClickDownload = () => {
                 <div class="status status-error" v-else/>
                 {{ config.name }}
               </div>
-              <div class="ml-2">
+              <div class="ml-2" v-if="config.tag">
                                     <span class="badge badge-xs"
                                           :class="config.isRunning ? 'badge-success' : 'badge-warning'">{{
                                         config.tag

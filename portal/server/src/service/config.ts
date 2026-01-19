@@ -53,6 +53,9 @@ const getWebConfigs = <Q>(parmas: any): Promise<Response<Q>> => {
   return Http.post("/api/getWebConfigs", parmas);
 };
 
+const getRandomPort = <Q>(parmas: any): Promise<Response<Q>> => {
+  return Http.post("/api/getRandomPort", parmas);
+};
 
 const functions = {
   genClientConfig,
@@ -63,6 +66,7 @@ const functions = {
   updateProxyState,
   addWebConfigs,
   getWebConfigs,
+  getRandomPort
 };
 
 export default functions;

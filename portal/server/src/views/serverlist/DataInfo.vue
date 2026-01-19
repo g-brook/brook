@@ -161,11 +161,16 @@ defineExpose({
           <tr v-for="(item, index) in webLogs" :key="index">
             <th>
               <div class="flex items-center gap-2">
-                <div class="badge badge-xs" :class="item.status==200 ? 'badge-success' : 'badge-error'">
+                <div class="badge badge-xs"
+                     :class="{
+           'badge-success': item.status === 200,
+           'badge-error': item.status >= 400,
+           'badge-warning': item.status >= 300 && item.status < 400,
+           'badge-info': item.status >= 200 && item.status < 300
+         }">
                 </div>
                 {{ index + 1 }}
               </div>
-
             </th>
             <td>{{ item.time.String }}</td>
             <td>{{ item.path }}</td>

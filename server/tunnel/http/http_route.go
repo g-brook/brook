@@ -51,10 +51,10 @@ func AddRouteInfo(httpId string, domain string, paths []string, fun ProxyConnect
 	defer lock.Unlock()
 	info := &RouteInfo{
 		httpId:             httpId,
-		matcher:            httpx.NewPathMatcher(),
 		getProxyConnection: fun,
 		domain:             domain,
 	}
+	info.matcher = httpx.NewPathMatcher(info)
 	for _, path := range paths {
 		info.matcher.AddPathMatcher(path, info)
 	}

@@ -16,9 +16,10 @@
 
 <script lang="ts" setup>
 import config from "@/service/config";
-import {computed, reactive, ref} from 'vue';
+import {computed, onMounted, reactive, ref} from 'vue';
 import Icon from "@/components/icon/Index.vue";
 import {useI18n} from '@/components/lang/useI18n';
+import message from "@/components/message";
 
 
 // 表单数据类型
@@ -72,8 +73,8 @@ const form = reactive<ConfigForm>({
   remotePort: props.initialData?.remotePort || 10000,
   proxyId: props.initialData?.proxyId || '',
   protocol: props.initialData?.protocol || '',
-  destinationAddr:props.initialData?.destination.split(":")[0] || '',
-  destinationPort:props.initialData?.destination.split(":")[1] || null,
+  destinationAddr: props.initialData?.destination.split(":")[0] || '',
+  destinationPort: props.initialData?.destination.split(":")[1] || 0,
 });
 
 const errors = reactive<FormErrors>({});
@@ -99,7 +100,6 @@ const validateForm = (): boolean => {
     errors.name = t('validation.maxLength', {max: 50});
     isValid = false;
   }
-
   // Port 验证
   if (!form.remotePort) {
     errors.remotePort = t('validation.required');
@@ -133,8 +133,11 @@ const handleSubmit = async () => {
   try {
     // 发送请求
     let res;
-    form.destination = form.destinationAddr + ":" + form.destinationPort
-    console.log("res", form.destination);
+    if (form.destinationAddr && form.destinationPort) {
+      form.destination = form.destinationAddr + ":" + form.destinationPort
+    } else {
+      form.destination = ''
+    }
     if (!props.isEdit) {
       res = await config.addProxyConfig(form);
     } else {
@@ -149,6 +152,17 @@ const handleSubmit = async () => {
     return Promise.reject(false);
   } finally {
     loading.value = false;
+  }
+};
+
+const getPort = async () => {
+  try {
+    const res = await config.getRandomPort({});
+    if (res.success()) {
+      form.remotePort = res.data.port;
+    }
+  } catch (error) {
+    console.error(error);
   }
 };
 
@@ -175,6 +189,11 @@ defineExpose({
 if (props.onRegister) {
   props.onRegister({handleSubmit});
 }
+onMounted(() => {
+  if (!props.isEdit) {
+    getPort();
+  }
+});
 </script>
 <template>
   <div class="w-[35rem] h-[20rem]">
@@ -188,6 +207,9 @@ if (props.onRegister) {
           <input type="radio" name="types" v-model="form.protocol" :value="type.value"
                  class="radio radio-accent radio-sm checked:bg-red-200 checked:text-red-600 checked:border-red-600  group-hover:border-base-100"/>
           <p class="text-sm font-bold text-neutral">{{ type.label }}</p>
+        </label>
+        <label v-if="errors.protocol" class="label py-1">
+          <span class="label-text-alt text-red-500 text-xs">{{ errors.protocol }}</span>
         </label>
       </div>
       <div class="flex flex-row gap-2 justify-between">

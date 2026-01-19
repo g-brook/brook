@@ -136,7 +136,7 @@ func (r *ProxyConfig) toDb() *sql.ProxyConfig {
 		ProxyID:     r.ProxyID,
 		Protocol:    r.Protocol,
 		State:       r.State,
-		Destination: sql2.NullString{String: r.Destination},
+		Destination: sql2.NullString{String: r.Destination, Valid: true},
 	}
 }
 func newProxyConfig(config *sql.ProxyConfig) *ProxyConfig {

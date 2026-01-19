@@ -89,7 +89,9 @@ func formatCfg(cfg *configs.ServerTunnelConfig, this *TunnelHttpServer) {
 	RouteClean()
 	for _, httpJson := range cfg.Http {
 		AddRouteInfo(httpJson.Id, httpJson.Domain, httpJson.Paths, this.getProxyConnection)
-		this.proxyToConn.Store(httpJson.Id, hash.NewSyncMap[string, *Tracker]())
+		if _, ok := this.proxyToConn.Load(httpJson.Id); !ok {
+			this.proxyToConn.Store(httpJson.Id, hash.NewSyncMap[string, *Tracker]())
+		}
 	}
 
 	if cfg.Type == lang.Https {
@@ -321,7 +323,7 @@ func (htl *TunnelHttpServer) OpenWorker(ch Channel, request *exchange.ClientWork
 		log.Info("Open Worker http tunnel, proxyId: %s,httpId:%s", request.ProxyId, request.HttpId)
 
 	} else {
-		log.Warn("Open Worker %v:%v not exists by http tunnelServer.", request.ProxyId, request.HttpId)
+		log.Error("Open Worker %v:%v not exists by http tunnelServer.", request.ProxyId, request.HttpId)
 		return errors.New("Open Worker " + request.ProxyId + ":" + request.HttpId + " not exists by http tunnelServer.")
 	}
 	tracker := NewHttpTracker(ch)

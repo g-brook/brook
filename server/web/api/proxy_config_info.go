@@ -17,7 +17,9 @@
 package api
 
 import (
+	sql2 "database/sql"
 	"encoding/json"
+	"math/rand"
 
 	"github.com/brook/common/configs"
 	"github.com/brook/common/lang"
@@ -38,6 +40,25 @@ func init() {
 	RegisterRoute(NewRoute("/updateProxyConfig", "POST"), updateProxyConfig)
 	RegisterRoute(NewRoute("/updateProxyState", "POST"), updateProxyState)
 	RegisterRoute(NewRoute("/genClientConfig", "POST"), genClientConfig)
+	RegisterRoute(NewRoute("/getRandomPort", "POST"), getRandomPort)
+}
+
+func getRandomPort(*Request[any]) *Response {
+	all := sql.GetAllProxyConfig()
+	var ports = make(map[int]bool)
+	for _, item := range all {
+		port := item.RemotePort
+		ports[port] = true
+	}
+
+	for {
+		port := 10000 + rand.Intn(55536) // 生成10000-65535之间的随机数
+		if !ports[port] {
+			m := make(map[string]int)
+			m["port"] = port
+			return NewResponseSuccess(m)
+		}
+	}
 }
 
 // getProxyConfigs retrieves configuration information from the database
@@ -217,15 +238,23 @@ func addProxyConfigs(req *Request[ProxyConfig]) *Response {
 	if body.ProxyID == "" {
 		return NewResponseFail(errs.CodeSysErr, "proxyId is empty")
 	}
-	if body.IsHttpOrHttps() {
-		body.State = 0
-	} else {
-		body.State = 1
-	}
-	err := sql.AddProxyConfig(body.toDb())
+	body.State = 1
+	err, id := sql.AddProxyConfig(body.toDb())
 	if err != nil {
 		log.Error(err.Error())
 		return NewResponseFail(errs.CodeSysErr, "add configs failed")
+	}
+	if body.IsHttpOrHttps() {
+		config := &sql.WebProxyConfig{
+			RefProxyId: int(id),
+			Proxy:      "[{\"id\":\"default\",\"domain\":\"*\",\"paths\":[\"/*\"]}]",
+			CertId:     sql2.NullInt32{Valid: false, Int32: 0},
+		}
+		err = sql.AddWebProxyConfig(config)
+		if err != nil {
+			log.Error(err.Error())
+			return NewResponseFail(errs.CodeSysErr, "add web configs failed")
+		}
 	}
 	base.TunnelCfm.Push(body.ProxyID)
 	return NewResponseSuccess(nil)

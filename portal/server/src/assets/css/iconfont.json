@@ -6,6 +6,13 @@
   "description": "",
   "glyphs": [
     {
+      "icon_id": "17412036",
+      "name": "Certificate-1",
+      "font_class": "Certificate-1",
+      "unicode": "e642",
+      "unicode_decimal": 58946
+    },
+    {
       "icon_id": "9358795",
       "name": "upgrade",
       "font_class": "upgrade",

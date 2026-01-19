@@ -31,7 +31,7 @@ func AddWebProxyConfig(p *WebProxyConfig) error {
 	err := Exec(`
 				INSERT INTO web_proxy_config("ref_proxy_id","proxy","cert_id")
 				VALUES (?, ?, ?);
-			`, p.RefProxyId, p.Proxy)
+			`, p.RefProxyId, p.Proxy, p.CertId)
 	return err
 }
 

@@ -23,7 +23,7 @@ import (
 
 // MatchDomain match domain.
 func MatchDomain(routeDomain, reqDomain string) bool {
-	if routeDomain == "" {
+	if routeDomain == "" || routeDomain == "*" {
 		return true
 	}
 

@@ -130,12 +130,12 @@ const props = defineProps({
   width: 100%;
   height: 100%;
   background-color: rgba(0, 0, 0, 0.5);
-  z-index: 9999;
+  z-index: 100;
 }
 
 .drawer {
   position: fixed;
-  z-index: 10000;
+  z-index: 100;
   transition: all 0.3s ease-in-out;
   box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
   overflow-y: auto;

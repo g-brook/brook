@@ -103,7 +103,7 @@ const { t } = useI18n()
 
 <template>
   <div>
-    <div class="max-w-6xl mx-auto p-6 space-y-8 fade-in">
+    <div class="max-w-6xl mx-auto p-6 space-y-2 fade-in">
       <!-- Token 管理 - 简洁展示 -->
       <div class="space-y-4">
         <div class="border card border-base-300 rounded-lg p-6 w-full">

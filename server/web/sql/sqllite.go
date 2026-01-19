@@ -81,3 +81,17 @@ func Exec(sql string, args ...any) error {
 	}
 	return err
 }
+
+func ExecWithId(sql string, args ...any) (int64, error) {
+	result, err := SqlDB.Exec(sql, args...)
+	if err != nil {
+		log.Error("sql: %s, err: %v", sql, err)
+		return 0, err
+	}
+	id, err := result.LastInsertId()
+	if err != nil {
+		log.Error("get last insert id err: %v", err)
+		return 0, err
+	}
+	return id, nil
+}
