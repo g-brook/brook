@@ -79,7 +79,7 @@ const addPath = (proxy) => {
 // 删除路径
 const removePath = (proxy, index) => {
   proxy.paths.splice(index, 1);
-  if (proxy.paths.length === 0) {
+  if (proxy.paths?.length === 0) {
     proxy.paths.push('/*');
   }
 };
@@ -126,7 +126,7 @@ const cancelEdit = (proxy, index) => {
 // 保存代理
 const saveProxy = (proxy) => {
   // 验证表单
-  if (!proxy.id || !proxy.domain || proxy.paths.length === 0) {
+  if (!proxy.id || !proxy.domain || proxy.paths?.length === 0) {
     message.warning(t('configuration.proxyFormIncomplete'));
     return;
   }
@@ -140,7 +140,7 @@ const saveProxy = (proxy) => {
 };
 
 const saveProxyToRemote = () => {
-  if (proxyList.value.length === 0) {
+  if (proxyList.value?.length === 0) {
     message.warning(t('configuration.atLeastOneProxy'));
     return;
   }
@@ -206,7 +206,7 @@ onMounted(() => {
               </option>
             </select>
             <div class="flex-1">
-              <span v-if="itmes.length === 0" class="text-sm text-red-500">
+              <span v-if="itmes?.length === 0" class="text-sm text-red-500">
             {{ t('configuration.certInfoEmpty') }}</span>
             </div>
           </div>
@@ -311,7 +311,7 @@ onMounted(() => {
                 </td>
               </template>
             </tr>
-            <tr v-if="proxyList.length === 0">
+            <tr v-if="proxyList?.length === 0">
               <td colspan="4" class="text-center py-4 text-base-content/60">
                 {{ t('configuration.noProxyTip') }}
               </td>

@@ -58,8 +58,8 @@ func (t *TcpTunnelClient) initOpen(ch *transport.SChannel) error {
 		return err
 	}
 	err = t.AsyncRegister(t.GetRegisterReq(), func(p *exchange.Protocol, rw io.ReadWriteCloser, _ context.Context) error {
-		log.Info("Connection local address success then Client to server register success:%v", t.GetCfg().Destination)
 		if p.IsSuccess() {
+			log.Info("Connection local address success then Client to server register success:%v", t.GetCfg().Destination)
 			addHealthyCheckStream(ch)
 			var finnish = make(chan int)
 			threading.GoSafe(func() {

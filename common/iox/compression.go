@@ -42,10 +42,10 @@ func (c *CompressionRw) Close() error {
 
 func NewCompressionRw(reader io.Reader, writer io.Writer) *CompressionRw {
 	return &CompressionRw{
-		reader:  reader,
-		writer:  writer,
-		cReader: GetSnappyReader(reader),
-		cWriter: GetSnappyWriter(writer),
+		reader: reader,
+		writer: writer,
+		//cReader: GetSnappyReader(reader),
+		//cWriter: GetSnappyWriter(writer),
 	}
 }
 
@@ -59,6 +59,8 @@ func (c *CompressionRw) Writer() io.Writer {
 
 func (c *CompressionRw) Write(p []byte) (n int, err error) {
 	n, err = c.writer.Write(p)
+	//n, err = c.cWriter.Write(p)
+	//_ = c.cWriter.Flush()
 	return
 }
 

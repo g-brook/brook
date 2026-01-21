@@ -265,9 +265,9 @@ func (c *Client) doConnection() error {
 		// Get default smux configuration
 		config := smux.DefaultConfig()
 		// Wrap connection with compression
-		conn := NewCompressConn(c.GetConn())
+		//conn := NewCompressConn(c.GetConn())
 		// Create smux client session
-		if session, err := smux.Client(conn, config); err != nil {
+		if session, err := smux.Client(c.GetConn(), config); err != nil {
 			// Return error if smux client creation fails
 			return nil, c.error("New smux Client error", err)
 		} else {

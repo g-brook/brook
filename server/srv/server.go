@@ -225,7 +225,7 @@ func (sever *Server) OnOpen(c gnet.Conn) (out []byte, action gnet.Action) {
 	defer sever.removeIfConnection(conn)
 	if sever.startSmux != nil {
 		conn.Context.isSmux = true
-		conn.PipeConn = NewSmuxAdapterConn(conn)
+		conn.PipeConn = NewSmuxAdapterConn(conn, conn.bgCtx, c.EventLoop())
 		conn.PipeConn.StartWR()
 		_ = sever.startSmux(
 			conn.PipeConn,

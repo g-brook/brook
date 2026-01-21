@@ -58,9 +58,7 @@ func (p *Pool) Get() *RingBuffer {
 	v := p.pool.Get()
 	if v != nil {
 		buffer := v.(*RingBuffer)
-		if !buffer.IsEmpty() {
-			buffer.Reset()
-		}
+		buffer.Reset()
 		return buffer
 	}
 	return NewRingBuffer(int(atomic.LoadUint64(&p.defaultSize)))

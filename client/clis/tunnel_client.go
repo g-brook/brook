@@ -293,7 +293,7 @@ func (b *BaseTunnelClient) OpenWorkerToSchannel(rsp *exchange.RegisterReqAndRsp)
 }
 
 func (b *BaseTunnelClient) OpenWorker(rsp *exchange.RegisterReqAndRsp, isToManager bool) (err error) {
-	wreq := exchange.ClientWorkConnReq{
+	wreq := &exchange.ClientWorkConnReq{
 		ProxyId:    rsp.ProxyId,
 		HttpId:     rsp.HttpId,
 		TunnelPort: rsp.TunnelPort,

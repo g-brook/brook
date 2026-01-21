@@ -23,6 +23,7 @@ import (
 	"context"
 	"io"
 	"net"
+	"sync"
 	"time"
 
 	"github.com/brook/common/lang"
@@ -45,6 +46,7 @@ type SChannel struct {
 	attr         map[lang.KeyType]interface{}
 	closeEvents  []CloseEvent
 	lastTime     time.Time
+	once         sync.Once
 }
 
 // NewSChannel creates a new SChannel with the given smux stream
@@ -74,15 +76,17 @@ func (c *SChannel) SendTo([]byte, net.Addr) (int, error) {
 
 // Close closes the SChannel by closing the underlying stream
 func (c *SChannel) Close() error {
-	err := c.Stream.Close()
-	c.cancel()
-	for _, event := range c.closeEvents {
-		if event != nil {
-			event(c)
+	c.once.Do(func() {
+		_ = c.Stream.Close()
+		c.cancel()
+		for _, event := range c.closeEvents {
+			if event != nil {
+				event(c)
+			}
 		}
-	}
-	clear(c.closeEvents)
-	return err
+		clear(c.closeEvents)
+	})
+	return nil
 }
 
 // SetDeadline sets the deadline for both read and write operations
