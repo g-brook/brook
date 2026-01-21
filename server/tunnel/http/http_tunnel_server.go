@@ -270,7 +270,7 @@ func (htl *TunnelHttpServer) Open(ch Channel, tb srv.TraverseBy) {
 			} else {
 				htl.httpProxy.ServeHTTP(rc, req)
 				_, _ = io.Copy(io.Discard, req.Body)
-				req.Body.Close()
+				_ = req.Body.Close()
 				err := rc.finish(nil, req)
 				if err != nil {
 					_ = rwConn.Close()
@@ -307,15 +307,16 @@ func (htl *TunnelHttpServer) getRoute(req *http.Request) (*RouteInfo, error) {
 }
 
 // RegisterConn is a method of HttpTunnelServer, which is used to register a connection.
-func (htl *TunnelHttpServer) RegisterConn(ch Channel, request exchange.TRegister) {
+func (htl *TunnelHttpServer) RegisterConn(ch Channel, request exchange.TRegister) (serverId string, err error) {
 	if request.GetProxyId() == "" || request.GetHttpId() == "" {
-		log.Warn("Register http tunnel, but It' httpId or httpId is nil")
-		return
+		log.Warn("Register http tunnel, but It' ProxyId or httpId is nil")
+		return "", errors.New("ProxyId or httpId is nil")
 	}
 	htl.registerLock.Lock()
-	htl.BaseTunnelServer.RegisterConn(ch, request)
-	htl.registerLock.Unlock()
+	defer htl.registerLock.Unlock()
+	serverId, err = htl.BaseTunnelServer.RegisterConn(ch, request)
 	log.Info("Register http tunnel, proxyId: %s,httpId:%s, waiting for open worker", request.GetTunnelPort(), request.GetHttpId())
+	return
 }
 func (htl *TunnelHttpServer) OpenWorker(ch Channel, request *exchange.ClientWorkConnReq) error {
 	proxies, ok := htl.proxyToConn.Load(request.HttpId)
@@ -326,10 +327,16 @@ func (htl *TunnelHttpServer) OpenWorker(ch Channel, request *exchange.ClientWork
 		log.Error("Open Worker %v:%v not exists by http tunnelServer.", request.ProxyId, request.HttpId)
 		return errors.New("Open Worker " + request.ProxyId + ":" + request.HttpId + " not exists by http tunnelServer.")
 	}
-	tracker := NewHttpTracker(ch)
-	proxies.Store(ch.GetId(), tracker)
-	tracker.Run()
-	return nil
+	id := request.ServerId
+	userCh, b := htl.TunnelChannel.Load(id)
+	if b && !ch.IsClose() {
+		tracker := NewHttpTracker(userCh)
+		proxies.Store(userCh.GetId(), tracker)
+		tracker.Run()
+		log.Info("add http tracker, proxyId: %s", request.ProxyId)
+		return nil
+	}
+	return errors.New("channel is nil or closed")
 }
 
 // unRegisterConn is a method of HttpTunnelServer, which is used to unregister a connection.

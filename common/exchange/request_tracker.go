@@ -53,6 +53,9 @@ func (rt *RequestTracker) Register(reqId int64) chan *Protocol {
 
 // Complete delivers a response and removes the tracker entry.
 func (rt *RequestTracker) Complete(resp *Protocol) bool {
+	if resp.PType != RESPONSE {
+		return false
+	}
 	rt.mu.Lock()
 	defer rt.mu.Unlock()
 	ch, ok := rt.pending[resp.ReqId]

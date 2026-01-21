@@ -246,28 +246,33 @@ func (sever *Server) OnOpen(c gnet.Conn) (out []byte, action gnet.Action) {
 
 func (sever *Server) OnTraffic(c gnet.Conn) gnet.Action {
 	conn := NewChannel(c, sever)
-	conn.GetContext().LastActive()
 	defer sever.removeIfConnection(conn)
+	conn.GetContext().LastActive()
 	if sever.startSmux != nil {
-		if conn.PipeConn != nil {
-			buf, err := c.Next(-1)
-			if err != nil {
-				log.Error("pipeConn.Copy error: %s", err)
-			}
-			_, err = conn.PipeConn.Copy(buf)
-			if err != nil {
-				log.Error("pipeConn.Copy error: %s", err)
-			}
+		if conn.PipeConn == nil {
+			return gnet.None
 		}
-	} else {
-		sever.next(func(s ServerHandler, newCh trp.Channel) bool {
-			b := true
-			s.Reader(newCh, func() {
-				b = false
-			})
-			return b
-		}, conn)
+		buf, err := c.Next(-1)
+		if err != nil {
+			log.Error("pipeConn.Copy error: %s", err)
+			return gnet.None
+		}
+		if len(buf) == 0 {
+			return gnet.None
+		}
+		_, err = conn.PipeConn.Copy(buf)
+		if err != nil {
+			log.Error("pipeConn.Copy error: %s", err)
+		}
+		return gnet.None
 	}
+	sever.next(func(s ServerHandler, newCh trp.Channel) bool {
+		b := true
+		s.Reader(newCh, func() {
+			b = false
+		})
+		return b
+	}, conn)
 	return gnet.None
 }
 
@@ -338,17 +343,20 @@ func (sever *Server) Start(opt ...ServerOption) error {
 func (sever *Server) streamAssignment() {
 	if sever.opts.withSmux != nil && sever.opts.withSmux.enable {
 		sever.startSmux = func(conn *TChannel, ctx context.Context, option *SmuxServerOption) error {
-			config := smux.DefaultConfig()
-			session, err := smux.Server(conn, config)
-			if err != nil {
-				log.Error("Start server error. %v", err)
-				return err
-			}
 			threading.GoSafe(func() {
+				config := smux.DefaultConfig()
+				session, err := smux.Server(conn, config)
+				if err != nil {
+					log.Error("Start server error. %v", err)
+					_ = conn.Close()
+					return
+				}
 				for {
+					log.Debug("Start server accept stream. %s:%s", conn.LocalAddr(), conn.RemoteAddr())
 					stream, err := session.AcceptStream()
 					if err != nil || session.IsClosed() {
 						log.Error("session is close.PORT:%v, %v", conn.LocalAddr(), err.Error())
+						_ = conn.Close()
 						return
 					}
 					log.Info("Start server success stream. %s:%s", conn.LocalAddr(), stream.RemoteAddr())

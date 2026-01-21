@@ -34,6 +34,8 @@ type TRegister interface {
 	GetBindId() string
 
 	IsOpen() bool
+
+	SetServerId(serverId string)
 }
 
 // RegisterReqAndRsp
@@ -53,31 +55,38 @@ type RegisterReqAndRsp struct {
 	//proxyId.
 	ProxyId string `json:"proxyId"`
 
+	//ServerId
+	ServerId string `json:"serverId"`
+
 	Open bool `json:"open"`
 }
 
-func (r RegisterReqAndRsp) GetTunnelPort() int {
+func (r *RegisterReqAndRsp) GetTunnelPort() int {
 	return r.TunnelPort
 }
 
-func (r RegisterReqAndRsp) GetBindId() string {
+func (r *RegisterReqAndRsp) GetBindId() string {
 	return r.BindId
 }
 
-func (r RegisterReqAndRsp) GetHttpId() string {
+func (r *RegisterReqAndRsp) GetHttpId() string {
 	return r.HttpId
 }
 
-func (r RegisterReqAndRsp) GetTunnelType() lang.TunnelType {
+func (r *RegisterReqAndRsp) GetTunnelType() lang.TunnelType {
 	return r.TunnelType
 }
 
-func (r RegisterReqAndRsp) GetProxyId() string {
+func (r *RegisterReqAndRsp) GetProxyId() string {
 	return r.ProxyId
 }
 
-func (r RegisterReqAndRsp) IsOpen() bool {
+func (r *RegisterReqAndRsp) IsOpen() bool {
 	return r.Open
+}
+
+func (r *RegisterReqAndRsp) SetServerId(serverId string) {
+	r.ServerId = serverId
 }
 
 type UdpRegisterReqAndRsp struct {
@@ -85,10 +94,10 @@ type UdpRegisterReqAndRsp struct {
 	RemoteAddress string `json:"remote_address"`
 }
 
-func (r UdpRegisterReqAndRsp) Cmd() Cmd {
+func (r *UdpRegisterReqAndRsp) Cmd() Cmd {
 	return UdpRegister
 }
 
-func (r RegisterReqAndRsp) Cmd() Cmd {
+func (r *RegisterReqAndRsp) Cmd() Cmd {
 	return Register
 }

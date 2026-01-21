@@ -19,7 +19,6 @@ package tunnel
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"io"
 	"net"
 	"sync"
@@ -68,15 +67,13 @@ func (t *UdpTunnelClient) GetName() string {
 }
 
 func (t *UdpTunnelClient) initOpen(*transport.SChannel) (err error) {
-
-	stop := make(chan struct{})
+	stop := make(chan int)
 	var stopOnce sync.Once
 	safeClose := func() {
 		stopOnce.Do(func() {
 			close(stop)
 		})
 	}
-
 	readLoop := func(updConn *net.UDPConn, remoteAddress *net.UDPAddr, bucket *exchange.TunnelBucket) {
 		pool := iox.GetByteBufPool(t.bufSize)
 		for {
@@ -140,10 +137,16 @@ func (t *UdpTunnelClient) initOpen(*transport.SChannel) (err error) {
 			bucket := exchange.NewTunnelBucket(rw, t.TcControl.Context())
 			revLoop(rw, bucket)
 			bucket.Run()
+			result, _ := exchange.Parse[exchange.RegisterReqAndRsp](p.Data)
+			err = t.OpenWorkerToManager(result)
+			if err != nil {
+				return exchange.CloseError
+			}
 			<-stop
+			log.Debug("Exit handler......%s", result.ProxyId)
 		} else {
-			log.Error("Connection local address success then Client to server register fail:%v", t.GetCfg().Destination)
-			return fmt.Errorf("register fail")
+			log.Error("Connection local address success then Client to server register fail:%v", p.RspMsg)
+			return exchange.CloseError
 		}
 		return nil
 	})

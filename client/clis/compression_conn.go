@@ -35,7 +35,8 @@ func NewCompressConn(conn net.Conn) *CompressConn {
 }
 
 func (c *CompressConn) Read(b []byte) (n int, err error) {
-	return c.rw.Read(b)
+	read, err := c.rw.Read(b)
+	return read, err
 }
 
 func (c *CompressConn) Write(b []byte) (n int, err error) {

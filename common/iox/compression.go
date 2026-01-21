@@ -58,11 +58,10 @@ func (c *CompressionRw) Writer() io.Writer {
 }
 
 func (c *CompressionRw) Write(p []byte) (n int, err error) {
-	n, err = c.cWriter.Write(p)
-	_ = c.cWriter.Flush()
+	n, err = c.writer.Write(p)
 	return
 }
 
 func (c *CompressionRw) Read(p []byte) (n int, err error) {
-	return c.cReader.Read(p)
+	return c.reader.Read(p)
 }

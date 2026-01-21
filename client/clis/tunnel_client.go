@@ -284,6 +284,39 @@ func (b *BaseTunnelClient) Register(req exchange.InBound) (*exchange.RegisterReq
 	return result, nil
 }
 
+func (b *BaseTunnelClient) OpenWorkerToManager(rsp *exchange.RegisterReqAndRsp) (err error) {
+	return b.OpenWorker(rsp, true)
+}
+
+func (b *BaseTunnelClient) OpenWorkerToSchannel(rsp *exchange.RegisterReqAndRsp) (err error) {
+	return b.OpenWorker(rsp, false)
+}
+
+func (b *BaseTunnelClient) OpenWorker(rsp *exchange.RegisterReqAndRsp, isToManager bool) (err error) {
+	wreq := exchange.ClientWorkConnReq{
+		ProxyId:    rsp.ProxyId,
+		HttpId:     rsp.HttpId,
+		TunnelPort: rsp.TunnelPort,
+		ServerId:   rsp.ServerId,
+	}
+	if isToManager {
+		rs, err2 := ManagerTransport.SyncWrite(wreq, 5*time.Second)
+		err = err2
+		if err == nil && !rs.IsSuccess() {
+			return errors.New(fmt.Sprintf("open worker fail: %v", rs.RspMsg))
+		}
+	} else {
+		err = b.TcControl.Bucket.PushWitchRequest(wreq)
+		return err
+	}
+	if err != nil {
+		log.Error("Register error %v", err)
+		return err
+	}
+	log.Info("Register success:PORT-%v-ProxyId:%s", rsp.TunnelPort, rsp.ProxyId)
+	return nil
+}
+
 // AsyncRegister is an asynchronous method that registers a callback handler for incoming messages
 // and sends a registration request to the server
 //

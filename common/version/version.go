@@ -22,14 +22,22 @@ import (
 
 const BuildVersion = "0.1.1"
 
+const Version = 2
+
+const DBVersion = 3
+
 // GetBuildVersion application version.
 func GetBuildVersion() string {
 	return BuildVersion
 }
 
+func GetVersion() int {
+	return Version
+}
+
 // GetDbVersion db version.
 func GetDbVersion() int {
-	return 3
+	return DBVersion
 }
 
 func Banner() string {

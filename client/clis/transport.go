@@ -126,14 +126,13 @@ func (b *CheckHandler) Read(r *exchange.Protocol, cct *ClientControl) error {
 	if r.Cmd == exchange.Heart {
 		log.Debug("Receiver PONG info: %v", cct.cli.getAddress())
 		return nil
-	} else {
-		exchange.Tracker.Complete(r)
-		return nil
 	}
+	exchange.Tracker.Complete(r)
+	return nil
 }
 
 func (b *CheckHandler) Timeout(cct *ClientControl) {
-	var h = exchange.Heartbeat{
+	var h = &exchange.Heartbeat{
 		Value:     "PING",
 		StartTime: time.Now().UnixMilli(),
 	}

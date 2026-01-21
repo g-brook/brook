@@ -165,7 +165,10 @@ func (b *HttpBridge) toRunning() {
 
 func (b *HttpBridge) Close() {
 	b.cancelOnce.Do(func() {
-		ringbuffer.Put(b.buffer)
+		if b.buffer != nil {
+			b.buffer.Reset()
+			ringbuffer.Put(b.buffer)
+		}
 		b.cancel()
 		if !b.isWs {
 			_ = b.right.Close()

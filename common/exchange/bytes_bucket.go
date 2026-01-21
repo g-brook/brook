@@ -118,19 +118,19 @@ func (m *BytesBucket) revLoop() {
 
 func (m *BytesBucket) readLoop() {
 	defaultFunction := func() error {
-		maybeHeader := make([]byte, m.headerLength)
-		_, err := m.rw.Read(maybeHeader)
+		header := make([]byte, m.headerLength)
+		_, err := m.rw.Read(header)
 		if err != nil {
 			return err
 		}
-		cmd, length := m.witch(maybeHeader)
+		cmd, length := m.witch(header)
 		if handler, ok := m.bucketHandler[cmd]; ok {
 			body := make([]byte, length-m.headerLength)
 			_, err = m.rw.Read(body)
 			if err != nil {
 				return err
 			}
-			return handler(maybeHeader, body, m.rw, m.cannelCtx)
+			return handler(header, body, m.rw, m.cannelCtx)
 		}
 		return nil
 	}

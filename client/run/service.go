@@ -75,7 +75,7 @@ func (receiver *Service) connectionTunnel(cfg *configs.ClientConfig) error {
 		log.Warn("Tunnels is empty, no tunnels will be opened")
 		return nil
 	}
-	req := exchange.LoginReq{
+	req := &exchange.LoginReq{
 		Token: cfg.Token,
 	}
 	p, err := clis.ManagerTransport.SyncWrite(req, 5*time.Second)

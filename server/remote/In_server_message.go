@@ -38,7 +38,7 @@ func NewTunnelCfg(remotePort int, destination string) *TunnelCfg {
 	}
 }
 
-var OpenTunnelServerFun func(req exchange.OpenTunnelReq, ch transport.Channel) (*TunnelCfg, error)
+var OpenTunnelServerFun func(req *exchange.OpenTunnelReq, ch transport.Channel) (*TunnelCfg, error)
 
 // InWriteMessage This function takes a user ID and an InBound request as parameters and sends the request to the user's connection
 func InWriteMessage(unId string, r exchange.InBound) error {
@@ -56,7 +56,7 @@ func InWriteMessage(unId string, r exchange.InBound) error {
 	}
 }
 
-func OpenTunnelServer(req exchange.OpenTunnelReq, ch transport.Channel) (*TunnelCfg, error) {
+func OpenTunnelServer(req *exchange.OpenTunnelReq, ch transport.Channel) (*TunnelCfg, error) {
 	if OpenTunnelServerFun == nil {
 		log.Error("not found open tunnel function")
 		return nil, fmt.Errorf("not found open tunnel function")

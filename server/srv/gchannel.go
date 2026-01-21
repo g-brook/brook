@@ -145,12 +145,6 @@ func (c *GChannel) Write(out []byte) (int, error) {
 	return c.conn.Write(out)
 }
 
-// Next
-//
-//	@Description: Next()
-//	@receiver receiver
-//	@param pos
-//	@return net.conn
 func (c *GChannel) Next(pos int) ([]byte, error) {
 	return c.conn.Next(pos)
 }

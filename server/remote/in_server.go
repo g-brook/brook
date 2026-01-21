@@ -19,6 +19,7 @@ package remote
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"os"
 
 	"github.com/brook/common/configs"
@@ -27,7 +28,8 @@ import (
 	"github.com/brook/common/threading"
 	"github.com/brook/common/transport"
 	"github.com/brook/server/defin"
-	srv2 "github.com/brook/server/srv"
+	"github.com/brook/server/srv"
+	"github.com/panjf2000/gnet/v2"
 )
 
 const isTunnelConnKey = "TunnelServer-conn"
@@ -35,13 +37,13 @@ const isTunnelConnKey = "TunnelServer-conn"
 const tunnelPort = "TunnelServer-Port"
 
 type InServer struct {
-	srv2.BaseServerHandler
+	srv.BaseServerHandler
 
 	//Current server.
-	server *srv2.Server
+	server *srv.Server
 
 	//tunnelServer
-	tunnelServer *srv2.Server
+	tunnelServer *srv.Server
 }
 
 func New() *InServer {
@@ -50,18 +52,35 @@ func New() *InServer {
 	}
 }
 
-func (t *InServer) Reader(ch transport.Channel, traverse srv2.TraverseBy) {
-	//Determining whether a communication channel is connected.
-	req, err := exchange.Decoder(ch.GetReader())
-	if err != nil {
-		return
+func (t *InServer) Reader(ch transport.Channel, traverse srv.TraverseBy) {
+	reader := ch.GetReader()
+	if c, ok := reader.(gnet.Conn); ok {
+		for {
+			n, p, err := exchange.Decoder2(c)
+			if errors.Is(err, exchange.ErrNeedMoreData) {
+				break
+			}
+			if err != nil {
+				log.Warn("Decode error: %v", err)
+				return
+			}
+			_, _ = c.Discard(n)
+			inProcess(p, ch)
+		}
+	} else if c, ok := ch.(*transport.SChannel); ok {
+		req, err := exchange.Decoder(c)
+		if err != nil {
+			log.Warn("Decode error: %v", err)
+			return
+		}
+		inProcess(req, ch)
 	}
-	//Start process.
-	inProcess(req, ch)
-	traverse()
+	if traverse != nil {
+		traverse()
+	}
 }
 
-func (t *InServer) isTunnelConn(conn *srv2.GChannel) bool {
+func (t *InServer) isTunnelConn(conn *srv.GChannel) bool {
 	attr, b := conn.GetContext().GetAttr(isTunnelConnKey)
 	if b {
 		return attr.(bool)
@@ -69,7 +88,7 @@ func (t *InServer) isTunnelConn(conn *srv2.GChannel) bool {
 	return false
 }
 
-func (t *InServer) getTunnelPort(conn *srv2.GChannel) int32 {
+func (t *InServer) getTunnelPort(conn *srv.GChannel) int32 {
 	attr, b := conn.GetContext().GetAttr(tunnelPort)
 	if b {
 		return attr.(int32)
@@ -92,7 +111,7 @@ func (t *InServer) Shutdown() {
 }
 
 // GetConnection This function returns a connection from the server given an id
-func (t *InServer) GetConnection(id string) (*srv2.GChannel, bool) {
+func (t *InServer) GetConnection(id string) (*srv.GChannel, bool) {
 	// Call the GetConnection function from the server with the given id
 	return t.server.GetConnection(id)
 }
@@ -178,7 +197,7 @@ func (t *InServer) onStart(cf *configs.ServerConfig) {
 }
 
 func (t *InServer) onStartServer(cf *configs.ServerConfig) {
-	t.server = srv2.NewServer(cf.ServerPort)
+	t.server = srv.NewServer(cf.ServerPort)
 	t.server.AddHandler(t)
 	err := t.server.Start()
 	if err != nil {
@@ -193,10 +212,10 @@ func (t *InServer) onStartTunnelServer(cf *configs.ServerConfig) {
 		port = cf.ServerPort + 10
 		cf.TunnelPort = port
 	}
-	t.tunnelServer = srv2.NewServer(port)
+	t.tunnelServer = srv.NewServer(port)
 	t.tunnelServer.AddHandler(t)
 	defin.Set(defin.TunnelPortKey, port)
-	err := t.tunnelServer.Start(srv2.WithServerSmux(srv2.DefaultServerSmux()))
+	err := t.tunnelServer.Start(srv.WithServerSmux(srv.DefaultServerSmux()))
 	if err != nil {
 		log.Error(err.Error())
 		os.Exit(1)

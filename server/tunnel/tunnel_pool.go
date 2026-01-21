@@ -76,8 +76,8 @@ func (r *TunnelPool) Get() (sch transport.Channel, err error) {
 		if !ok {
 			return nil, fmt.Errorf("tunnel pool get error: %v", err)
 		}
-	case <-time.After(5 * time.Second):
-		log.Debug("get user tunnel timeout, 5s")
+	case <-time.After(10 * time.Second):
+		log.Debug("get user tunnel timeout, 10s")
 		return nil, fmt.Errorf("tunnel pool get timeout")
 	}
 	return

@@ -25,6 +25,7 @@ import (
 	"github.com/brook/common/configs"
 	"github.com/brook/common/exchange"
 	"github.com/brook/common/log"
+	"github.com/brook/common/threading"
 	"github.com/brook/common/transport"
 	"github.com/gobwas/ws"
 )
@@ -63,22 +64,28 @@ func (h *HttpTunnelClient) GetName() string {
 // Returns:
 //   - error: An error if the registration fails.
 func (h *HttpTunnelClient) initOpen(*transport.SChannel) error {
-	registerReq := h.GetRegisterReq()
-	// http cannot open by default . it open by ClientWorkConnReq function.
-	registerReq.Open = false
-	rsp, err := h.Register(registerReq)
-	if err != nil {
-		log.Error("Register fail %v", err)
-		return err
-	}
-	log.Info("Register success:PORT-%v", rsp.TunnelPort)
-	h.BaseTunnelClient.AddReadHandler(exchange.ClientWorkerConnReq, h.bindHandler)
-	req := exchange.ClientWorkConnReq{
-		ProxyId:    rsp.ProxyId,
-		HttpId:     rsp.HttpId,
-		TunnelPort: rsp.TunnelPort,
-	}
-	return h.TcControl.Bucket.PushWitchRequest(req)
+	err := h.AsyncRegister(h.GetRegisterReq(), func(p *exchange.Protocol, rw io.ReadWriteCloser, ctx context.Context) error {
+		if p.IsSuccess() {
+			var finnish = make(chan int)
+			threading.GoSafe(func() {
+				err := h.bindHandler(p, rw, ctx)
+				if err != nil {
+					finnish <- 1
+				}
+			})
+			rsp, _ := exchange.Parse[exchange.RegisterReqAndRsp](p.Data)
+			err := h.OpenWorkerToManager(rsp)
+			if err != nil {
+				return exchange.CloseError
+			}
+			<-finnish
+			log.Debug("Exit handler......%s:%s", rsp.ProxyId, rsp.HttpId)
+			return nil
+		}
+		log.Error("Connection local address success then Client to server register fail:%v", p.RspMsg)
+		return exchange.CloseError
+	})
+	return err
 }
 
 // bindHandler handles the binding of HTTP tunnel client requests
@@ -129,7 +136,7 @@ func (h *HttpTunnelClient) bindHandler(p *exchange.Protocol, rw io.ReadWriteClos
 		select {
 		// Check for context cancellation
 		case <-ctx.Done():
-			return nil
+			return exchange.CloseError
 		default:
 		}
 		// Process next request
@@ -137,7 +144,7 @@ func (h *HttpTunnelClient) bindHandler(p *exchange.Protocol, rw io.ReadWriteClos
 		if err == io.EOF {
 			log.Debug("http stream close.")
 			_ = rw.Close()
-			return nil
+			return exchange.CloseError
 		}
 	}
 

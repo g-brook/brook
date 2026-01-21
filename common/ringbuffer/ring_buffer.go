@@ -17,15 +17,25 @@
 package ringbuffer
 
 import (
+	"sync/atomic"
+
 	"github.com/panjf2000/gnet/v2/pkg/buffer/ring"
 )
 
+var BufferIndex atomic.Int64
+
 type RingBuffer struct {
 	*ring.Buffer
+	index int64
 }
 
 func NewRingBuffer(size int) *RingBuffer {
 	return &RingBuffer{
+		index:  BufferIndex.Add(1),
 		Buffer: ring.New(size),
 	}
+}
+
+func (b *RingBuffer) Index() int64 {
+	return atomic.LoadInt64(&b.index)
 }

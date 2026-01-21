@@ -41,7 +41,7 @@ func init() {
 
 // OpenTunnelServer open tcp tunnel server
 // This function opens a tunnel server based on the request parameters.
-func OpenTunnelServer(request exchange.OpenTunnelReq, manager Channel) (*remote.TunnelCfg, error) {
+func OpenTunnelServer(request *exchange.OpenTunnelReq, manager Channel) (*remote.TunnelCfg, error) {
 	cfgNode := TunnelCfm.ConfigApi.GetConfig(request.ProxyId)
 	if cfgNode == nil {
 		return nil, fmt.Errorf("not found proxy id %v", request.ProxyId)

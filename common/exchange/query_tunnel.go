@@ -25,7 +25,7 @@ type LoginReq struct {
 //	@Description: getCmd
 //	@receiver r
 //	@return Cmd
-func (r LoginReq) Cmd() Cmd {
+func (r *LoginReq) Cmd() Cmd {
 	return LoginTunnel
 }
 
@@ -39,6 +39,6 @@ type LoginResp struct {
 	AutoTunnel bool `json:"auto_login"`
 }
 
-func (r LoginReq) QueryTunnelResp() Cmd {
+func (r *LoginReq) QueryTunnelResp() Cmd {
 	return LoginTunnel
 }

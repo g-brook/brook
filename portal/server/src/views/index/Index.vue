@@ -65,8 +65,6 @@ const upgradeDB = async () => {
     if (res.success()) {
       Message.success(t("success.operationCompleted"))
       loadBaseInfo()
-    } else {
-      Message.success(t("errors.operationFailed"))
     }
   } catch (err) {
   }

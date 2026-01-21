@@ -264,8 +264,6 @@ func (c *Client) doConnection() error {
 	openSmux := func() (*smux.Session, error) {
 		// Get default smux configuration
 		config := smux.DefaultConfig()
-		// Configure keep-alive based on options
-		config.KeepAliveDisabled = !c.opts.Smux.KeepAlive
 		// Wrap connection with compression
 		conn := NewCompressConn(c.GetConn())
 		// Create smux client session
@@ -464,7 +462,7 @@ func (c *Client) sessionLoop() {
 		for {
 			select {
 			case <-c.session.CloseChan():
-				log.Warn("Tunnel Session closed %v", c.session.RemoteAddr())
+				log.Warn("Tunnel Session closed %v:%v", c.session.LocalAddr(), c.session.RemoteAddr())
 				c.cct.Close()
 				return
 			}

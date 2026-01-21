@@ -41,7 +41,7 @@ type InProcess[T exchange.InBound] func(request T, ch transport.Channel) (any, e
 // pingProcess handles ping/pong heartbeat messages between servers
 // It takes a heartbeat request and a transport channel as input
 // and returns a response heartbeat or an error
-func pingProcess(request exchange.Heartbeat, ch transport.Channel) (any, error) {
+func pingProcess(request *exchange.Heartbeat, ch transport.Channel) (any, error) {
 	// Log the received ping message with its value and remote address
 	log.Debug("Receiver Ping message : %s:%v", request.Value, ch.RemoteAddr())
 	// Create a heartbeat response with PONG value
@@ -53,14 +53,14 @@ func pingProcess(request exchange.Heartbeat, ch transport.Channel) (any, error) 
 	return heartbeat, nil
 }
 
-func dupRegisterProcess(request exchange.UdpRegisterReqAndRsp, ch transport.Channel) (any, error) {
+func dupRegisterProcess(request *exchange.UdpRegisterReqAndRsp, ch transport.Channel) (any, error) {
 	return doRegister(request, ch)
 }
 
 // registerProcess handles the registration of a tunnel connection
 // It takes a request containing registration details and a transport channel
 // Returns the processed request and any error that occurred during registration
-func registerProcess(request exchange.RegisterReqAndRsp, ch transport.Channel) (any, error) {
+func registerProcess(request *exchange.RegisterReqAndRsp, ch transport.Channel) (any, error) {
 	return doRegister(request, ch)
 }
 
@@ -77,9 +77,6 @@ func doRegister(request exchange.TRegister, ch transport.Channel) (any, error) {
 		log.Error("Not support channel type: %T", ch)
 		return nil, fmt.Errorf("not support channel type:%T", ch)
 	}
-	// Bind the channel ID to the request
-	//request.BindId = ch.GetId()
-	// Get the tunnel using the specified port
 	port := request.GetTunnelPort()
 	t := tunnel.GetTunnel(port)
 	if t == nil {
@@ -90,12 +87,13 @@ func doRegister(request exchange.TRegister, ch transport.Channel) (any, error) {
 	// Log debug information about the tunnel being registered
 	log.Debug("Registering tunnel:%v", t)
 	// Register the connection with the tunnel
-	t.RegisterConn(ch, request)
+	serverId, err := t.RegisterConn(ch, request)
 	// Return the processed request
-	return request, nil
+	request.SetServerId(serverId)
+	return request, err
 }
 
-func loginProcess(req exchange.LoginReq, ch transport.Channel) (any, error) {
+func loginProcess(req *exchange.LoginReq, ch transport.Channel) (any, error) {
 	token := defin.GetToken()
 	if token != req.Token {
 		log.Warn("token not match,1:%v,2:%v", token, req.Token)
@@ -108,7 +106,7 @@ func loginProcess(req exchange.LoginReq, ch transport.Channel) (any, error) {
 	}, nil
 }
 
-func openTunnelProcess(req exchange.OpenTunnelReq, ch transport.Channel) (any, error) {
+func openTunnelProcess(req *exchange.OpenTunnelReq, ch transport.Channel) (any, error) {
 	cfg, err := OpenTunnelServer(req, ch)
 	if err != nil {
 		return nil, err
@@ -120,15 +118,11 @@ func openTunnelProcess(req exchange.OpenTunnelReq, ch transport.Channel) (any, e
 	}, nil
 }
 
-func clientWorkConnProcess(request exchange.ClientWorkConnReq, ch transport.Channel) (any, error) {
+func clientWorkConnProcess(request *exchange.ClientWorkConnReq, ch transport.Channel) (any, error) {
 	switch sch := ch.(type) {
 	case *transport.SChannel:
 		// If it's a secure channel, mark it as a tunnel and add the proxy ID attribute
 		sch.IsOpenTunnel = true
-	default:
-		// Log error and return error for unsupported channel types
-		log.Error("Not support channel type: %T", ch)
-		return nil, fmt.Errorf("not support channel type:%T", ch)
 	}
 	port := request.TunnelPort
 	t := tunnel.GetTunnel(port)
@@ -137,5 +131,5 @@ func clientWorkConnProcess(request exchange.ClientWorkConnReq, ch transport.Chan
 		log.Error("Not found tunnel: %d", port)
 		return nil, fmt.Errorf("not found tunnel:%d", port)
 	}
-	return request, t.OpenWorker(ch, &request)
+	return request, t.OpenWorker(ch, request)
 }

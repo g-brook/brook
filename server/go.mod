@@ -9,7 +9,7 @@ require (
 	github.com/panjf2000/gnet/v2 v2.9.7
 	github.com/spf13/cobra v1.10.2
 	github.com/xtaci/smux v1.5.50
-	modernc.org/sqlite v1.43.0
+	modernc.org/sqlite v1.44.2
 )
 
 require (
@@ -46,7 +46,7 @@ require (
 	golang.org/x/net v0.48.0
 	golang.org/x/sys v0.40.0 // indirect
 	google.golang.org/protobuf v1.36.11 // indirect
-	modernc.org/libc v1.67.4 // indirect
+	modernc.org/libc v1.67.6 // indirect
 	modernc.org/mathutil v1.7.1 // indirect
 	modernc.org/memory v1.11.0 // indirect
 )

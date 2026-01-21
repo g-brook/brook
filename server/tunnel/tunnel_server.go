@@ -71,7 +71,7 @@ type TunnelServer interface {
 	//  @param v2 connection.
 	//  @param request request.
 	//
-	RegisterConn(ch transport.Channel, request exchange.TRegister)
+	RegisterConn(ch transport.Channel, request exchange.TRegister) (string, error)
 
 	OpenWorker(ch transport.Channel, request *exchange.ClientWorkConnReq) error
 

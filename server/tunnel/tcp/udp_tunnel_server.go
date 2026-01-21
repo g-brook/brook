@@ -17,6 +17,7 @@
 package tcp
 
 import (
+	"errors"
 	"sync"
 
 	"github.com/brook/common/exchange"
@@ -42,19 +43,30 @@ func NewUdpTunnelServer(server *tunnel.BaseTunnelServer) *TunnelUdpServer {
 	return tunnelServer
 }
 
-func (htl *TunnelUdpServer) RegisterConn(ch trp.Channel, request exchange.TRegister) {
+func (htl *TunnelUdpServer) RegisterConn(ch trp.Channel, request exchange.TRegister) (serverId string, err error) {
 	if request.GetProxyId() == "" {
 		log.Warn("Register udp tunnel, but It' proxyId is nil")
-		return
+		return "", errors.New("it' proxyId is nil")
 	}
-	switch sch := ch.(type) {
-	case *trp.SChannel:
+	if _, ok := ch.(*trp.SChannel); ok {
 		htl.registerLock.Lock()
 		defer htl.registerLock.Unlock()
-		htl.BaseTunnelServer.RegisterConn(ch, request)
-		_ = htl.resources.put(NewUdpChannel(sch))
+		serverId, err = htl.BaseTunnelServer.RegisterConn(ch, request)
 		log.Info("Register udp tunnel, proxyId: %s", request.GetProxyId())
+		return
 	}
+	return "", errors.New("unknown channel type")
+}
+
+func (htl *TunnelUdpServer) OpenWorker(ch trp.Channel, request *exchange.ClientWorkConnReq) error {
+	id := request.ServerId
+	ch, b := htl.TunnelChannel.Load(id)
+	if b && !ch.IsClose() {
+		_ = htl.resources.put(ch)
+		log.Info("dup add user connection, proxyId: %s", request.ProxyId)
+		return nil
+	}
+	return errors.New("channel is nil or closed")
 }
 
 func (htl *TunnelUdpServer) Reader(ch trp.Channel, tb srv.TraverseBy) {

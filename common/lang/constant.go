@@ -22,7 +22,7 @@ import (
 
 var Placeholder PlaceholderType
 
-var DefaultPingTime time.Duration = 3000
+var DefaultPingTime time.Duration = 10000
 
 type KeyType string
 

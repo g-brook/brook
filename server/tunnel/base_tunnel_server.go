@@ -173,7 +173,7 @@ func (b *BaseTunnelServer) Runtime() time.Time {
 
 // RegisterConn  register the tunnel server connection
 func (b *BaseTunnelServer) RegisterConn(ch transport.Channel,
-	_ exchange.TRegister) {
+	_ exchange.TRegister) (string, error) {
 	oldCh, ok := b.TunnelChannel.Load(ch.GetId())
 	if !ok || oldCh != ch {
 		b.TunnelChannel.Store(ch.GetId(), ch)
@@ -183,6 +183,7 @@ func (b *BaseTunnelServer) RegisterConn(ch transport.Channel,
 		}
 		ch.OnClose(b.unRegister)
 	}
+	return ch.GetId(), nil
 }
 
 func (b *BaseTunnelServer) unRegister(ch transport.Channel) {
@@ -200,7 +201,7 @@ func (b *BaseTunnelServer) UpdateConfig(config *configs.ServerTunnelConfig) {
 	}
 }
 
-func (b *BaseTunnelServer) OpenWorker(ch transport.Channel, request *exchange.ClientWorkConnReq) error {
+func (b *BaseTunnelServer) OpenWorker(transport.Channel, *exchange.ClientWorkConnReq) error {
 	// Open a new goroutine to handle the channel
 	return nil
 }

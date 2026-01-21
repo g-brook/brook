@@ -17,6 +17,7 @@
 package tcp
 
 import (
+	"errors"
 	"sync"
 
 	"github.com/brook/common/exchange"
@@ -45,17 +46,28 @@ func NewTcpTunnelServer(server *tunnel.BaseTunnelServer) *TunnelTcpServer {
 	return tunnelServer
 }
 
-func (htl *TunnelTcpServer) RegisterConn(ch trp.Channel, request exchange.TRegister) {
+func (htl *TunnelTcpServer) RegisterConn(ch trp.Channel, request exchange.TRegister) (serverId string, err error) {
 	if request.GetProxyId() == "" {
 		log.Warn("Register tcp tunnel, but It' proxyId is nil")
-		return
+		return "", errors.New("it' proxyId is nil")
 	}
 	htl.registerLock.Lock()
 	defer htl.registerLock.Unlock()
-	htl.BaseTunnelServer.RegisterConn(ch, request)
-	_ = htl.resources.put(ch)
+	serverId, err = htl.BaseTunnelServer.RegisterConn(ch, request)
 	log.Info("Register tcp tunnel, proxyId: %s", request.GetProxyId())
+	return
+}
 
+func (htl *TunnelTcpServer) OpenWorker(ch trp.Channel, request *exchange.ClientWorkConnReq) error {
+	// Open a new goroutine to handle the channel
+	id := request.ServerId
+	ch, b := htl.TunnelChannel.Load(id)
+	if b && !ch.IsClose() {
+		_ = htl.resources.put(ch)
+		log.Info("add user connection, proxyId: %s", request.ProxyId)
+		return nil
+	}
+	return errors.New("channel is nil or closed")
 }
 
 func (htl *TunnelTcpServer) Reader(ch trp.Channel, _ srv.TraverseBy) {
@@ -75,8 +87,8 @@ func (htl *TunnelTcpServer) Reader(ch trp.Channel, _ srv.TraverseBy) {
 }
 
 func (htl *TunnelTcpServer) Open(ch trp.Channel, _ srv.TraverseBy) {
-	userConn, _ := htl.resources.get()
-	if userConn == nil {
+	userConn, err := htl.resources.get()
+	if userConn == nil || err != nil {
 		_ = ch.Close()
 		return
 	}

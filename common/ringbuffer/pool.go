@@ -57,7 +57,11 @@ func Get() *RingBuffer { return defaultPool.Get() }
 func (p *Pool) Get() *RingBuffer {
 	v := p.pool.Get()
 	if v != nil {
-		return v.(*RingBuffer)
+		buffer := v.(*RingBuffer)
+		if !buffer.IsEmpty() {
+			buffer.Reset()
+		}
+		return buffer
 	}
 	return NewRingBuffer(int(atomic.LoadUint64(&p.defaultSize)))
 }
@@ -66,7 +70,9 @@ func (p *Pool) Get() *RingBuffer {
 //
 // ByteBuffer.B mustn't be touched after returning it to the pool.
 // Otherwise data races will occur.
-func Put(b *RingBuffer) { defaultPool.Put(b) }
+func Put(b *RingBuffer) {
+	defaultPool.Put(b)
+}
 
 // Put releases byte buffer obtained via Get to the pool.
 //

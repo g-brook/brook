@@ -22,6 +22,7 @@ import (
 	"io"
 
 	"github.com/brook/common/log"
+	"github.com/panjf2000/gnet/v2"
 )
 
 const totalPacketSize = 4
@@ -35,6 +36,8 @@ const reqIdSize = 8
 const rspCode = 2
 
 const headerSize = totalPacketSize + cmdSize + ptypeSize + reqIdSize + rspCode
+
+var ErrNeedMoreData = errors.New("need more data")
 
 // Encoder
 //
@@ -55,14 +58,6 @@ func Encoder(data *Protocol) []byte {
 	binary.BigEndian.PutUint64(bytes[6:14], uint64(data.ReqId))
 	binary.BigEndian.PutUint16(bytes[14:16], uint16(data.RspCode))
 	copy(bytes[16:], data.Data)
-	//binary.BigEndian.PutUint32(bytes[4:4], uint32(totalLen))
-	//
-	//_ = binary.Write(b, binary.BigEndian, int32(totalLen))
-	//_ = binary.Write(b, binary.BigEndian, int8(data.Cmd))
-	//_ = binary.Write(b, binary.BigEndian, int8(data.PType))
-	//_ = binary.Write(b, binary.BigEndian, data.ReqId)
-	//_ = binary.Write(b, binary.BigEndian, data.RspCode)
-	//_ = binary.Write(b, binary.BigEndian, data.Data)
 	return bytes
 }
 
@@ -92,13 +87,6 @@ func GetBody(bodies []byte) (*Protocol, error) {
 	return &req, nil
 }
 
-// Decoder
-//
-//	@Description: decoder.
-//	@param bytes
-//	@param reader
-//	@return inter.Protocol
-//	@return error
 func Decoder(reader io.Reader) (*Protocol, error) {
 	lenByte := make([]byte, totalPacketSize)
 	if _, err := io.ReadFull(reader, lenByte); err != nil {
@@ -115,4 +103,25 @@ func Decoder(reader io.Reader) (*Protocol, error) {
 		return nil, err
 	}
 	return GetBody(data)
+}
+
+func Decoder2(rb gnet.Conn) (int, *Protocol, error) {
+	if rb.InboundBuffered() < totalPacketSize {
+		return 0, nil, ErrNeedMoreData
+	}
+	lenByte, _ := rb.Peek(totalPacketSize)
+	dataLen := GetByteLen(lenByte)
+	if dataLen <= 0 {
+		return 0, nil, errors.New("invalid packet size")
+	}
+	if dataLen < headerSize {
+		log.Error("packet size error")
+		return 0, nil, errors.New("invalid packet size")
+	}
+	if rb.InboundBuffered() < dataLen {
+		return 0, nil, ErrNeedMoreData
+	}
+	frame, _ := rb.Peek(dataLen)
+	body, err := GetBody(frame[totalPacketSize:])
+	return dataLen, body, err
 }

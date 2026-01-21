@@ -17,6 +17,8 @@
 package tcp
 
 import (
+	"errors"
+
 	"github.com/brook/common/configs"
 	"github.com/brook/common/exchange"
 	trp "github.com/brook/common/transport"
@@ -50,8 +52,9 @@ func (htl *Resources) createConnection() error {
 		}
 		request, _ := exchange.NewRequest(req)
 		_, _ = manager.Write(request.Bytes())
+		return nil
 	}
-	return nil
+	return errors.New("manager is nil, can't create connection")
 }
 
 func (htl *Resources) get() (trp.Channel, error) {

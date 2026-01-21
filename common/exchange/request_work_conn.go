@@ -28,6 +28,7 @@ type ClientWorkConnReq struct {
 	ProxyId    string `json:"proxyId"`
 	HttpId     string `json:"httpId"`
 	TunnelPort int    `json:"tunnelPort"`
+	ServerId   string `json:"serverId"`
 }
 
 func (r ClientWorkConnReq) Cmd() Cmd {

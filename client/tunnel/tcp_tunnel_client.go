@@ -18,7 +18,6 @@ package tunnel
 
 import (
 	"context"
-	"fmt"
 	"io"
 	"net"
 
@@ -28,6 +27,7 @@ import (
 	"github.com/brook/common/iox"
 	"github.com/brook/common/lang"
 	"github.com/brook/common/log"
+	"github.com/brook/common/threading"
 	"github.com/brook/common/transport"
 )
 
@@ -61,15 +61,26 @@ func (t *TcpTunnelClient) initOpen(ch *transport.SChannel) error {
 		log.Info("Connection local address success then Client to server register success:%v", t.GetCfg().Destination)
 		if p.IsSuccess() {
 			addHealthyCheckStream(ch)
-			errors := iox.Pipe(ch, localConnection)
-			if len(errors) > 0 {
-				log.Error("Pipe error %v", errors)
+			var finnish = make(chan int)
+			threading.GoSafe(func() {
+				errors := iox.Pipe(ch, localConnection)
+				if len(errors) > 0 {
+					log.Error("Pipe error %v", errors)
+				}
+				finnish <- 0
+			})
+			rsp, _ := exchange.Parse[exchange.RegisterReqAndRsp](p.Data)
+			err = t.OpenWorkerToManager(rsp)
+			if err != nil {
+				log.Error("Open worker to manager error:%v", err)
+				return exchange.CloseError
 			}
+			<-finnish
+			log.Debug("Exit handler......%s", rsp.ProxyId)
 			return nil
-		} else {
-			log.Error("Connection local address success then Client to server register fail:%v", t.GetCfg().Destination)
-			return fmt.Errorf("register fail")
 		}
+		log.Error("Connection local address success then Client to server register fail:%v", p.RspMsg)
+		return exchange.CloseError
 	})
 	if err != nil {
 		if localConnection != nil {

@@ -161,7 +161,9 @@ func (c *SChannel) Write(p []byte) (n int, err error) {
 	case <-c.Stream.GetDieCh():
 		return 0, io.EOF
 	default:
-		n, err = c.Stream.Write(p)
+		if len(p) > 0 {
+			n, err = c.Stream.Write(p)
+		}
 	}
 	return
 }

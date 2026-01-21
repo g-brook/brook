@@ -17,8 +17,8 @@
 package sql
 
 import (
-	"io"
-	"os"
+	"embed"
+	"io/fs"
 	"strconv"
 
 	"github.com/brook/common/log"
@@ -33,8 +33,13 @@ type Info struct {
 
 const (
 	DBVersionKey = "db_version"
-	sqlFileDir   = "./sql_files"
+	sqlFileDir   = "sql_files"
 )
+
+//go:embed sql_files/*
+var sqlFiles embed.FS
+
+var staticFs, _ = fs.Sub(sqlFiles, sqlFileDir)
 
 func CheckInfoDB() error {
 	// 检查并创建表
@@ -136,27 +141,24 @@ func UpdateTableStruct() error {
 	}
 
 	readFile := func(sqlFile string) error {
-		file, err := os.Open(sqlFile)
-		defer file.Close()
+		sqlContent, err := fs.ReadFile(staticFs, sqlFile)
 		if err != nil {
-			if os.IsNotExist(err) {
-				return nil
-			}
-			log.Warn("error opening sql file", "file", sqlFile, "err", err)
+			log.Warn("error reading sql file %v:%v", sqlFile, err)
 			return err
 		}
-		sqlContent, err := io.ReadAll(file)
 		sqlText := string(sqlContent)
+		log.Info("executing sql file %v", sqlText)
 		if err := Exec(sqlText); err != nil {
 			log.Warn("error executing sql %v:%v,%v", sqlFile, sqlText, err)
-			// SQL is skipped if there is an error
-			return nil
+			return err
 		}
 		return nil
 	}
+	log.Info("current db version %v, target db version %v", currentVersion, targetVersion)
 	for v := currentVersion + 1; v <= targetVersion; v++ {
-		sqlFile := sqlFileDir + string(os.PathSeparator) + strconv.Itoa(v) + ".sql"
+		sqlFile := strconv.Itoa(v) + ".sql"
 		if err := readFile(sqlFile); err != nil {
+			log.Warn("error reading sql file %v:%v", sqlFile, err)
 			return err
 		}
 	}

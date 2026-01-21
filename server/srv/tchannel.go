@@ -101,6 +101,7 @@ func (s *TChannel) Copy(p []byte) (n int, err error) {
 
 func (s *TChannel) Close() error {
 	if s.writerBuffer != nil {
+		s.writerBuffer.Reset()
 		ringbuffer.Put(s.writerBuffer)
 	}
 	if s.comRw != nil {

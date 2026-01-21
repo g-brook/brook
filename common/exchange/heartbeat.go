@@ -29,6 +29,6 @@ type Heartbeat struct {
 //	@Description: getCmd.
 //	@receiver p
 //	@return Cmd
-func (p Heartbeat) Cmd() Cmd {
+func (p *Heartbeat) Cmd() Cmd {
 	return Heart
 }

@@ -32,10 +32,10 @@ interface WebLog {
   path: string;
   host: string;
   method: string;
-  status: int;
+  status: number;
   proxyId: string;
   httpId: string;
-  time: time.Time;
+  time: Date;
 }
 
 const props = defineProps({
