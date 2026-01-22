@@ -11,11 +11,12 @@ func _() {
 	_ = x[NotAction-0]
 	_ = x[Closed-1]
 	_ = x[Active-2]
+	_ = x[OpenSession-3]
 }
 
-const _ClientState_name = "NotActionClosedActive"
+const _ClientState_name = "NotActionClosedActiveOpenSession"
 
-var _ClientState_index = [...]uint8{0, 9, 15, 21}
+var _ClientState_index = [...]uint8{0, 9, 15, 21, 32}
 
 func (i ClientState) String() string {
 	if i < 0 || i >= ClientState(len(_ClientState_index)-1) {

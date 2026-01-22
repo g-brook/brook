@@ -332,6 +332,7 @@ func (b *BaseTunnelClient) AsyncRegister(req exchange.InBound, readCallBack exch
 	if req == nil {
 		req = b.GetRegisterReq()
 	}
+	log.Debug("register %v", req)
 	b.TcControl.Bucket.AddHandler(req.Cmd(), readCallBack)
 	return b.TcControl.Bucket.PushWitchRequest(req)
 }

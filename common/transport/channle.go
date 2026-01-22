@@ -86,4 +86,6 @@ type Channel interface {
 	OnClose(event CloseEvent)
 
 	LastTime() time.Time
+
+	ActiveTime() time.Time
 }

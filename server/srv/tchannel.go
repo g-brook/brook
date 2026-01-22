@@ -18,16 +18,15 @@ package srv
 
 import (
 	"context"
-	"fmt"
 	"io"
 	"net"
+	"sync"
 	"time"
 
 	"github.com/brook/common/iox"
 	"github.com/brook/common/log"
 	"github.com/brook/common/ringbuffer"
 	"github.com/brook/common/threading"
-	"github.com/panjf2000/gnet/v2"
 )
 
 type TChannel struct {
@@ -37,18 +36,17 @@ type TChannel struct {
 	writerBuffer *ringbuffer.RingBuffer
 	comRw        io.ReadWriteCloser
 	wSign        chan int
-	loop         gnet.EventLoop
 	ctx          context.Context
+	once         sync.Once
 }
 
-func NewSmuxAdapterConn(rawConn *GChannel, ctx context.Context, loop gnet.EventLoop) *TChannel {
+func NewSmuxAdapterConn(rawConn *GChannel, ctx context.Context) *TChannel {
 	reader, writer := io.Pipe()
 	rw := iox.NewCompressionRw(reader, rawConn)
 	return &TChannel{
 		rawConn:    rawConn,
 		pipeWriter: writer,
 		comRw:      rw,
-		loop:       loop,
 		ctx:        ctx,
 	}
 }
@@ -64,12 +62,30 @@ func (c *TChannel) WriteWR(out []byte) (int, error) {
 	if err != nil {
 		return 0, err
 	}
-	c.wSign <- n
+	c.wSign <- 1
 	return n, nil
 }
 
 func (c *TChannel) writeWRLoop() {
-	_ = c.loop.Execute(c.ctx, c)
+	threading.GoSafe(func() {
+		for {
+			select {
+			case _ = <-c.wSign:
+				bytes := make([]byte, c.writerBuffer.Buffered())
+				_, err := c.writerBuffer.Read(bytes)
+				if err != nil {
+					log.Error("write error: %v", err)
+				}
+				_, err = c.comRw.Write(bytes)
+				if err != nil {
+					log.Error("write error: %v", err)
+				}
+			case <-c.ctx.Done():
+				_ = c.Close()
+				return
+			}
+		}
+	})
 }
 
 func (c *TChannel) Read(p []byte) (int, error) {
@@ -84,43 +100,22 @@ func (c *TChannel) Write(p []byte) (int, error) {
 	return c.WriteWR(p)
 }
 
-func (c *TChannel) Run(ctx context.Context) error {
-	threading.GoSafe(func() {
-		for {
-			select {
-			case l := <-c.wSign:
-				fmt.Println(l)
-				bytes := make([]byte, c.writerBuffer.Buffered())
-				_, err := c.writerBuffer.Read(bytes)
-				if err != nil {
-					log.Error("write error: %v", err)
-				}
-				_, err = c.comRw.Write(bytes)
-				if err != nil {
-					log.Error("write error: %v", err)
-				}
-			case <-c.rawConn.Done():
-				_ = c.Close()
-				return
-			}
-		}
-	})
-	return nil
-}
-
 func (c *TChannel) Copy(p []byte) (n int, err error) {
 	return c.pipeWriter.Write(p)
 }
 
 func (c *TChannel) Close() error {
-	if c.writerBuffer != nil {
-		c.writerBuffer.Reset()
-		ringbuffer.Put(c.writerBuffer)
-	}
-	if c.comRw != nil {
-		_ = c.comRw.Close()
-	}
-	return c.rawConn.Close()
+	c.once.Do(func() {
+		if c.writerBuffer != nil {
+			c.writerBuffer.Reset()
+			ringbuffer.Put(c.writerBuffer)
+		}
+		if c.comRw != nil {
+			_ = c.comRw.Close()
+		}
+		_ = c.rawConn.Close()
+	})
+	return nil
 }
 
 func (c *TChannel) LocalAddr() net.Addr                { return c.rawConn.LocalAddr() }

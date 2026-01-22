@@ -24,9 +24,9 @@ import (
 )
 
 type ConnContext struct {
-	IsClosed   bool
 	Id         string
 	lastActive time.Time
+	active     time.Time
 	IsTimeOut  bool
 	attr       map[lang.KeyType]interface{}
 	isSmux     bool
@@ -40,9 +40,9 @@ func NewConnContext(isUdp bool, addr string) *ConnContext {
 		id = uuid.New().String()
 	}
 	return &ConnContext{
-		IsClosed:   false,
 		Id:         id,
 		lastActive: time.Now(),
+		active:     time.Now(),
 		IsTimeOut:  false,
 		attr:       make(map[lang.KeyType]interface{}),
 		isSmux:     false,

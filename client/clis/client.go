@@ -43,6 +43,8 @@ const (
 	Closed ClientState = 1
 
 	Active ClientState = 2
+
+	OpenSession ClientState = 3
 )
 
 type ClientControl struct {
@@ -163,7 +165,7 @@ func NewClient(host string, port int) *Client {
 		id:    atomic.AddInt32(&cid, 1),
 		state: NotAction,
 		cct: &ClientControl{
-			state:   make(chan ClientState),
+			state:   make(chan ClientState, 10),
 			read:    make(chan *exchange.Protocol, 1024),
 			errors:  make(chan error),
 			timeout: make(chan bool),
@@ -257,7 +259,7 @@ func (c *Client) doConnection() error {
 
 	// If smux is not enabled, log success and return
 	if !c.isSmux() {
-		log.Info("👍---->Connection %s success OK.✅--->", c.getAddress())
+		log.Info("👍---->Connection %s success OK.✅--->:%s", c.getAddress())
 		return nil
 	}
 	// Function to open smux session over the established connection
@@ -265,14 +267,14 @@ func (c *Client) doConnection() error {
 		// Get default smux configuration
 		config := smux.DefaultConfig()
 		// Wrap connection with compression
-		//conn := NewCompressConn(c.GetConn())
+		conn := NewCompressConn(c.GetConn())
 		// Create smux client session
-		if session, err := smux.Client(c.GetConn(), config); err != nil {
+		if session, err := smux.Client(conn, config); err != nil {
 			// Return error if smux client creation fails
 			return nil, c.error("New smux Client error", err)
 		} else {
 			// Log successful session creation
-			log.Info("👍---->Open session[tunnel] %s success OK.✅--->", c.getAddress())
+			log.Info("👍---->Open session[tunnel] %s success OK.✅--->:%s", c.getAddress())
 			return session, nil
 		}
 	}
@@ -285,11 +287,12 @@ func (c *Client) doConnection() error {
 		c.cct.Close()
 		return err
 	}
-
 	// Store the smux session
 	c.session = session
-	// Start session monitoring in a separate goroutine
-	threading.GoSafe(c.sessionLoop)
+	c.cct.state <- OpenSession
+	threading.GoSafe(func() {
+		c.sessionLoop()
+	})
 	return nil
 }
 
@@ -338,12 +341,11 @@ func (c *Client) readLoop() {
 				_ = c.error("Close connection:"+c.getAddress(), err)
 				c.cct.state <- Closed
 				return err
-			} else {
-				var opErr *net.OpError
-				if errors.As(err, &opErr) && opErr.Timeout() {
-					c.setTimeout(c.conn)
-					c.cct.timeout <- true
-				}
+			}
+			var opErr *net.OpError
+			if errors.As(err, &opErr) && opErr.Timeout() {
+				c.setTimeout(c.conn)
+				c.cct.timeout <- true
 			}
 			return nil
 		}
@@ -380,7 +382,7 @@ func (c *Client) isSmux() bool {
 //   - bool: Returns true if connection exists and is in Active state, false otherwise
 func (c *Client) IsConnection() bool {
 	// Check if connection object is not nil and state is Active
-	return c.conn != nil && c.state == Active
+	return c.conn != nil && (c.state == Active || c.state == OpenSession)
 }
 
 // handleLoop manages the client's connection lifecycle and event handling
@@ -400,7 +402,6 @@ func (c *Client) handleLoop() {
 		}
 		return nil
 	}
-	// Main event loop handling various client events
 	for {
 		select {
 		// Handle state changes
@@ -449,7 +450,6 @@ func (c *Client) handleLoop() {
 		}
 	}
 }
-
 func (c *Client) revReadNext() {
 	select {
 	case c.cct.revRead <- struct{}{}:

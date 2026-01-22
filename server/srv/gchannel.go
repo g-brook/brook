@@ -79,39 +79,23 @@ func (c *GChannel) GetConn() net.Conn {
 	return c.conn
 }
 
-// GetReader
-//
-//	@Description: Get from gnet.conn.
-//	@receiver receiver
-//	@return iox.Reader
 func (c *GChannel) GetReader() io.Reader {
 	return c.conn
 }
 
-// GetWriter
-//
-//	@Description:
-//	@receiver receiver
-//	@return iox.Writer
 func (c *GChannel) GetWriter() io.Writer {
 	return c.conn
 }
 
-// GetContext
-//
-// This function returns the context of the GChannel
 func (c *GChannel) GetContext() *ConnContext {
 	// Return the context of the GChannel
 	return c.Context
 }
 
-// OnClose CloseEvent This function takes a pointer to a GChannel
-// and a function as parameters. The function does not return anything.
 func (c *GChannel) OnClose(event transport.CloseEvent) {
 	c.closeEvents = append(c.closeEvents, event)
 }
 
-// Reader
 func (c *GChannel) Read(out []byte) (int, error) {
 	if c.IsClose() {
 		return 0, io.EOF
@@ -132,12 +116,6 @@ func (c *GChannel) ReadFull(out []byte) (int, error) {
 	return io.ReadFull(c.GetReader(), out)
 }
 
-// Writer
-//
-//	@Description:
-//	@receiver receiver
-//	@param out
-//	@return error
 func (c *GChannel) Write(out []byte) (int, error) {
 	if c.IsClose() {
 		return 0, io.EOF
@@ -158,7 +136,6 @@ func (c *GChannel) Close() error {
 		if c.conn != nil {
 			_ = c.conn.Close()
 		}
-		c.Context.IsClosed = true
 		c.cancel()
 		for _, event := range c.closeEvents {
 			event(c)
@@ -169,9 +146,6 @@ func (c *GChannel) Close() error {
 }
 
 func (c *GChannel) IsClose() bool {
-	if c.Context.IsClosed {
-		return true
-	}
 	select {
 	case <-c.Done():
 		return true
@@ -193,7 +167,7 @@ func (c *GChannel) GetNetConn() net.Conn {
 }
 
 func (c *GChannel) isConnection() bool {
-	return !c.Context.IsClosed
+	return !c.IsClose()
 }
 
 func (c *GChannel) GetAttr(key lang.KeyType) (interface{}, bool) {
@@ -201,44 +175,27 @@ func (c *GChannel) GetAttr(key lang.KeyType) (interface{}, bool) {
 	return i, ok
 }
 
-// AddAttr
-//
-//	@Description: Add a attr info on conn.
-//	@receiver receiver
 func (receiver *ConnContext) AddAttr(key lang.KeyType, value interface{}) {
 	receiver.attr[key] = value
 }
 
-// GetAttr
-//
-//	@Description: Get conn attr value.
-//	@receiver receiver
-//	@param key
-//	@return interface{}
-//	@return bool
 func (receiver *ConnContext) GetAttr(key lang.KeyType) (interface{}, bool) {
 	i, ok := receiver.attr[key]
 	return i, ok
-}
-
-// LastActive
-//
-//	@Description:
-//	@receiver receiver
-func (receiver *ConnContext) LastActive() {
-	receiver.lastActive = time.Now()
-	//conn.context = receiver
 }
 
 func (c *GChannel) LastTime() time.Time {
 	return c.Context.lastActive
 }
 
-// GetLastActive
-//
-//	@Description:
-//	@receiver receiver
-//	@return time.Time
+func (c *GChannel) ActiveTime() time.Time {
+	return c.Context.active
+}
+
+func (receiver *ConnContext) LastActive() {
+	receiver.lastActive = time.Now()
+}
+
 func (receiver *ConnContext) GetLastActive() time.Time {
 	return receiver.lastActive
 }

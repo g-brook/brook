@@ -54,7 +54,20 @@ func (s *SyncSet[T]) Remove(v T) {
 }
 
 func (s *SyncSet[T]) Len() int {
+	s.lock.Lock()
+	defer s.lock.Unlock()
 	return len(s.data)
+}
+
+func (s *SyncSet[T]) ForEach(f func(v T) bool) {
+	s.lock.Lock()
+	defer s.lock.Unlock()
+	for k := range s.data {
+		b := f(k)
+		if !b {
+			break
+		}
+	}
 }
 
 func (s *SyncSet[T]) List() []T {

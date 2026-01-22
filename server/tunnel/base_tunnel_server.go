@@ -18,6 +18,7 @@ package tunnel
 
 import (
 	"context"
+	"sort"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -212,17 +213,31 @@ func (b *BaseTunnelServer) Done() <-chan struct{} {
 
 func (b *BaseTunnelServer) GetManager() transport.Channel {
 	if b.ManagerChannel.Len() == 0 {
+		log.Error("1:Tunnel Manager channel is empty. No available manager channel.")
 		return nil
 	}
-	i := b.ManagerChannel.Len()
-	v := index.Add(1) % uint64(i)
-	bt := 0
-br:
-	channel := b.ManagerChannel.List()[v]
-	if channel.IsClose() && bt < i {
-		b.ManagerChannel.Remove(channel)
-		bt++
-		goto br
+	activeChannels := make([]transport.Channel, 0)
+	b.ManagerChannel.ForEach(func(ch transport.Channel) bool {
+		if !ch.IsClose() {
+			activeChannels = append(activeChannels, ch)
+		} else {
+			b.ManagerChannel.Remove(ch)
+		}
+		return true
+	})
+
+	aLen := len(activeChannels)
+	if aLen == 0 {
+		log.Error("2:Tunnel Manager channel is empty. No available manager channel.")
+		return nil
 	}
-	return channel
+	if aLen == 1 {
+		return activeChannels[0]
+	}
+	sort.Slice(activeChannels, func(i, j int) bool {
+		return activeChannels[i].ActiveTime().Before(activeChannels[j].ActiveTime())
+	})
+
+	v := index.Add(1) % uint64(len(activeChannels))
+	return activeChannels[v]
 }

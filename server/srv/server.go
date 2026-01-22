@@ -205,16 +205,17 @@ func (sever *Server) OnBoot(engine gnet.Engine) (action gnet.Action) {
 
 func (sever *Server) OnClose(c gnet.Conn, _ error) gnet.Action {
 	log.Debug("Close an Connection: %s", c.RemoteAddr().String())
-	conn2 := NewChannel(c, sever)
-	conn2.GetContext().IsClosed = true
-	defer sever.removeIfConnection(conn2)
+	conn := NewChannel(c, sever)
+	defer sever.removeIfConnection(conn)
+	_ = conn.Close()
 	sever.next(func(s ServerHandler, newCh trp.Channel) bool {
 		b := true
 		s.Close(newCh, func() {
 			b = false
 		})
 		return b
-	}, conn2)
+	}, conn)
+
 	return gnet.None
 }
 
@@ -223,15 +224,17 @@ func (sever *Server) OnOpen(c gnet.Conn) (out []byte, action gnet.Action) {
 	c.SetContext(NewConnContext(false, ""))
 	conn := NewChannel(c, sever)
 	defer sever.removeIfConnection(conn)
-	if sever.startSmux != nil {
+	if sever.startSmux != nil && sever.opts.withSmux.enable {
+		log.Debug("Start smux server.%s", c.RemoteAddr().String())
 		conn.Context.isSmux = true
-		conn.PipeConn = NewSmuxAdapterConn(conn, conn.bgCtx, c.EventLoop())
+		conn.PipeConn = NewSmuxAdapterConn(conn, conn.bgCtx)
 		conn.PipeConn.StartWR()
 		_ = sever.startSmux(
 			conn.PipeConn,
 			conn.bgCtx,
 			nil,
 		)
+		log.Debug("Start smux server end.%s", c.RemoteAddr().String())
 	} else {
 		sever.next(func(s ServerHandler, newCh trp.Channel) bool {
 			b := true
@@ -241,20 +244,29 @@ func (sever *Server) OnOpen(c gnet.Conn) (out []byte, action gnet.Action) {
 			return b
 		}, conn)
 	}
-	return
+	return nil, gnet.None
 }
 
 func (sever *Server) OnTraffic(c gnet.Conn) gnet.Action {
 	conn := NewChannel(c, sever)
+	if conn == nil {
+		log.Warn("connection is nil, can not open connection")
+		return gnet.Close
+	}
 	defer sever.removeIfConnection(conn)
 	conn.GetContext().LastActive()
-	if sever.startSmux != nil {
+	if conn.Context.isSmux {
+		log.Debug("OnTraffic smux connection: %s", c.RemoteAddr().String())
 		if conn.PipeConn == nil {
-			return gnet.None
+			log.Error("conn.PipeConn is nil")
+			return gnet.Close
 		}
-		buf, err := c.Next(-1)
+		buf, err := conn.Next(-1)
 		if err != nil {
 			log.Error("pipeConn.Copy error: %s", err)
+			if err == io.EOF {
+				return gnet.Close
+			}
 			return gnet.None
 		}
 		if len(buf) == 0 {
@@ -303,7 +315,7 @@ func (sever *Server) GetPort() int {
 }
 
 func (sever *Server) removeIfConnection(v2 *GChannel) {
-	if !v2.isConnection() {
+	if v2.IsClose() {
 		//This use v2.id removing map element.
 		// v2.id eq context.id, so yet use v2.id.
 		//Because v2.context possible is nil.

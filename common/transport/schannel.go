@@ -46,6 +46,7 @@ type SChannel struct {
 	attr         map[lang.KeyType]interface{}
 	closeEvents  []CloseEvent
 	lastTime     time.Time
+	active       time.Time
 	once         sync.Once
 }
 
@@ -65,6 +66,7 @@ func NewSChannel(
 		IsOpenTunnel: isOpenTunnel,
 		closeEvents:  make([]CloseEvent, 0),
 		lastTime:     time.Now(),
+		active:       time.Now(),
 		buf:          bytes.Buffer{},
 	} // Initialize as pointer
 	return ch
@@ -87,6 +89,10 @@ func (c *SChannel) Close() error {
 		clear(c.closeEvents)
 	})
 	return nil
+}
+
+func (c *SChannel) ActiveTime() time.Time {
+	return c.active
 }
 
 // SetDeadline sets the deadline for both read and write operations
