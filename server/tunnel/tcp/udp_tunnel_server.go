@@ -62,7 +62,7 @@ func (htl *TunnelUdpServer) OpenWorker(ch trp.Channel, request *exchange.ClientW
 	id := request.ServerId
 	ch, b := htl.TunnelChannel.Load(id)
 	if b && !ch.IsClose() {
-		_ = htl.resources.put(ch)
+		_ = htl.resources.put(NewUdpChannel(ch.(*trp.SChannel)))
 		log.Info("dup add user connection, proxyId: %s", request.ProxyId)
 		return nil
 	}
