@@ -25,7 +25,7 @@ import (
 
 type ServerOption func(opts *sOptions)
 
-type NewChannelFunction func(ch *GChannel) transport.Channel
+type NewChannelFunction func(ch transport.Channel) transport.Channel
 
 // Options
 // @Description: 设置的设数.

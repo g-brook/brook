@@ -133,10 +133,12 @@ func NewBaseTunnelServer(cfg *configs.ServerTunnelConfig) *BaseTunnelServer {
 		closeCtx:       context.Background(),
 	}
 }
-func (b *BaseTunnelServer) Boot(_ *srv.Server, _ srv.TraverseBy) {
+
+func (b *BaseTunnelServer) Boot(_ srv.BootServer, _ srv.TraverseBy) error {
 	b.openChOnce.Do(func() {
 		close(b.openCh)
 	})
+	return nil
 }
 
 // Start  the tunnel server
@@ -144,7 +146,7 @@ func (b *BaseTunnelServer) Start(network lang.Network) error {
 	threading.GoSafe(func() {
 		b.Server = srv.NewServer(b.port)
 		b.Server.AddHandler(b)
-		err := b.Server.Start(srv.WithNetwork(network), srv.WithNewChannelFunc(func(ch *srv.GChannel) transport.Channel {
+		err := b.Server.Start(srv.WithNetwork(network), srv.WithNewChannelFunc(func(ch transport.Channel) transport.Channel {
 			return metrics.NewMetricsChannel(ch, b.trafficMetrics)
 		}))
 		if err != nil {

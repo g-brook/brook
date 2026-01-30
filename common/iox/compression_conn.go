@@ -14,23 +14,21 @@
  * limitations under the License.
  */
 
-package clis
+package iox
 
 import (
 	"net"
-
-	"github.com/brook/common/iox"
 )
 
 type CompressConn struct {
 	net.Conn
-	rw *iox.CompressionRw
+	rw *CompressionRw
 }
 
 func NewCompressConn(conn net.Conn) *CompressConn {
 	return &CompressConn{
 		Conn: conn,
-		rw:   iox.NewCompressionRw(conn, conn),
+		rw:   NewCompressionRw(conn, conn),
 	}
 }
 

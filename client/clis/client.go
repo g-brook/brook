@@ -27,6 +27,7 @@ import (
 
 	"github.com/brook/common/configs"
 	"github.com/brook/common/exchange"
+	"github.com/brook/common/iox"
 	"github.com/brook/common/log"
 	"github.com/brook/common/threading"
 	"github.com/xtaci/smux"
@@ -267,7 +268,7 @@ func (c *Client) doConnection() error {
 		// Get default smux configuration
 		config := smux.DefaultConfig()
 		// Wrap connection with compression
-		conn := NewCompressConn(c.GetConn())
+		conn := iox.NewCompressConn(c.GetConn())
 		// Create smux client session
 		if session, err := smux.Client(conn, config); err != nil {
 			// Return error if smux client creation fails

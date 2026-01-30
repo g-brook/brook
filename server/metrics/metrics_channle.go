@@ -17,6 +17,7 @@
 package metrics
 
 import (
+	"github.com/brook/common/transport"
 	"github.com/brook/server/srv"
 )
 
@@ -25,19 +26,11 @@ type Channel struct {
 	traffic *TunnelTraffic
 }
 
-func NewMetricsChannel(src *srv.GChannel, traffic *TunnelTraffic) *Channel {
+func NewMetricsChannel(src transport.Channel, traffic *TunnelTraffic) *Channel {
 	return &Channel{
-		GChannel: src,
+		GChannel: src.(*srv.GChannel),
 		traffic:  traffic,
 	}
-}
-
-func (c *Channel) Next(pos int) ([]byte, error) {
-	next, err := c.GChannel.Next(pos)
-	if c.traffic != nil && err == nil {
-		c.traffic.AddInBytes(len(next))
-	}
-	return next, err
 }
 
 func (c *Channel) Write(p []byte) (n int, err error) {

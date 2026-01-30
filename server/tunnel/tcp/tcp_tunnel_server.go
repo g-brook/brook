@@ -70,7 +70,7 @@ func (htl *TunnelTcpServer) OpenWorker(ch trp.Channel, request *exchange.ClientW
 	return errors.New("channel is nil or closed")
 }
 
-func (htl *TunnelTcpServer) Reader(ch trp.Channel, _ srv.TraverseBy) {
+func (htl *TunnelTcpServer) Reader(ch trp.Channel, _ srv.TraverseBy) error {
 	switch workConn := ch.(type) {
 	case srv.GContext:
 		chId, ok := workConn.GetContext().GetAttr(defin.ToSChannelId)
@@ -80,17 +80,19 @@ func (htl *TunnelTcpServer) Reader(ch trp.Channel, _ srv.TraverseBy) {
 				err := iox.Copy(ch, dest)
 				if err != nil {
 					log.Debug("iox.copy error %v", err)
+					return err
 				}
 			}
 		}
 	}
+	return nil
 }
 
-func (htl *TunnelTcpServer) Open(ch trp.Channel, _ srv.TraverseBy) {
+func (htl *TunnelTcpServer) Open(ch trp.Channel, _ srv.TraverseBy) error {
 	userConn, err := htl.resources.get()
 	if userConn == nil || err != nil {
 		_ = ch.Close()
-		return
+		return err
 	}
 	switch workConn := ch.(type) {
 	case srv.GContext:
@@ -100,6 +102,7 @@ func (htl *TunnelTcpServer) Open(ch trp.Channel, _ srv.TraverseBy) {
 			log.Debug("iox.SinglePipe error %v", err)
 		})
 	}
+	return err
 }
 
 func (htl *TunnelTcpServer) startAfter() error {

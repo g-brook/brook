@@ -19,7 +19,6 @@
 package transport
 
 import (
-	"bytes"
 	"context"
 	"io"
 	"net"
@@ -33,13 +32,12 @@ import (
 
 // SChannel struct holds the secure channel information
 // r and w are the reader and writer for the channel
-// Stream is the underlying smux stream
+// stream is the underlying smux stream
 // buf is a buffer for storing data temporarily
 // isBindTunnel indicates if the channel is bound to a tunnel
 type SChannel struct {
-	Stream       *smux.Stream
+	stream       *smux.Stream
 	IsOpenTunnel bool
-	buf          bytes.Buffer
 	id           string
 	ctx          context.Context
 	cancel       context.CancelFunc
@@ -58,7 +56,7 @@ func NewSChannel(
 	isOpenTunnel bool) *SChannel {
 	ctx, cancelFunc := context.WithCancel(parent)
 	ch := &SChannel{
-		Stream:       stream,
+		stream:       stream,
 		ctx:          ctx,
 		id:           uuid.NewString(),
 		cancel:       cancelFunc,
@@ -67,7 +65,6 @@ func NewSChannel(
 		closeEvents:  make([]CloseEvent, 0),
 		lastTime:     time.Now(),
 		active:       time.Now(),
-		buf:          bytes.Buffer{},
 	} // Initialize as pointer
 	return ch
 }
@@ -79,7 +76,7 @@ func (c *SChannel) SendTo([]byte, net.Addr) (int, error) {
 // Close closes the SChannel by closing the underlying stream
 func (c *SChannel) Close() error {
 	c.once.Do(func() {
-		_ = c.Stream.Close()
+		_ = c.stream.Close()
 		c.cancel()
 		for _, event := range c.closeEvents {
 			if event != nil {
@@ -97,32 +94,32 @@ func (c *SChannel) ActiveTime() time.Time {
 
 // SetDeadline sets the deadline for both read and write operations
 func (c *SChannel) SetDeadline(t time.Time) error {
-	return c.Stream.SetDeadline(t)
+	return c.stream.SetDeadline(t)
 }
 
 // SetReadDeadline sets the deadline for read operations
 func (c *SChannel) SetReadDeadline(t time.Time) error {
-	return c.Stream.SetReadDeadline(t)
+	return c.stream.SetReadDeadline(t)
 }
 
 // SetWriteDeadline sets the deadline for write operations
 func (c *SChannel) SetWriteDeadline(t time.Time) error {
-	return c.Stream.SetWriteDeadline(t)
+	return c.stream.SetWriteDeadline(t)
 }
 
 // GetConn returns the underlying connection
 func (c *SChannel) GetConn() net.Conn {
-	return c.Stream
+	return c.stream
 }
 
 // RemoteAddr returns the remote network address
 func (c *SChannel) RemoteAddr() net.Addr {
-	return c.Stream.RemoteAddr()
+	return c.stream.RemoteAddr()
 }
 
 // LocalAddr returns the local network address
 func (c *SChannel) LocalAddr() net.Addr {
-	return c.Stream.LocalAddr()
+	return c.stream.LocalAddr()
 }
 
 func (c *SChannel) AddAttr(key lang.KeyType, value interface{}) {
@@ -137,7 +134,7 @@ func (c *SChannel) IsClose() bool {
 	select {
 	case <-c.Done():
 		return true
-	case <-c.Stream.GetDieCh():
+	case <-c.stream.GetDieCh():
 		return true
 	default:
 		return false
@@ -155,11 +152,7 @@ func (c *SChannel) Read(p []byte) (n int, err error) {
 		return 0, io.EOF
 	}
 	c.lastTime = time.Now()
-	if c.IsOpenTunnel {
-		n, err = c.Stream.Read(p)
-	} else {
-		n, err = c.buf.Read(p)
-	}
+	n, err = c.stream.Read(p)
 	return
 }
 
@@ -168,19 +161,14 @@ func (c *SChannel) Write(p []byte) (n int, err error) {
 	select {
 	case <-c.Done():
 		return 0, io.EOF
-	case <-c.Stream.GetDieCh():
+	case <-c.stream.GetDieCh():
 		return 0, io.EOF
 	default:
 		if len(p) > 0 {
-			n, err = c.Stream.Write(p)
+			n, err = c.stream.Write(p)
 		}
 	}
 	return
-}
-
-// Copy copies data into the buffer
-func (c *SChannel) Copy(p []byte) (n int, err error) {
-	return c.buf.Write(p) // Using pointer access
 }
 
 // GetReader returns the reader for this channel

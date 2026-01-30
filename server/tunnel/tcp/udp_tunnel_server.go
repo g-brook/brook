@@ -69,20 +69,21 @@ func (htl *TunnelUdpServer) OpenWorker(ch trp.Channel, request *exchange.ClientW
 	return errors.New("channel is nil or closed")
 }
 
-func (htl *TunnelUdpServer) Reader(ch trp.Channel, tb srv.TraverseBy) {
+func (htl *TunnelUdpServer) Reader(ch trp.Channel, tb srv.TraverseBy) error {
 	switch workConn := ch.(type) {
 	case srv.GContext:
 		userConn, _ := htl.resources.get()
 		if userConn == nil {
 			_ = ch.Close()
-			return
+			return nil
 		}
 		data, _ := workConn.Next(-1)
 		userConn.(*UdpSChannel).AsyncWriter(data, ch)
 		_ = htl.resources.put(userConn)
-		return
+		return nil
 	}
 	tb()
+	return nil
 }
 
 func (htl *TunnelUdpServer) startAfter() error {

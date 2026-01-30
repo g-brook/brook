@@ -54,3 +54,20 @@ type GContext interface {
 
 	Next(pos int) ([]byte, error)
 }
+
+func (receiver *ConnContext) AddAttr(key lang.KeyType, value interface{}) {
+	receiver.attr[key] = value
+}
+
+func (receiver *ConnContext) GetAttr(key lang.KeyType) (interface{}, bool) {
+	i, ok := receiver.attr[key]
+	return i, ok
+}
+
+func (receiver *ConnContext) LastActive() {
+	receiver.lastActive = time.Now()
+}
+
+func (receiver *ConnContext) GetLastActive() time.Time {
+	return receiver.lastActive
+}

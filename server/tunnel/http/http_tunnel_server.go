@@ -58,7 +58,7 @@ type TunnelHttpServer struct {
 }
 
 // NewHttpTunnelServer  is a constructor function for HttpTunnelServer. It takes a pointer to BaseTunnelServer as input
-// and returns a pointer to HttpTunnelServer. The constructor sets the DoStart field of BaseTunnelServer to the startAfter
+// and returns a pointer to HttpTunnelServer. The constructor sets the NewDupServer field of BaseTunnelServer to the startAfter
 // method of HttpTunnelServer, which is used to perform cleanup or subsequent processing operations startAfter the server
 // processes the request. The constructor also returns a pointer to HttpTunnelServer.
 func NewHttpTunnelServer(server *tunnel.BaseTunnelServer) (*TunnelHttpServer, error) {
@@ -222,20 +222,20 @@ func (htl *TunnelHttpServer) getProxyConnection(httpId string) (workConn net.Con
 }
 
 // Reader    is a method of HttpTunnelServer, which is used to process incoming requests. It
-func (htl *TunnelHttpServer) Reader(ch Channel, tb srv.TraverseBy) {
+func (htl *TunnelHttpServer) Reader(ch Channel, tb srv.TraverseBy) error {
 	channel := ch.(srv.GContext)
 	bt, err := channel.Next(-1)
 	if err != nil {
-		return
+		return err
 	}
 	conn, ok := ch.GetAttr(defin.HttpChannel)
 	if ok {
 		conn.(*Conn).OnData(bt)
 	}
-	//skip next loop.
 	tb()
+	return nil
 }
-func (htl *TunnelHttpServer) Open(ch Channel, tb srv.TraverseBy) {
+func (htl *TunnelHttpServer) Open(ch Channel, tb srv.TraverseBy) error {
 	channel := ch.(srv.GContext)
 	httpConn := newHttpConn(ch, htl.isHttps)
 	channel.GetContext().AddAttr(defin.HttpChannel, httpConn)
@@ -274,12 +274,12 @@ func (htl *TunnelHttpServer) Open(ch Channel, tb srv.TraverseBy) {
 				err := rc.finish(nil, req)
 				if err != nil {
 					_ = rwConn.Close()
-					return
 				}
 			}
 		}
 	})
 	tb()
+	return nil
 }
 
 // After is a method of HttpTunnelServer, which is used to perform cleanup or subsequent processing operations startAfter

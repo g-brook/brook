@@ -43,7 +43,7 @@ type InServer struct {
 	server *srv.Server
 
 	//tunnelServer
-	tunnelServer *srv.Server
+	tunnelServer *srv.DupServer
 }
 
 func New() *InServer {
@@ -52,7 +52,7 @@ func New() *InServer {
 	}
 }
 
-func (t *InServer) Reader(ch transport.Channel, traverse srv.TraverseBy) {
+func (t *InServer) Reader(ch transport.Channel, traverse srv.TraverseBy) error {
 	reader := ch.GetReader()
 	if c, ok := reader.(gnet.Conn); ok {
 		for {
@@ -62,7 +62,7 @@ func (t *InServer) Reader(ch transport.Channel, traverse srv.TraverseBy) {
 			}
 			if err != nil {
 				log.Warn("Decode error: %v", err)
-				return
+				return err
 			}
 			_, _ = c.Discard(n)
 			inProcess(p, ch)
@@ -71,13 +71,14 @@ func (t *InServer) Reader(ch transport.Channel, traverse srv.TraverseBy) {
 		req, err := exchange.Decoder(c)
 		if err != nil {
 			log.Warn("Decode error: %v", err)
-			return
+			return err
 		}
 		inProcess(req, ch)
 	}
 	if traverse != nil {
 		traverse()
 	}
+	return nil
 }
 
 func (t *InServer) isTunnelConn(conn *srv.GChannel) bool {
@@ -108,12 +109,6 @@ func (t *InServer) Shutdown() {
 		// Shutdown the tunnel server
 		t.tunnelServer.Shutdown(context.Background())
 	}
-}
-
-// GetConnection This function returns a connection from the server given an id
-func (t *InServer) GetConnection(id string) (*srv.GChannel, bool) {
-	// Call the GetConnection function from the server with the given id
-	return t.server.GetConnection(id)
 }
 
 // This function handles the processing of a request from a client
@@ -177,10 +172,7 @@ func (t *InServer) Start(cf *configs.ServerConfig) *InServer {
 		cf.ServerPort = configs.DefServerPort
 	}
 	//Start local server.
-	threading.GoSafe(func() {
-		t.onStart(cf)
-	})
-	log.Info("Start the In-Server ,port is : %d ", cf.ServerPort)
+	t.onStart(cf)
 	return t
 }
 
@@ -212,10 +204,10 @@ func (t *InServer) onStartTunnelServer(cf *configs.ServerConfig) {
 		port = cf.ServerPort + 10
 		cf.TunnelPort = port
 	}
-	t.tunnelServer = srv.NewServer(port)
+	t.tunnelServer = srv.NewDupServer(port, srv.WithServerSmux(srv.DefaultServerSmux()))
 	t.tunnelServer.AddHandler(t)
 	defin.Set(defin.TunnelPortKey, port)
-	err := t.tunnelServer.Start(srv.WithServerSmux(srv.DefaultServerSmux()))
+	err := t.tunnelServer.Start()
 	if err != nil {
 		log.Error(err.Error())
 		os.Exit(1)
