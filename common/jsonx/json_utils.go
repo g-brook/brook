@@ -38,5 +38,6 @@ func ReaderJson(file string, out interface{}) error {
 		return err
 	}
 	// Unmarshal the JSON data into the provided interface and return the result
-	return json.Unmarshal(readFile, out)
+	err = json.Unmarshal(readFile, out)
+	return err
 }

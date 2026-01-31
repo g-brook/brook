@@ -26,6 +26,10 @@ func start(service string) {
 	log.Error("Not supported command:start")
 }
 
+func install(service string) {
+	log.Error("Not supported command:start")
+}
+
 func stop(service string) {
 	log.Error("Not supported command:stop")
 }
