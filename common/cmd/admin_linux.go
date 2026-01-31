@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"os/user"
 	"path/filepath"
 	"strings"
 
@@ -30,6 +31,13 @@ import (
 const (
 	servicePath = "/etc/systemd/system/"
 )
+
+func install(service string) {
+	execute(service, func(conn *dbus.Conn, serviceName string) error {
+		printSuccess(fmt.Sprintf("Service %s %s  successfully", serviceName, "install"))
+		return nil
+	})
+}
 
 // start starts the specified systemd service
 func start(service string) {
@@ -207,6 +215,8 @@ Wants=network-online.target
 
 [Service]
 Type=notify
+User=%s
+Group=%s
 ExecStart=%s
 
 Restart=on-failure
@@ -232,7 +242,8 @@ WantedBy=multi-user.target`
 	}
 
 	workDir := filepath.Dir(execPath)
-	fileContent = fmt.Sprintf(fileContent, execPath, workDir, workDir)
+	runUser, runGroup := realUser()
+	fileContent = fmt.Sprintf(fileContent, runUser, runGroup, execPath, workDir, workDir)
 
 	// Create service file with secure permissions
 	if err := os.WriteFile(serviceFilePath, []byte(fileContent), 0644); err != nil {
@@ -255,4 +266,17 @@ func printError(msg string) {
 
 func printSuccess(msg string) {
 	fmt.Println("\033[32m✓ SUCCESS:\033[0m " + msg)
+}
+
+func realUser() (userName, groupName string) {
+	sudoUser := os.Getenv("SUDO_USER")
+	if sudoUser != "" {
+		u, _ := user.Lookup(sudoUser)
+		g, _ := user.LookupGroupId(u.Gid)
+		return u.Username, g.Name
+	}
+
+	u, _ := user.Current()
+	g, _ := user.LookupGroupId(u.Gid)
+	return u.Username, g.Name
 }

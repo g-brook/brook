@@ -33,6 +33,12 @@ var (
 		Run:   cliStart,
 	}
 
+	installCmdCli = &cobra.Command{
+		Use:   "install",
+		Short: "Install Brook client to systemctl. Requires systemd installation and only supported on Linux",
+		Run:   cliInstall,
+	}
+
 	stopCmdCli = &cobra.Command{
 		Use:   "stop",
 		Short: "Stop Brook client. Requires systemd installation and only supported on Linux",
@@ -49,6 +55,12 @@ var (
 		Use:   "restart",
 		Short: "Restart Brook server. Requires systemd installation and only supported on Linux",
 		Run:   srvRestart,
+	}
+
+	installCmdSrv = &cobra.Command{
+		Use:   "install",
+		Short: "Install Brook server to systemctl. Requires systemd installation and only supported on Linux",
+		Run:   srvInstall,
 	}
 
 	stopCmdSrv = &cobra.Command{
@@ -82,6 +94,7 @@ func InitClientCmd(rootCmd *cobra.Command) {
 	rootCmd.AddCommand(stopCmdCli)
 	rootCmd.AddCommand(startCmdCli)
 	rootCmd.AddCommand(statusCmdCli)
+	rootCmd.AddCommand(installCmdCli)
 	rootCmd.AddCommand(version)
 }
 
@@ -92,5 +105,6 @@ func InitServerCmd(rootCmd *cobra.Command) {
 	rootCmd.AddCommand(stopCmdSrv)
 	rootCmd.AddCommand(startCmdSrv)
 	rootCmd.AddCommand(statusCmdSrv)
+	rootCmd.AddCommand(installCmdSrv)
 	rootCmd.AddCommand(version)
 }

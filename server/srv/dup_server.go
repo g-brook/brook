@@ -175,29 +175,26 @@ func (sever *DupServer) streamAssignment() {
 				return
 			}
 			for {
-			bg:
 				if session.IsClosed() {
 					return
 				}
 				log.Debug("Start server accept stream. %s:%s", conn.LocalAddr(), conn.RemoteAddr())
 				stream, err := session.AcceptStream()
 				if err != nil {
-					if err == io.EOF {
-						log.Error("session is close.PORT:%v, %v", conn.LocalAddr(), err.Error())
-						_ = conn.Close()
-						return
-					}
-					sever.OnError(nil, err)
-					//goto bg
+					log.Error("session is close.PORT:%v, %v", conn.LocalAddr(), err.Error())
+					_ = conn.Close()
 					return
 				}
 				log.Info("Start server success stream. %s:%s", conn.LocalAddr(), stream.RemoteAddr())
 				channel := trp.NewSChannel(stream, context.Background(), false)
 				err = sever.OnOpen(channel)
 				if err != nil {
+					if err == io.EOF {
+						sever.OnClose(channel)
+						return
+					}
 					log.Error("Tunnel Server next error. %v", err)
 					sever.OnError(channel, err)
-					goto bg
 				}
 				threading.GoSafe(func() {
 					sever.readLoopStream(channel)

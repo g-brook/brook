@@ -20,6 +20,10 @@ func Start(service string) {
 	start(service)
 }
 
+func Install(service string) {
+	install(service)
+}
+
 func Stop(service string) {
 	stop(service)
 }

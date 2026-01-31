@@ -23,6 +23,10 @@ import (
 	"github.com/spf13/cobra"
 )
 
+func cliInstall(cmd *cobra.Command, args []string) {
+	Install("brook-cli")
+}
+
 func cliStart(cmd *cobra.Command, args []string) {
 	Start("brook-cli")
 }
@@ -44,6 +48,9 @@ func srvStart(cmd *cobra.Command, args []string) {
 
 func srvRestart(cmd *cobra.Command, args []string) {
 	Restart("brook-sev")
+}
+func srvInstall(cmd *cobra.Command, args []string) {
+	Install("brook-sev")
 }
 
 func srvStop(cmd *cobra.Command, args []string) {
