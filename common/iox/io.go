@@ -76,34 +76,3 @@ func SinglePipe(src io.ReadWriteCloser, dst io.ReadWriteCloser) error {
 	})
 	return <-errCh
 }
-
-func Copy(src io.ReadWriteCloser, dst io.ReadWriteCloser) error {
-	written := int64(0)
-	return WithBuffer(func(buf []byte) (err error) {
-		for {
-			nr, er := src.Read(buf)
-			if nr > 0 {
-				bytes := buf[0:nr]
-				nw, ew := dst.Write(bytes)
-				if nw < 0 || nr < nw {
-					nw = 0
-				}
-				written += int64(nw)
-				if ew != nil {
-					err = ew
-					break
-				}
-				if nr != nw {
-					break
-				}
-			}
-			if er != nil && er != io.EOF {
-				if er == io.EOF {
-					err = er
-				}
-				break
-			}
-		}
-		return err
-	}, GetBytePool16k())
-}

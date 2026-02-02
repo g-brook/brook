@@ -77,11 +77,12 @@ func (htl *TunnelTcpServer) Reader(ch trp.Channel, _ srv.TraverseBy) error {
 		if ok && chId != "" {
 			dest, ok := htl.TunnelChannel.Load(chId.(string))
 			if ok {
-				err := iox.Copy(ch, dest)
+				srcBytes, err := workConn.Next(-1)
 				if err != nil {
 					log.Debug("iox.copy error %v", err)
 					return err
 				}
+				_, err = dest.Write(srcBytes)
 			}
 		}
 	}

@@ -89,7 +89,8 @@ func (b *managerTransport) GetTransport() *Transport {
 	return b.transport
 }
 
-// SyncWrite This function is a method of the managerTransport struct and is used to synchronously write a message to the transport with a specified timeout.
+// SyncWrite This function is a method of the managerTransport struct and is used
+// to synchronously write a message to the transport with a specified timeout.
 func (b *managerTransport) SyncWrite(message exchange.InBound, timeout time.Duration) (*exchange.Protocol, error) {
 	// Call the SyncWrite method of the transport struct and pass in the message and timeout
 	return b.transport.SyncWrite(

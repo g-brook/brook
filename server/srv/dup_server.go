@@ -66,7 +66,6 @@ func (sever *DupServer) Start() error {
 		return err
 	}
 	log.Info("Server Listen %s success", addr)
-	sever.port = listener.Addr().(*net.TCPAddr).Port
 	sever.ln = listener
 	for {
 		conn, err := sever.ln.Accept()
@@ -174,18 +173,18 @@ func (sever *DupServer) streamAssignment() {
 				_ = conn.Close()
 				return
 			}
+			log.Debug("Start server accept stream. %s:%s", conn.LocalAddr(), conn.RemoteAddr())
 			for {
 				if session.IsClosed() {
 					return
 				}
-				log.Debug("Start server accept stream. %s:%s", conn.LocalAddr(), conn.RemoteAddr())
 				stream, err := session.AcceptStream()
 				if err != nil {
 					log.Error("session is close.PORT:%v, %v", conn.LocalAddr(), err.Error())
 					_ = conn.Close()
 					return
 				}
-				log.Info("Start server success stream. %s:%s", conn.LocalAddr(), stream.RemoteAddr())
+				log.Info("accept success stream. %s:%s", conn.LocalAddr(), stream.RemoteAddr())
 				channel := trp.NewSChannel(stream, context.Background(), false)
 				err = sever.OnOpen(channel)
 				if err != nil {
