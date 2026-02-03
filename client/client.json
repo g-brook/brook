@@ -9,6 +9,16 @@
       "type": "tcp",
       "destination": "127.0.0.1:3306",
       "proxyId": "local_mysql"
+    },
+    {
+      "type": "tcp",
+      "destination": "127.0.0.1:15432",
+      "proxyId": "postgres"
+    },
+    {
+      "type": "tcp",
+      "destination": "127.0.0.1:16379",
+      "proxyId": "redis"
     }
   ]
 }
