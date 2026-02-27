@@ -19,9 +19,9 @@ package remote
 import (
 	"fmt"
 
-	"github.com/brook/common/exchange"
-	"github.com/brook/common/log"
-	"github.com/brook/common/transport"
+	"github.com/g-brook/brook/common/exchange"
+	"github.com/g-brook/brook/common/log"
+	"github.com/g-brook/brook/common/transport"
 )
 
 var Inserver *InServer

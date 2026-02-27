@@ -22,13 +22,13 @@ import (
 	"errors"
 	"os"
 
-	"github.com/brook/common/configs"
-	"github.com/brook/common/exchange"
-	"github.com/brook/common/log"
-	"github.com/brook/common/threading"
-	"github.com/brook/common/transport"
-	"github.com/brook/server/defin"
-	"github.com/brook/server/srv"
+	"github.com/g-brook/brook/common/configs"
+	"github.com/g-brook/brook/common/exchange"
+	"github.com/g-brook/brook/common/log"
+	"github.com/g-brook/brook/common/threading"
+	"github.com/g-brook/brook/common/transport"
+	"github.com/g-brook/brook/server/defin"
+	"github.com/g-brook/brook/server/srv"
 	"github.com/panjf2000/gnet/v2"
 )
 

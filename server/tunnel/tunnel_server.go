@@ -17,9 +17,9 @@
 package tunnel
 
 import (
-	"github.com/brook/common/exchange"
-	"github.com/brook/common/lang"
-	"github.com/brook/common/transport"
+	"github.com/g-brook/brook/common/exchange"
+	"github.com/g-brook/brook/common/lang"
+	"github.com/g-brook/brook/common/transport"
 )
 
 // Save all tunnels channel. port: server.

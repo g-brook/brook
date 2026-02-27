@@ -20,7 +20,7 @@ import (
 	"errors"
 	"time"
 
-	"github.com/brook/common/lang"
+	"github.com/g-brook/brook/common/lang"
 )
 
 // errTimeout indicates a timeout.

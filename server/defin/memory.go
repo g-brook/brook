@@ -19,7 +19,7 @@ package defin
 import (
 	"sync"
 
-	"github.com/brook/common/lang"
+	"github.com/g-brook/brook/common/lang"
 )
 
 var Store Memory

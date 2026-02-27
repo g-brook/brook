@@ -19,7 +19,7 @@ package srv
 import (
 	"time"
 
-	"github.com/brook/common/lang"
+	"github.com/g-brook/brook/common/lang"
 	"github.com/google/uuid"
 )
 

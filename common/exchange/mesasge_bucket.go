@@ -21,7 +21,7 @@ import (
 	"io"
 	"time"
 
-	"github.com/brook/common/log"
+	"github.com/g-brook/brook/common/log"
 )
 
 // BucketRead is a function type that takes a pointer to a Protocol struct and an io.ReadWriteCloser as parameters

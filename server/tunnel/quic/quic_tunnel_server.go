@@ -17,7 +17,7 @@
 package quic
 
 import (
-	"github.com/brook/server/tunnel"
+	"github.com/g-brook/brook/server/tunnel"
 )
 
 type TunnelQUICServer struct {

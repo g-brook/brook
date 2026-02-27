@@ -28,8 +28,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/brook/common/ringbuffer"
-	. "github.com/brook/common/transport"
+	"github.com/g-brook/brook/common/ringbuffer"
+	. "github.com/g-brook/brook/common/transport"
 )
 
 var (

@@ -17,7 +17,7 @@
 package main
 
 import (
-	"github.com/brook/client/run"
+	"github.com/g-brook/brook/client/run"
 )
 
 func main() {

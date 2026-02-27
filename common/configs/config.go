@@ -20,8 +20,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/brook/common/jsonx"
-	"github.com/brook/common/lang"
+	"github.com/g-brook/brook/common/jsonx"
+	"github.com/g-brook/brook/common/lang"
 )
 
 var DefServerPort = 8909

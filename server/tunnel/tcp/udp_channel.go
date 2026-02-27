@@ -20,10 +20,10 @@ import (
 	"encoding/json"
 	"net"
 
-	"github.com/brook/common/exchange"
-	"github.com/brook/common/hash"
-	"github.com/brook/common/log"
-	"github.com/brook/common/transport"
+	"github.com/g-brook/brook/common/exchange"
+	"github.com/g-brook/brook/common/hash"
+	"github.com/g-brook/brook/common/log"
+	"github.com/g-brook/brook/common/transport"
 )
 
 type UdpSChannel struct {

@@ -30,11 +30,11 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/brook/common/exchange"
-	"github.com/brook/common/hash"
-	"github.com/brook/common/httpx"
-	"github.com/brook/common/ringbuffer"
-	"github.com/brook/common/threading"
+	"github.com/g-brook/brook/common/exchange"
+	"github.com/g-brook/brook/common/hash"
+	"github.com/g-brook/brook/common/httpx"
+	"github.com/g-brook/brook/common/ringbuffer"
+	"github.com/g-brook/brook/common/threading"
 )
 
 var httpError = errors.New("error: Agent connect to server failed")

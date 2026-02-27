@@ -22,7 +22,7 @@ import (
 	"runtime"
 	"strconv"
 
-	recover2 "github.com/brook/common/resue"
+	recover2 "github.com/g-brook/brook/common/resue"
 )
 
 // GoSafe runs the given fn using another goroutine, recovers if fn panics.

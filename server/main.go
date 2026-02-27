@@ -17,7 +17,7 @@
 package main
 
 import (
-	"github.com/brook/server/run"
+	"github.com/g-brook/brook/server/run"
 )
 
 //

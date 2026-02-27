@@ -19,7 +19,7 @@
 package cmd
 
 import (
-	"github.com/brook/common/log"
+	"github.com/g-brook/brook/common/log"
 )
 
 func start(service string) {

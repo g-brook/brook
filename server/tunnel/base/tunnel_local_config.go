@@ -19,11 +19,11 @@ package base
 import (
 	"encoding/json"
 
-	sf "github.com/brook/common/configs"
-	"github.com/brook/common/hash"
-	"github.com/brook/common/lang"
-	"github.com/brook/common/log"
-	"github.com/brook/server/web/sql"
+	sf "github.com/g-brook/brook/common/configs"
+	"github.com/g-brook/brook/common/hash"
+	"github.com/g-brook/brook/common/lang"
+	"github.com/g-brook/brook/common/log"
+	"github.com/g-brook/brook/server/web/sql"
 )
 
 type LocalTunnelConfig struct {

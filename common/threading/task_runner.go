@@ -20,8 +20,8 @@ import (
 	"errors"
 	"sync"
 
-	"github.com/brook/common/lang"
-	"github.com/brook/common/resue"
+	"github.com/g-brook/brook/common/lang"
+	"github.com/g-brook/brook/common/resue"
 )
 
 // ErrTaskRunnerBusy is the error that indicates the runner is busy.

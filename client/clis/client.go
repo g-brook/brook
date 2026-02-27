@@ -25,11 +25,11 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/brook/common/configs"
-	"github.com/brook/common/exchange"
-	"github.com/brook/common/iox"
-	"github.com/brook/common/log"
-	"github.com/brook/common/threading"
+	"github.com/g-brook/brook/common/configs"
+	"github.com/g-brook/brook/common/exchange"
+	"github.com/g-brook/brook/common/iox"
+	"github.com/g-brook/brook/common/log"
+	"github.com/g-brook/brook/common/threading"
 	"github.com/xtaci/smux"
 )
 

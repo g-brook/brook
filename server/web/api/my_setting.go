@@ -21,9 +21,9 @@ import (
 	"math/rand"
 	"time"
 
-	"github.com/brook/server/defin"
-	"github.com/brook/server/web/db"
-	"github.com/brook/server/web/errs"
+	"github.com/g-brook/brook/server/defin"
+	"github.com/g-brook/brook/server/web/db"
+	"github.com/g-brook/brook/server/web/errs"
 )
 
 func init() {

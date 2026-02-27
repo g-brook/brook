@@ -21,9 +21,9 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/brook/common/hash"
-	"github.com/brook/common/version"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/g-brook/brook/common/hash"
+	"github.com/g-brook/brook/common/version"
 )
 
 type MainPage struct {

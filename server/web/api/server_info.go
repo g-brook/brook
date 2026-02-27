@@ -20,8 +20,8 @@ import (
 	"sort"
 	"strconv"
 
-	"github.com/brook/server/metrics"
-	"github.com/brook/server/web/sql"
+	"github.com/g-brook/brook/server/metrics"
+	"github.com/g-brook/brook/server/web/sql"
 )
 
 func init() {

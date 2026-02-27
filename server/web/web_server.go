@@ -22,12 +22,12 @@ import (
 	"io/fs"
 	"net/http"
 
-	"github.com/brook/common/configs"
-	"github.com/brook/common/log"
-	"github.com/brook/common/threading"
-	"github.com/brook/server/web/api"
-	"github.com/brook/server/web/db"
-	"github.com/brook/server/web/sql"
+	"github.com/g-brook/brook/common/configs"
+	"github.com/g-brook/brook/common/log"
+	"github.com/g-brook/brook/common/threading"
+	"github.com/g-brook/brook/server/web/api"
+	"github.com/g-brook/brook/server/web/db"
+	"github.com/g-brook/brook/server/web/sql"
 	"github.com/gorilla/mux"
 )
 

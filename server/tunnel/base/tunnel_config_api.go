@@ -20,12 +20,12 @@ import (
 	"encoding/json"
 	"sync"
 
-	"github.com/brook/common/configs"
-	"github.com/brook/common/hash"
-	"github.com/brook/common/lang"
-	"github.com/brook/common/log"
-	"github.com/brook/common/queue"
-	"github.com/brook/common/threading"
+	"github.com/g-brook/brook/common/configs"
+	"github.com/g-brook/brook/common/hash"
+	"github.com/g-brook/brook/common/lang"
+	"github.com/g-brook/brook/common/log"
+	"github.com/g-brook/brook/common/queue"
+	"github.com/g-brook/brook/common/threading"
 )
 
 type ConfigNode struct {

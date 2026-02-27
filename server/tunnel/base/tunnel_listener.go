@@ -21,15 +21,15 @@ import (
 	"sync"
 	"time"
 
-	"github.com/brook/common/configs"
-	"github.com/brook/common/exchange"
-	"github.com/brook/common/hash"
-	"github.com/brook/common/lang"
-	. "github.com/brook/common/transport"
-	"github.com/brook/server/remote"
-	"github.com/brook/server/tunnel"
-	"github.com/brook/server/tunnel/http"
-	"github.com/brook/server/tunnel/tcp"
+	"github.com/g-brook/brook/common/configs"
+	"github.com/g-brook/brook/common/exchange"
+	"github.com/g-brook/brook/common/hash"
+	"github.com/g-brook/brook/common/lang"
+	. "github.com/g-brook/brook/common/transport"
+	"github.com/g-brook/brook/server/remote"
+	"github.com/g-brook/brook/server/tunnel"
+	"github.com/g-brook/brook/server/tunnel/http"
+	"github.com/g-brook/brook/server/tunnel/tcp"
 )
 
 var servers *hash.SyncMap[string, tunnel.TunnelServer]

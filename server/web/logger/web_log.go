@@ -20,8 +20,8 @@ import (
 	sql2 "database/sql"
 	"time"
 
-	"github.com/brook/common/log"
-	"github.com/brook/server/web/sql"
+	"github.com/g-brook/brook/common/log"
+	"github.com/g-brook/brook/server/web/sql"
 )
 
 type WebLogger struct {

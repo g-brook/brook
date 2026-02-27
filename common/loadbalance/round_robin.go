@@ -22,7 +22,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/brook/common/hash"
+	"github.com/g-brook/brook/common/hash"
 )
 
 type WeightedRoundRobin struct {

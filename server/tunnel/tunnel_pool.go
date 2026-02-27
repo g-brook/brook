@@ -21,8 +21,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/brook/common/log"
-	"github.com/brook/common/transport"
+	"github.com/g-brook/brook/common/log"
+	"github.com/g-brook/brook/common/transport"
 )
 
 type GetFunction = func() error

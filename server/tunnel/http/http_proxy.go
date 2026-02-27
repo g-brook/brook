@@ -25,10 +25,10 @@ import (
 	"net/url"
 	"time"
 
-	"github.com/brook/common/httpx"
-	"github.com/brook/common/iox"
-	"github.com/brook/common/log"
-	"github.com/brook/server/web/logger"
+	"github.com/g-brook/brook/common/httpx"
+	"github.com/g-brook/brook/common/iox"
+	"github.com/g-brook/brook/common/log"
+	"github.com/g-brook/brook/server/web/logger"
 )
 
 type Proxy struct {

@@ -22,9 +22,9 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/brook/common/hash"
-	"github.com/brook/common/lang"
-	"github.com/brook/common/threading"
+	"github.com/g-brook/brook/common/hash"
+	"github.com/g-brook/brook/common/lang"
+	"github.com/g-brook/brook/common/threading"
 )
 
 const drainWorkers = 8

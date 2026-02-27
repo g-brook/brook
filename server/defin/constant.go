@@ -17,13 +17,14 @@
 package defin
 
 import (
-	"github.com/brook/common/lang"
+	"github.com/g-brook/brook/common/lang"
 )
 
 const (
 	TunnelPortKey lang.KeyType = "tunnel_port"
 
-	HttpIdKey  lang.KeyType = "httpIdKey"
+	HttpIdKey lang.KeyType = "httpIdKey"
+
 	ProxyIdKey lang.KeyType = "proxyIdKey"
 
 	ToSChannelId lang.KeyType = "to_channel_id"

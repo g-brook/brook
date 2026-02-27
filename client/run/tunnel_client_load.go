@@ -17,9 +17,9 @@
 package run
 
 import (
-	"github.com/brook/client/clis"
-	_ "github.com/brook/client/tunnel"
-	"github.com/brook/common/log"
+	"github.com/g-brook/brook/client/clis"
+	_ "github.com/g-brook/brook/client/tunnel"
+	"github.com/g-brook/brook/common/log"
 )
 
 func LoadTunnel() {

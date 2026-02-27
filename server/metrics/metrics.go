@@ -19,7 +19,7 @@ package metrics
 import (
 	"time"
 
-	"github.com/brook/common/hash"
+	"github.com/g-brook/brook/common/hash"
 )
 
 type Metrics struct {

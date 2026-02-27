@@ -25,7 +25,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/brook/common/lang"
+	"github.com/g-brook/brook/common/lang"
 	"github.com/google/uuid"
 	"github.com/xtaci/smux"
 )

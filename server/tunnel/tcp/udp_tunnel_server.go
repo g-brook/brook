@@ -20,11 +20,11 @@ import (
 	"errors"
 	"sync"
 
-	"github.com/brook/common/exchange"
-	"github.com/brook/common/log"
-	trp "github.com/brook/common/transport"
-	"github.com/brook/server/srv"
-	"github.com/brook/server/tunnel"
+	"github.com/g-brook/brook/common/exchange"
+	"github.com/g-brook/brook/common/log"
+	trp "github.com/g-brook/brook/common/transport"
+	"github.com/g-brook/brook/server/srv"
+	"github.com/g-brook/brook/server/tunnel"
 )
 
 type TunnelUdpServer struct {

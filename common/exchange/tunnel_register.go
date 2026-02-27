@@ -17,7 +17,7 @@
 package exchange
 
 import (
-	"github.com/brook/common/lang"
+	"github.com/g-brook/brook/common/lang"
 )
 
 type TRegister interface {

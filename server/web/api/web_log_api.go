@@ -17,7 +17,7 @@
 package api
 
 import (
-	"github.com/brook/server/web/sql"
+	"github.com/g-brook/brook/server/web/sql"
 )
 
 func init() {

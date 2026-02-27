@@ -19,8 +19,8 @@ package srv
 import (
 	"time"
 
-	"github.com/brook/common/lang"
-	"github.com/brook/common/transport"
+	"github.com/g-brook/brook/common/lang"
+	"github.com/g-brook/brook/common/transport"
 )
 
 type ServerOption func(opts *sOptions)

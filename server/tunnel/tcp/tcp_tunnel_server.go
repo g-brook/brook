@@ -20,14 +20,14 @@ import (
 	"errors"
 	"sync"
 
-	"github.com/brook/common/exchange"
-	"github.com/brook/common/iox"
-	"github.com/brook/common/log"
-	"github.com/brook/common/threading"
-	trp "github.com/brook/common/transport"
-	"github.com/brook/server/defin"
-	"github.com/brook/server/srv"
-	"github.com/brook/server/tunnel"
+	"github.com/g-brook/brook/common/exchange"
+	"github.com/g-brook/brook/common/iox"
+	"github.com/g-brook/brook/common/log"
+	"github.com/g-brook/brook/common/threading"
+	trp "github.com/g-brook/brook/common/transport"
+	"github.com/g-brook/brook/server/defin"
+	"github.com/g-brook/brook/server/srv"
+	"github.com/g-brook/brook/server/tunnel"
 )
 
 type TunnelTcpServer struct {

@@ -23,11 +23,11 @@ import (
 	"io"
 	"net"
 
-	"github.com/brook/common/iox"
-	"github.com/brook/common/lang"
-	"github.com/brook/common/log"
-	"github.com/brook/common/threading"
-	trp "github.com/brook/common/transport"
+	"github.com/g-brook/brook/common/iox"
+	"github.com/g-brook/brook/common/lang"
+	"github.com/g-brook/brook/common/log"
+	"github.com/g-brook/brook/common/threading"
+	trp "github.com/g-brook/brook/common/transport"
 	"github.com/xtaci/smux"
 )
 

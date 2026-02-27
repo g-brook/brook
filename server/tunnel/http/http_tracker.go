@@ -21,12 +21,12 @@ import (
 	"sync"
 	"time"
 
-	"github.com/brook/common/exchange"
-	"github.com/brook/common/hash"
-	"github.com/brook/common/log"
-	"github.com/brook/common/ringbuffer"
-	"github.com/brook/common/threading"
-	"github.com/brook/common/transport"
+	"github.com/g-brook/brook/common/exchange"
+	"github.com/g-brook/brook/common/hash"
+	"github.com/g-brook/brook/common/log"
+	"github.com/g-brook/brook/common/ringbuffer"
+	"github.com/g-brook/brook/common/threading"
+	"github.com/g-brook/brook/common/transport"
 	"github.com/gobwas/ws"
 )
 

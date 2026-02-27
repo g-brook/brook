@@ -20,11 +20,11 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/brook/common/exchange"
-	"github.com/brook/common/log"
-	"github.com/brook/common/transport"
-	"github.com/brook/server/defin"
-	"github.com/brook/server/tunnel"
+	"github.com/g-brook/brook/common/exchange"
+	"github.com/g-brook/brook/common/log"
+	"github.com/g-brook/brook/common/transport"
+	"github.com/g-brook/brook/server/defin"
+	"github.com/g-brook/brook/server/tunnel"
 )
 
 func init() {

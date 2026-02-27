@@ -21,8 +21,8 @@ import (
 	"os"
 	"strings"
 
-	"github.com/brook/common/configs"
-	"github.com/brook/common/hash"
+	"github.com/g-brook/brook/common/configs"
+	"github.com/g-brook/brook/common/hash"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"gopkg.in/natefinch/lumberjack.v2"

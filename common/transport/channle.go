@@ -23,7 +23,7 @@ import (
 	"net"
 	"time"
 
-	"github.com/brook/common/lang"
+	"github.com/g-brook/brook/common/lang"
 )
 
 type CloseEvent func(channel Channel)

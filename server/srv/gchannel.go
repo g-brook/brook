@@ -24,8 +24,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/brook/common/lang"
-	"github.com/brook/common/transport"
+	"github.com/g-brook/brook/common/lang"
+	"github.com/g-brook/brook/common/transport"
 	"github.com/panjf2000/gnet/v2"
 )
 

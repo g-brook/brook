@@ -24,9 +24,9 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/brook/common/log"
-	"github.com/brook/common/notify"
-	"github.com/brook/common/pid"
+	"github.com/g-brook/brook/common/log"
+	"github.com/g-brook/brook/common/notify"
+	"github.com/g-brook/brook/common/pid"
 )
 
 func init() {

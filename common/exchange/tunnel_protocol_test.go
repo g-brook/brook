@@ -20,7 +20,7 @@ import (
 	"encoding/binary"
 	"testing"
 
-	"github.com/brook/common/log"
+	"github.com/g-brook/brook/common/log"
 )
 
 func TestNewTunnelRead(t *testing.T) {

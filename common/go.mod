@@ -1,4 +1,4 @@
-module github.com/brook/common
+module github.com/g-brook/brook/common
 
 go 1.24.0
 

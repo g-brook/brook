@@ -17,8 +17,8 @@
 package metrics
 
 import (
-	"github.com/brook/common/transport"
-	"github.com/brook/server/srv"
+	"github.com/g-brook/brook/common/transport"
+	"github.com/g-brook/brook/server/srv"
 )
 
 type Channel struct {

@@ -17,8 +17,8 @@
 package service
 
 import (
-	"github.com/brook/server/web/api"
-	"github.com/brook/server/web/db"
+	"github.com/g-brook/brook/server/web/api"
+	"github.com/g-brook/brook/server/web/db"
 )
 
 // GetToken retrieves an authentication token from the database

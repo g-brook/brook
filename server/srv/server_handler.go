@@ -17,7 +17,7 @@
 package srv
 
 import (
-	trp "github.com/brook/common/transport"
+	trp "github.com/g-brook/brook/common/transport"
 )
 
 type BootServer interface {

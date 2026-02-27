@@ -20,7 +20,7 @@ import (
 	"io"
 	"sync"
 
-	"github.com/brook/common/threading"
+	"github.com/g-brook/brook/common/threading"
 )
 
 // Pipe establishes a bidirectional data stream between two ReadWriteClosers, enabling data transfer in both directions.

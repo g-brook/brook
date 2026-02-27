@@ -20,8 +20,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/brook/common/log"
-	"github.com/brook/common/threading"
+	"github.com/g-brook/brook/common/log"
+	"github.com/g-brook/brook/common/threading"
 )
 
 type ReconnectFunction func() bool

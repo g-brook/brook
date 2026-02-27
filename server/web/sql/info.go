@@ -21,8 +21,8 @@ import (
 	"io/fs"
 	"strconv"
 
-	"github.com/brook/common/log"
-	"github.com/brook/common/version"
+	"github.com/g-brook/brook/common/log"
+	"github.com/g-brook/brook/common/version"
 )
 
 type Info struct {

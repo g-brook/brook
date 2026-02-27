@@ -25,7 +25,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/brook/common/exchange"
+	"github.com/g-brook/brook/common/exchange"
 	"github.com/gobwas/ws"
 )
 

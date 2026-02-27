@@ -19,9 +19,9 @@ package tunnel
 import (
 	"time"
 
-	"github.com/brook/common/log"
-	"github.com/brook/common/transport"
-	"github.com/brook/common/wheel"
+	"github.com/g-brook/brook/common/log"
+	"github.com/g-brook/brook/common/transport"
+	"github.com/g-brook/brook/common/wheel"
 )
 
 var schannelWheel *wheel.TimingWheel

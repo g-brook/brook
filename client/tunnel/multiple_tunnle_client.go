@@ -22,14 +22,14 @@ import (
 	"sync"
 	"time"
 
-	"github.com/brook/client/cli"
-	"github.com/brook/client/clis"
-	"github.com/brook/common/configs"
-	"github.com/brook/common/exchange"
-	"github.com/brook/common/hash"
-	"github.com/brook/common/lang"
-	"github.com/brook/common/log"
-	"github.com/brook/common/threading"
+	"github.com/g-brook/brook/client/cli"
+	"github.com/g-brook/brook/client/clis"
+	"github.com/g-brook/brook/common/configs"
+	"github.com/g-brook/brook/common/exchange"
+	"github.com/g-brook/brook/common/hash"
+	"github.com/g-brook/brook/common/lang"
+	"github.com/g-brook/brook/common/log"
+	"github.com/g-brook/brook/common/threading"
 	"github.com/xtaci/smux"
 )
 

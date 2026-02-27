@@ -19,10 +19,10 @@ package tcp
 import (
 	"errors"
 
-	"github.com/brook/common/configs"
-	"github.com/brook/common/exchange"
-	trp "github.com/brook/common/transport"
-	. "github.com/brook/server/tunnel"
+	"github.com/g-brook/brook/common/configs"
+	"github.com/g-brook/brook/common/exchange"
+	trp "github.com/g-brook/brook/common/transport"
+	. "github.com/g-brook/brook/server/tunnel"
 )
 
 type Resources struct {

@@ -21,8 +21,8 @@ import (
 	"encoding/json"
 	"time"
 
-	"github.com/brook/common/transform"
-	"github.com/brook/server/web/sql"
+	"github.com/g-brook/brook/common/transform"
+	"github.com/g-brook/brook/server/web/sql"
 )
 
 type AuthInfo struct {

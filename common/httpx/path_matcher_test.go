@@ -19,7 +19,7 @@ package httpx_test
 import (
 	"testing"
 
-	"github.com/brook/common/httpx"
+	"github.com/g-brook/brook/common/httpx"
 )
 
 func TestNewPathMatcher(t *testing.T) {

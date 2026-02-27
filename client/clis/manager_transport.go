@@ -19,9 +19,9 @@ package clis
 import (
 	"time"
 
-	"github.com/brook/client/cli"
-	"github.com/brook/common/configs"
-	"github.com/brook/common/exchange"
+	"github.com/g-brook/brook/client/cli"
+	"github.com/g-brook/brook/common/configs"
+	"github.com/g-brook/brook/common/exchange"
 )
 
 var ManagerTransport *managerTransport

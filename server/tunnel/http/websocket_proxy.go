@@ -19,9 +19,9 @@ package http
 import (
 	"net/http"
 
-	"github.com/brook/common/httpx"
-	"github.com/brook/common/iox"
-	"github.com/brook/common/log"
+	"github.com/g-brook/brook/common/httpx"
+	"github.com/g-brook/brook/common/iox"
+	"github.com/g-brook/brook/common/log"
 	"golang.org/x/net/websocket"
 )
 

@@ -24,9 +24,9 @@ import (
 	"encoding/pem"
 	"fmt"
 
-	"github.com/brook/common/transform"
-	"github.com/brook/server/web/errs"
-	"github.com/brook/server/web/sql"
+	"github.com/g-brook/brook/common/transform"
+	"github.com/g-brook/brook/server/web/errs"
+	"github.com/g-brook/brook/server/web/sql"
 	"golang.org/x/crypto/ed25519"
 )
 

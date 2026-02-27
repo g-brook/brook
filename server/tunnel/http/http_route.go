@@ -21,7 +21,7 @@ import (
 	"net/http"
 	"sync"
 
-	"github.com/brook/common/httpx"
+	"github.com/g-brook/brook/common/httpx"
 )
 
 var routes []*RouteInfo

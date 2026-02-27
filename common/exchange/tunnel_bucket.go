@@ -22,7 +22,7 @@ import (
 	"io"
 	"sync/atomic"
 
-	"github.com/brook/common/hash"
+	"github.com/g-brook/brook/common/hash"
 )
 
 type TunnelBucketRead func(p *TunnelProtocol)

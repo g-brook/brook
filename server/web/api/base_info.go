@@ -17,12 +17,12 @@
 package api
 
 import (
-	"github.com/brook/common/log"
-	"github.com/brook/common/stringx"
-	"github.com/brook/common/version"
-	"github.com/brook/server/web/db"
-	"github.com/brook/server/web/errs"
-	"github.com/brook/server/web/sql"
+	"github.com/g-brook/brook/common/log"
+	"github.com/g-brook/brook/common/stringx"
+	"github.com/g-brook/brook/common/version"
+	"github.com/g-brook/brook/server/web/db"
+	"github.com/g-brook/brook/server/web/errs"
+	"github.com/g-brook/brook/server/web/sql"
 )
 
 func init() {

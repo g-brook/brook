@@ -24,8 +24,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/brook/common/log"
 	"github.com/coreos/go-systemd/v22/dbus"
+	"github.com/g-brook/brook/common/log"
 )
 
 const (

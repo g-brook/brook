@@ -19,7 +19,7 @@ package sql
 import (
 	"database/sql"
 
-	"github.com/brook/common/log"
+	"github.com/g-brook/brook/common/log"
 )
 
 type DBWebLogger struct {

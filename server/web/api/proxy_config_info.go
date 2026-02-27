@@ -21,14 +21,14 @@ import (
 	"encoding/json"
 	"math/rand"
 
-	"github.com/brook/common/configs"
-	"github.com/brook/common/lang"
-	"github.com/brook/common/log"
-	"github.com/brook/server/defin"
-	"github.com/brook/server/metrics"
-	"github.com/brook/server/tunnel/base"
-	"github.com/brook/server/web/errs"
-	"github.com/brook/server/web/sql"
+	"github.com/g-brook/brook/common/configs"
+	"github.com/g-brook/brook/common/lang"
+	"github.com/g-brook/brook/common/log"
+	"github.com/g-brook/brook/server/defin"
+	"github.com/g-brook/brook/server/metrics"
+	"github.com/g-brook/brook/server/tunnel/base"
+	"github.com/g-brook/brook/server/web/errs"
+	"github.com/g-brook/brook/server/web/sql"
 )
 
 func init() {

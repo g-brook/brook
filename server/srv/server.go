@@ -22,10 +22,10 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/brook/common/hash"
-	"github.com/brook/common/lang"
-	"github.com/brook/common/log"
-	trp "github.com/brook/common/transport"
+	"github.com/g-brook/brook/common/hash"
+	"github.com/g-brook/brook/common/lang"
+	"github.com/g-brook/brook/common/log"
+	trp "github.com/g-brook/brook/common/transport"
 	"github.com/panjf2000/gnet/v2"
 )
 

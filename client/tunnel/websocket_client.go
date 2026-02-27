@@ -22,10 +22,10 @@ import (
 	"net"
 	"sync"
 
-	"github.com/brook/common/exchange"
-	"github.com/brook/common/hash"
-	"github.com/brook/common/log"
-	"github.com/brook/common/threading"
+	"github.com/g-brook/brook/common/exchange"
+	"github.com/g-brook/brook/common/hash"
+	"github.com/g-brook/brook/common/log"
+	"github.com/g-brook/brook/common/threading"
 	"github.com/gobwas/ws"
 	"github.com/gobwas/ws/wsutil"
 )

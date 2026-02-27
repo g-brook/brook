@@ -19,7 +19,7 @@ package cmd
 import (
 	"fmt"
 
-	version2 "github.com/brook/common/version"
+	version2 "github.com/g-brook/brook/common/version"
 	"github.com/spf13/cobra"
 )
 
