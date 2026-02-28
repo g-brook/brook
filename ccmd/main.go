@@ -17,7 +17,8 @@
 package main
 
 import (
-	"github.com/g-brook/brook/client/run"
+	"github.com/g-brook/brook/ccmd/run"
+	_ "github.com/g-brook/brook/ccmd/standard"
 )
 
 func main() {

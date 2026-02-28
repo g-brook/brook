@@ -44,3 +44,5 @@ go.work.sum
 .idea
 /scmd/logs/
 /scmd/dist/
+/ccmd/dist/
+/ccmd/logs/

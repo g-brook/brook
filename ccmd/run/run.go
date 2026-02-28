@@ -25,6 +25,7 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/g-brook/brook/client/cli"
+	"github.com/g-brook/brook/client/run"
 	"github.com/g-brook/brook/common/cmd"
 	"github.com/g-brook/brook/common/configs"
 	"github.com/g-brook/brook/common/lang"
@@ -39,7 +40,7 @@ import (
 var (
 	config   *configs.ClientConfig
 	cmdValue = cmd.NewCliCmdValue()
-	service  *Service
+	service  *run.Service
 )
 
 func init() {
@@ -68,7 +69,7 @@ func rootRun(cmd *cobra.Command, args []string) {
 		os.Exit(1)
 	}
 	log.NewLogger(config.Logger)
-	LoadTunnel()
+	run.LoadTunnel()
 	verilyBaseConfig(config)
 	startServer(config)
 	// wait for exit
@@ -123,7 +124,7 @@ func startServer(config *configs.ClientConfig) {
 		}
 	}()
 	go OpenCli()
-	service = NewService()
+	service = run.NewService()
 	service.Run(config)
 	pid.CreatePidFile()
 	defer func() {
