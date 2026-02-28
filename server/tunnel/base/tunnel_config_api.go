@@ -44,6 +44,8 @@ type TunnelConfigApi interface {
 	GetConfig(proxyId string) *ConfigNode
 
 	UpdateConfig(proxyId string) *ConfigNode
+
+	Store(cfgId string, cfg *ConfigNode)
 }
 
 var TunnelCfm = &ConfigManager{

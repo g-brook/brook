@@ -28,6 +28,8 @@ import (
 	"github.com/g-brook/brook/server/tunnel/base"
 )
 
+var moduleName = modules.ModuleID("local_tunnel_config")
+
 func init() {
 	modules.RegisterModule(&LocalTunnelConfig{})
 }
@@ -36,9 +38,13 @@ type LocalTunnelConfig struct {
 	configs *hash.SyncMap[string, *base.ConfigNode]
 }
 
+func (receiver *LocalTunnelConfig) Store(cfgId string, cfg *base.ConfigNode) {
+	receiver.configs.Store(cfgId, cfg)
+}
+
 func (receiver *LocalTunnelConfig) Module() modules.ModuleInfo {
 	return modules.ModuleInfo{
-		ID:  "local_tunnel_config",
+		ID:  moduleName,
 		New: func() modules.Module { return NewLocalTunnelConfig() },
 	}
 }
@@ -78,14 +84,11 @@ func NewLocalTunnelConfig() *LocalTunnelConfig {
 }
 
 func InitTunnelConfig(sc *sf.ServerConfig) {
-	var ltc = NewLocalTunnelConfig()
-	for _, item := range getTunnelConfig(sc) {
-		ltc.configs.Store(item.Id, &base.ConfigNode{
-			Config: item,
-			State:  false,
-		})
+	config := getTunnelConfig(sc)
+	err := base.InitServerConfig(moduleName, config)
+	if err != nil {
+		return
 	}
-	base.TunnelCfm.Running(ltc)
 }
 
 // GetTunnelConfig retrieves the server tunnel configuration
