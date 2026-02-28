@@ -31,7 +31,7 @@ import (
 	"github.com/gorilla/mux"
 )
 
-//go:embed dist/*
+//go:embed dist
 var embeddedFiles embed.FS
 var (
 	root = "dist"
