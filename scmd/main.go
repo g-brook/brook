@@ -14,19 +14,18 @@
  * limitations under the License.
  */
 
-package service
+package main
 
 import (
-	"github.com/g-brook/brook/server/web/api"
-	"github.com/g-brook/brook/server/web/db"
+	server "github.com/g-brook/brook/scmd/run"
+	_ "github.com/g-brook/brook/scmd/standard"
 )
 
-// GetToken retrieves an authentication token from the database
-// It returns the token as a string or an empty string if an error occurs
-func GetToken() string {
-	get, err := db.Get[api.AuthInfo](api.AuthKey)
-	if err != nil {
-		return ""
-	}
-	return get.Token
+//
+// main
+//  @Description: main.
+//
+
+func main() {
+	server.Start()
 }

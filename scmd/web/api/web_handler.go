@@ -22,8 +22,8 @@ import (
 	"net/http"
 
 	"github.com/g-brook/brook/common/log"
-	"github.com/g-brook/brook/server/web/db"
-	"github.com/g-brook/brook/server/web/errs"
+	"github.com/g-brook/brook/scmd/web/db"
+	"github.com/g-brook/brook/scmd/web/errs"
 )
 
 type Request[T any] struct {

@@ -21,7 +21,7 @@ import (
 	"time"
 
 	"github.com/g-brook/brook/common/log"
-	"github.com/g-brook/brook/server/web/sql"
+	"github.com/g-brook/brook/scmd/web/sql"
 )
 
 type WebLogger struct {

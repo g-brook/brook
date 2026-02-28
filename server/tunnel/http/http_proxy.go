@@ -28,7 +28,7 @@ import (
 	"github.com/g-brook/brook/common/httpx"
 	"github.com/g-brook/brook/common/iox"
 	"github.com/g-brook/brook/common/log"
-	"github.com/g-brook/brook/server/web/logger"
+	"github.com/g-brook/brook/scmd/web/logger"
 )
 
 type Proxy struct {

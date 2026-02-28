@@ -48,19 +48,19 @@ func OpenTunnelServer(request *exchange.OpenTunnelReq, manager Channel) (*remote
 	}
 	cfgNode.openLock.Lock()
 	defer cfgNode.openLock.Unlock()
-	t, b := servers.Load(cfgNode.config.Id)
+	t, b := servers.Load(cfgNode.Config.Id)
 	if b {
 		t.PutManager(manager)
-		return remote.NewTunnelCfg(cfgNode.config.Port, cfgNode.config.Destination), nil
+		return remote.NewTunnelCfg(cfgNode.Config.Port, cfgNode.Config.Destination), nil
 	}
-	baseServer, err := running(cfgNode.config)
+	baseServer, err := running(cfgNode.Config)
 	if err != nil {
 		return nil, err
 	}
-	t, b = servers.Load(cfgNode.config.Id)
+	t, b = servers.Load(cfgNode.Config.Id)
 	if b {
-		TunnelCfm.AddListen(cfgNode.config.Id, func(cfg *ConfigNode) {
-			baseServer.UpdateConfig(cfg.config)
+		TunnelCfm.AddListen(cfgNode.Config.Id, func(cfg *ConfigNode) {
+			baseServer.UpdateConfig(cfg.Config)
 		})
 		t.PutManager(manager)
 	}

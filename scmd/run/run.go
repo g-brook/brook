@@ -29,11 +29,11 @@ import (
 	"github.com/g-brook/brook/common/notify"
 	"github.com/g-brook/brook/common/pid"
 	"github.com/g-brook/brook/common/version"
+	"github.com/g-brook/brook/scmd/standard"
+	"github.com/g-brook/brook/scmd/web"
+	"github.com/g-brook/brook/scmd/web/service"
 	"github.com/g-brook/brook/server/defin"
 	"github.com/g-brook/brook/server/remote"
-	"github.com/g-brook/brook/server/tunnel/base"
-	"github.com/g-brook/brook/server/web"
-	"github.com/g-brook/brook/server/web/service"
 	"github.com/spf13/cobra"
 )
 
@@ -113,7 +113,7 @@ func run() {
 	//Start In-Server.
 	remote.Inserver = remote.New().Start(&serverConfig)
 	// Get tunnelServer infos.
-	base.InitTunnelConfig(&serverConfig)
+	standard.InitTunnelConfig(&serverConfig)
 	afterRun(&serverConfig)
 	pid.CreatePidFile()
 	defer func() {

@@ -24,21 +24,22 @@ import (
 	"github.com/g-brook/brook/common/hash"
 	"github.com/g-brook/brook/common/lang"
 	"github.com/g-brook/brook/common/log"
+	"github.com/g-brook/brook/common/modules"
 	"github.com/g-brook/brook/common/queue"
 	"github.com/g-brook/brook/common/threading"
 )
 
 type ConfigNode struct {
-	config *configs.ServerTunnelConfig
+	Config *configs.ServerTunnelConfig
 	// state is start.
-	state    bool
+	State    bool
 	openLock sync.Mutex
 }
 
 type ConfigNotify func(cfg *ConfigNode)
 
 type TunnelConfigApi interface {
-
+	modules.Module
 	// GetConfig Get tunnel configs by proxy id
 	GetConfig(proxyId string) *ConfigNode
 
@@ -87,9 +88,9 @@ func (receiver *ConfigManager) Running(api TunnelConfigApi) {
 			if proxyId != "" {
 				newConfig := receiver.ConfigApi.UpdateConfig(proxyId)
 				if newConfig != nil {
-					j, _ := json.Marshal(newConfig.config)
+					j, _ := json.Marshal(newConfig.Config)
 					log.Info("Update config proxyId: %s:％s", proxyId, string(j))
-					load, b := receiver.listens.Load(newConfig.config.Id)
+					load, b := receiver.listens.Load(newConfig.Config.Id)
 					if b {
 						load(newConfig)
 					}

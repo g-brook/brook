@@ -14,20 +14,4 @@
  * limitations under the License.
  */
 
-package api
-
-import (
-	"github.com/g-brook/brook/server/web/sql"
-)
-
-func init() {
-	RegisterRoute(NewRoute("/getWebLogs", "POST"), getWebLogs)
-}
-
-func getWebLogs(qr *Request[QueryServerInfo]) *Response {
-	config := sql.QueryWebLogByProxyId(qr.Body.ProxyId)
-	if config == nil {
-		return NewResponseSuccess(nil)
-	}
-	return NewResponseSuccess(config)
-}
+package standard

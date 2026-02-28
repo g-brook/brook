@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package base
+package standard
 
 import (
 	"encoding/json"
@@ -23,11 +23,24 @@ import (
 	"github.com/g-brook/brook/common/hash"
 	"github.com/g-brook/brook/common/lang"
 	"github.com/g-brook/brook/common/log"
-	"github.com/g-brook/brook/server/web/sql"
+	"github.com/g-brook/brook/common/modules"
+	"github.com/g-brook/brook/scmd/web/sql"
+	"github.com/g-brook/brook/server/tunnel/base"
 )
 
+func init() {
+	modules.RegisterModule(&LocalTunnelConfig{})
+}
+
 type LocalTunnelConfig struct {
-	configs *hash.SyncMap[string, *ConfigNode]
+	configs *hash.SyncMap[string, *base.ConfigNode]
+}
+
+func (receiver *LocalTunnelConfig) Module() modules.ModuleInfo {
+	return modules.ModuleInfo{
+		ID:  "local_tunnel_config",
+		New: func() modules.Module { return NewLocalTunnelConfig() },
+	}
 }
 
 // GetConfig retrieves a server tunnel configuration by proxy ID
@@ -37,12 +50,12 @@ type LocalTunnelConfig struct {
 //
 // Returns:
 //   - *sf.ServerTunnelConfig: pointer to the server tunnel configuration associated with the proxy ID
-func (receiver *LocalTunnelConfig) GetConfig(proxyId string) *ConfigNode {
+func (receiver *LocalTunnelConfig) GetConfig(proxyId string) *base.ConfigNode {
 	load, _ := receiver.configs.Load(proxyId) // Load retrieves the value for a key from the sync.Map
 	return load
 }
 
-func (receiver *LocalTunnelConfig) UpdateConfig(proxyId string) *ConfigNode {
+func (receiver *LocalTunnelConfig) UpdateConfig(proxyId string) *base.ConfigNode {
 	cfg := sql.GetProxyConfigByProxyId(proxyId)
 	if cfg == nil {
 		receiver.configs.Delete(proxyId)
@@ -50,9 +63,9 @@ func (receiver *LocalTunnelConfig) UpdateConfig(proxyId string) *ConfigNode {
 	}
 	config := format(cfg)
 	if config != nil {
-		receiver.configs.Store(proxyId, &ConfigNode{
-			config: config,
-			state:  false,
+		receiver.configs.Store(proxyId, &base.ConfigNode{
+			Config: config,
+			State:  false,
 		})
 	}
 	return receiver.GetConfig(proxyId)
@@ -60,19 +73,19 @@ func (receiver *LocalTunnelConfig) UpdateConfig(proxyId string) *ConfigNode {
 
 func NewLocalTunnelConfig() *LocalTunnelConfig {
 	return &LocalTunnelConfig{
-		configs: hash.NewSyncMap[string, *ConfigNode](),
+		configs: hash.NewSyncMap[string, *base.ConfigNode](),
 	}
 }
 
 func InitTunnelConfig(sc *sf.ServerConfig) {
 	var ltc = NewLocalTunnelConfig()
 	for _, item := range getTunnelConfig(sc) {
-		ltc.configs.Store(item.Id, &ConfigNode{
-			config: item,
-			state:  false,
+		ltc.configs.Store(item.Id, &base.ConfigNode{
+			Config: item,
+			State:  false,
 		})
 	}
-	TunnelCfm.Running(ltc)
+	base.TunnelCfm.Running(ltc)
 }
 
 // GetTunnelConfig retrieves the server tunnel configuration
@@ -116,7 +129,7 @@ func format(item *sql.ProxyConfig) *sf.ServerTunnelConfig {
 	st.Id = item.ProxyID
 	st.Port = item.RemotePort
 	st.Destination = item.Destination.String
-	protocol := TransformProtocol(item.Protocol)
+	protocol := base.TransformProtocol(item.Protocol)
 	if protocol == "" {
 		log.Error("protocol is not support: %s", item.Protocol)
 	} else {

@@ -14,17 +14,20 @@
  * limitations under the License.
  */
 
-package main
+package api
 
 import (
-	"github.com/g-brook/brook/server/run"
+	"github.com/g-brook/brook/scmd/web/sql"
 )
 
-//
-// main
-//  @Description: main.
-//
+func init() {
+	RegisterRoute(NewRoute("/getWebLogs", "POST"), getWebLogs)
+}
 
-func main() {
-	run.Start()
+func getWebLogs(qr *Request[QueryServerInfo]) *Response {
+	config := sql.QueryWebLogByProxyId(qr.Body.ProxyId)
+	if config == nil {
+		return NewResponseSuccess(nil)
+	}
+	return NewResponseSuccess(config)
 }

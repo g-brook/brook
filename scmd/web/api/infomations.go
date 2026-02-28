@@ -22,7 +22,7 @@ import (
 	"time"
 
 	"github.com/g-brook/brook/common/transform"
-	"github.com/g-brook/brook/server/web/sql"
+	"github.com/g-brook/brook/scmd/web/sql"
 )
 
 type AuthInfo struct {

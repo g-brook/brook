@@ -4,7 +4,7 @@ portal/server/.gitignore
 /client/logs/
 /server/logs/
 /server/fdb2/
-/server/dist/
+/scmd/dist/
 /ssl/
 
 
@@ -38,7 +38,7 @@ go.work.sum
 .env
 
 /portal/.idea/
-/server/web/dist/!/server/db.db
-!/server/dist/
+/scmd/web/dist/!/server/db.db
+!/scmd/dist/
 
 .idea

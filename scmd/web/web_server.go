@@ -25,9 +25,9 @@ import (
 	"github.com/g-brook/brook/common/configs"
 	"github.com/g-brook/brook/common/log"
 	"github.com/g-brook/brook/common/threading"
-	"github.com/g-brook/brook/server/web/api"
-	"github.com/g-brook/brook/server/web/db"
-	"github.com/g-brook/brook/server/web/sql"
+	"github.com/g-brook/brook/scmd/web/api"
+	"github.com/g-brook/brook/scmd/web/db"
+	"github.com/g-brook/brook/scmd/web/sql"
 	"github.com/gorilla/mux"
 )
 

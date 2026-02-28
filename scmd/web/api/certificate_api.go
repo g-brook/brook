@@ -25,8 +25,8 @@ import (
 	"fmt"
 
 	"github.com/g-brook/brook/common/transform"
-	"github.com/g-brook/brook/server/web/errs"
-	"github.com/g-brook/brook/server/web/sql"
+	"github.com/g-brook/brook/scmd/web/errs"
+	"github.com/g-brook/brook/scmd/web/sql"
 	"golang.org/x/crypto/ed25519"
 )
 

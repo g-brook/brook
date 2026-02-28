@@ -24,11 +24,11 @@ import (
 	"github.com/g-brook/brook/common/configs"
 	"github.com/g-brook/brook/common/lang"
 	"github.com/g-brook/brook/common/log"
+	"github.com/g-brook/brook/scmd/web/errs"
+	"github.com/g-brook/brook/scmd/web/sql"
 	"github.com/g-brook/brook/server/defin"
 	"github.com/g-brook/brook/server/metrics"
 	"github.com/g-brook/brook/server/tunnel/base"
-	"github.com/g-brook/brook/server/web/errs"
-	"github.com/g-brook/brook/server/web/sql"
 )
 
 func init() {
