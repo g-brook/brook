@@ -1,3 +1,3 @@
 module github.com/g-brook/brook
 
-go 1.25
+go 1.24.2
