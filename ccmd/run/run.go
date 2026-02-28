@@ -53,11 +53,13 @@ func init() {
 var rootCmd = &cobra.Command{
 	Use:     "start",
 	Version: version.GetBuildVersion(),
-	Long:    version.Banner() + "\nBrook is a cross-platform, high-performance network tunneling and proxy toolkit implemented in Go.\nIt supports a wide range of transport protocols, including TCP, UDP, HTTP(S), and WebSocket, ensuring compatibility with popular application protocols such as SSH, HTTP, Redis, and MySQL.\nA built-in web UI simplifies configuration.",
+	Long:    version.Banner(version.BuildVersion) + "\nBrook is a cross-platform, high-performance network tunneling and proxy toolkit implemented in Go.\nIt supports a wide range of transport protocols, including TCP, UDP, HTTP(S), and WebSocket, ensuring compatibility with popular application protocols such as SSH, HTTP, Redis, and MySQL.\nA built-in web UI simplifies configuration.",
 	Run:     rootRun,
 }
 
 func rootRun(cmd *cobra.Command, args []string) {
+	fmt.Println("brook starting; hello world!! 👋")
+	version.ShowBanner(version.GetBuildVersion())
 	sysCtx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM, syscall.SIGINT)
 	defer stop()
 	if cmdValue.ConfigPath == "" {

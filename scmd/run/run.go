@@ -57,11 +57,13 @@ func init() {
 var rootCmd = &cobra.Command{
 	Use:     "start",
 	Version: version.GetBuildVersion(),
-	Long:    version.Banner() + "\nBrook is a cross-platform, high-performance network tunneling and proxy toolkit implemented in Go.\nIt supports a wide range of transport protocols, including TCP, UDP, HTTP(S), and WebSocket, ensuring compatibility with popular application protocols such as SSH, HTTP, Redis, and MySQL.\nA built-in web UI simplifies configuration.",
+	Long:    version.Banner(version.GetBuildVersion()) + "\nBrook is a cross-platform, high-performance network tunneling and proxy toolkit implemented in Go.\nIt supports a wide range of transport protocols, including TCP, UDP, HTTP(S), and WebSocket, ensuring compatibility with popular application protocols such as SSH, HTTP, Redis, and MySQL.\nA built-in web UI simplifies configuration.",
 	Run:     rootRun,
 }
 
 func rootRun(_ *cobra.Command, _ []string) {
+	fmt.Println("brook starting; hello world!! 👋")
+	version.ShowBanner(version.GetBuildVersion())
 	// Create a context that can be cancelled by interrupt signals (SIGINT, SIGTERM)
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop() // Ensure the signal notification is stopped when the function returns

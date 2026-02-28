@@ -40,7 +40,7 @@ func GetDbVersion() int {
 	return DBVersion
 }
 
-func Banner() string {
+func Banner(version string) string {
 	banner := `
     __                     __  
    / /__________________  / /__
@@ -49,5 +49,9 @@ func Banner() string {
 /_.___/_/   \____/\____/_/|_|  
            v%s
 `
-	return fmt.Sprintf(banner, GetBuildVersion())
+	return fmt.Sprintf(banner, version)
+}
+
+func ShowBanner(version string) {
+	fmt.Print(Banner(version))
 }
