@@ -1,4 +1,4 @@
-# <img src="document/svg.png" alt="svg.png" style="zoom:80%;" /> Brook ![Latest Release](https://img.shields.io/github/v/release/g-brook/brook?label=Latest&style=flat-square)
+# <img src="document/logo.svg" alt="svg.png" style="zoom:80%;" /> <img src="document/font-dark.svg" alt="svg.png" style="zoom:80%;" />  ![Latest Release](https://img.shields.io/github/v/release/g-brook/brook?label=Latest&style=flat-square)
 
 [English](document/README.en.md)
 
