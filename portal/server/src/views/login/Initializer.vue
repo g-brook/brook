@@ -18,7 +18,6 @@
 import baseInfo from '@/service/baseInfo';
 import {computed, ref} from 'vue';
 import {useI18n} from '@/components/lang/useI18n';
-import LanguageSwitcher from '@/components/lang/LanguageSwitcher.vue';
 import Message from '@/components/message';
 
 const { t } = useI18n();
@@ -97,7 +96,7 @@ const handleInit = async () => {
         <div class="absolute -top-12 left-1/2 -translate-x-1/2 flex items-center justify-center">
           <div class="relative">
             <div class="absolute inset-1 w-30 h-30 rounded-full bg-gradient-to-r from-sky-300 via-blue-400 to-indigo-400 opacity-40 blur-2xl"></div>
-            <img src="@/assets/svg-light.svg" class="w-30 h-auto relative z-10 drop-shadow-md" />
+            <img src="@/assets/logo.svg" class="w-30 h-auto relative z-10 drop-shadow-md" />
           </div>
         </div>
 
