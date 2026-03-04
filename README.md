@@ -54,9 +54,10 @@ bash -c "$(curl -fsSL https://www.gbrook.cc/install.sh)"
 
 ### 步骤一：解压并进入目录
 
+```shell
 mkdir -p ./brook-sev && tar -xzf brook-sev_Linux-arm64.tar.gz -C ./brook-sev
 cd brook-sev
-
+````
 ### 步骤二：编辑 `server.json` 配置文件
 ```json
 {
@@ -74,8 +75,9 @@ cd brook-sev
 ```
 ### 步骤三：启动服务端
 
+```shell
 ./brook-sev -c ./server.json
-
+````
 ### 步骤四：访问管理界面
 
 打开浏览器访问 `http://localhost:8000/index`，首次登录需要初始化账户信息。
@@ -100,8 +102,10 @@ cd brook-sev
 
 ### 步骤一：解压并进入目录
 
+```shell
 mkdir -p ./brook-cli && tar -xzf brook-cli_Linux-arm64.tar.gz -C ./brook-cli
 cd brook-cli
+```
 
 ### 步骤二：准备 `client.json` 配置文件
 
@@ -130,7 +134,9 @@ cd brook-cli
 
 ### 步骤三：启动客户端
 
+```shell
 ./brook-cli -c ./client.json
+```
 
 ### 步骤四：获取模板与标识符
 
@@ -174,22 +180,26 @@ cd brook-cli
 ### CLI 启动命令
 
 #### 服务端启动方式：
-
+```shell
 ./brook-sev -c ./server.json
 # 或者使用长参数形式
 ./brook-sev --configs ./server.json
-
+```
 #### 客户端启动方式：
 
+```shell
 ./brook-cli -c ./client.json
 # 或者使用长参数形式
 ./brook-cli --configs ./client.json
+```
 
 ##### Linux 系统后台运行（需要 systemd 支持）：
 
+```shell
 sudo ./brook-cli start
 # 查看帮助了解更多命令选项
 ./brook-cli help
+```
 
 ---
 
@@ -197,23 +207,27 @@ sudo ./brook-cli start
 
 ### 前端构建（用于服务端 UI 页面）
 
+```shell
 cd portal/server/
 npm install
 npm run build
-
+```
 ### 服务端构建
 
+```shell
 cd server/
 bash gobuild.sh
 # 根据提示选择平台和架构
 # 输出路径：server/dist/brook-sev_*.tar.gz
+```
 
 ### 客户端构建
 
+```shell
 cd client/
 bash gobuild.sh
 # 输出路径：client/dist/brook-cli_*.tar.gz
-
+```
 ---
 
 ## ❓ 常见问题解答（FAQ）
