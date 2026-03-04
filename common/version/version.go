@@ -20,7 +20,7 @@ import (
 	"fmt"
 )
 
-const BuildVersion = "0.2.0"
+const BuildVersion = "0.2.1"
 
 const Version = 2
 
