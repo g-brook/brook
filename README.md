@@ -19,7 +19,7 @@
 
 ## 🌐 在线安装
 ```shell
-bash -c "$(curl -fsSL https://www.gbrook.cc/install.sh)"
+bash -c "$(curl -fsSL https://dev.gbrook.cc/install.sh)"
 ```
 
 ## 📦 下载与安装 (手动安装)
