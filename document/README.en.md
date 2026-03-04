@@ -1,54 +1,66 @@
-# <img src="logo.svg" alt="svg.png" width="50" height="50" /> <img src="font-dark.svg" alt="svg.png" width="200" height="50" />  ![Latest Release](https://img.shields.io/github/v/release/g-brook/brook?label=Latest&style=flat-square)
+# <img src="document/logo.svg" alt="svg.png" width="50" height="50" /> <img src="document/font-dark.svg" alt="svg.png" width="200" height="50" />  ![Latest Release](https://img.shields.io/github/v/release/g-brook/brook?label=Latest&style=flat-square)
 
+[中文](README.md)
 
-Brook is a cross-platform, high-performance network tunneling and proxy toolkit implemented in Go.
-It supports a wide range of transport protocols, including TCP, UDP, HTTP(S), and WebSocket, ensuring compatibility with popular application protocols such as SSH, HTTP, Redis, and MySQL.
-A built-in web UI simplifies configuration.
-
-## Features
-
-- Supports TCP / UDP / HTTP(S) / WebSocket tunnels
-- Compatible with SSH, HTTP(S), MySQL, Redis, etc.
-- Visual management UI with initialization, configuration, and status monitoring
-- Simple configs (`client.json`, `server.json`), auto-reconnect, and logging
-- Lightweight, efficient, and cross-platform
+**Brook** is a high-performance network tunnel and proxy tool designed for intranet penetration. It's cross-platform (Linux/macOS/Windows) and developed in Go. It supports multiple transmission protocols including TCP, UDP, HTTP(S), and WebSocket, while being compatible with mainstream application protocols such as SSH, HTTP, Redis, and MySQL. It also provides an intuitive visual management interface for easy configuration and real-time monitoring.
 
 ---
 
-## Download & Install
+## 🌟 Features
 
-Download binaries from GitHub Releases that match your OS and architecture:
-
-| Platform | Arch | Filename | Type | Link |
-|----------|------|----------|------|------|
-| Linux | x86_64 | `brook-sev_Linux-x86_64(amd64).tar.gz` | Server | https://github.com/g-brook/brook/releases/download/v0.0.1-bate.1/brook-sev_Linux-arm64.tar.gz |
-| Linux | arm64 | `brook-sev_Linux-arm64.tar.gz` | Server | https://github.com/g-brook/brook/releases/latest/download/brook-sev_Linux-arm64.tar.gz |
-| macOS | ARM64 (Apple M) | `brook-sev_macOS-ARM64(Apple-M).tar.gz` | Server | https://github.com/g-brook/brook/releases/latest/download/brook-sev_macOS-ARM64.Apple-M.tar.gz |
-| macOS | Intel | `brook-sev_macOS-Intel.tar.gz` | Server | https://github.com/g-brook/brook/releases/latest/download/brook-sev_macOS-Intel.tar.gz |
-| Windows | x86_64 | `brook-sev_Windows-x86_64.tar.gz` | Server | https://github.com/g-brook/brook/releases/latest/download/brook-sev_Windows-x86_64.tar.gz |
-
-| Platform | Arch | Filename | Type | Link |
-|----------|------|----------|------|------|
-| Linux | x86_64 | `brook-cli_Linux-x86_64(amd64).tar.gz` | Client | https://github.com/g-brook/brook/releases/download/v0.0.1-bate.1/brook-sev_Linux-arm64.tar.gz |
-| Linux | arm64 | `brook-cli_Linux-arm64.tar.gz` | Client | https://github.com/g-brook/brook/releases/latest/download/brook-cli_Linux-arm64.tar.gz |
-| macOS | ARM64 (Apple M) | `brook-cli_macOS-ARM64(Apple-M).tar.gz` | Client | https://github.com/g-brook/brook/releases/latest/download/brook-cli_macOS-ARM64(Apple-M).tar.gz |
-| macOS | Intel | `brook-cli_macOS-Intel.tar.gz` | Client | https://github.com/g-brook/brook/releases/latest/download/brook-cli_macOS-Intel.tar.gz |
-| Windows | x86_64 | `brook-cli_Windows-x86_64.tar.gz` | Client | https://github.com/g-brook/brook/releases/latest/download/brook-cli_Windows-x86_64.tar.gz |
-
-Tip: Links point to the latest version via `/latest/download/`. See the Releases page for older versions.
+- ✅ **Multi-Protocol Support**: TCP / UDP / HTTP(S) / WebSocket tunnels
+- 🔧 **Wide Compatibility**: Compatible with SSH, HTTP(S), MySQL, Redis, and other common protocols
+- 🖥️ **Visual Interface**: Built-in web management panel supporting initialization, configuration, and status monitoring
+- ⚙️ **Easy to Use**: Quick setup via `client.json` and `server.json`, with auto-reconnection and logging support
+- 🚀 **Lightweight & Efficient**: Low resource consumption, suitable for various application scenarios
+- 🌍 **Cross-Platform Deployment**: Supports mainstream operating systems, flexibly adapting to different environments
 
 ---
 
-## Server Quick Start
+## 🌐 Online Installation
 
-1) Extract the package and enter the directory
+```shell
+bash -c "$(curl -fsSL https://www.brook.cc/install.sh)"
+```
 
-```sh
+## 📦 Download & Installation (Manual)
+
+Download pre-compiled packages for your system from the [GitHub Releases](https://github.com/g-brook/brook/releases) page:
+
+### Server
+
+| Platform | Architecture | Filename | Type | Download Link |
+|----------|--------------|----------|------|---------------|
+| Linux | x86_64 (amd64) | `brook-sev_Linux-x86_64(amd64).tar.gz` | Server | [Download](https://github.com/g-brook/brook/releases/latest/download/brook-sev_Linux-arm64.tar.gz) |
+| Linux | arm64 | `brook-sev_Linux-arm64.tar.gz` | Server | [Download](https://github.com/g-brook/brook/releases/latest/download/brook-sev_Linux-arm64.tar.gz) |
+| macOS | ARM64 (Apple M) | `brook-sev_macOS-ARM64(Apple-M).tar.gz` | Server | [Download](https://github.com/g-brook/brook/releases/latest/download/brook-sev_macOS-ARM64.Apple-M.tar.gz) |
+| macOS | Intel | `brook-sev_macOS-Intel.tar.gz` | Server | [Download](https://github.com/g-brook/brook/releases/latest/download/brook-sev_macOS-Intel.tar.gz) |
+| Windows | x86_64 | `brook-sev_Windows-x86_64.tar.gz` | Server | [Download](https://github.com/g-brook/brook/releases/latest/download/brook-sev_Windows-x86_64.tar.gz) |
+
+### Client
+
+| Platform | Architecture | Filename | Type | Download Link |
+|----------|--------------|----------|------|---------------|
+| Linux | x86_64 (amd64) | `brook-cli_Linux-x86_64(amd64).tar.gz` | Client | [Download](https://github.com/g-brook/brook/releases/latest/download/brook-cli_Linux-arm64.tar.gz) |
+| Linux | arm64 | `brook-cli_Linux-arm64.tar.gz` | Client | [Download](https://github.com/g-brook/brook/releases/latest/download/brook-cli_Linux-arm64.tar.gz) |
+| macOS | ARM64 (Apple M) | `brook-cli_macOS-ARM64(Apple-M).tar.gz` | Client | [Download](https://github.com/g-brook/brook/releases/latest/download/brook-sev_macOS-ARM64.Apple-M.tar.gz) |
+| macOS | Intel | `brook-cli_macOS-Intel.tar.gz` | Client | [Download](https://github.com/g-brook/brook/releases/latest/download/brook-cli_macOS-Intel.tar.gz) |
+| Windows | x86_64 | `brook-cli_Windows-x86_64.tar.gz` | Client | [Download](https://github.com/g-brook/brook/releases/latest/download/brook-cli_Windows-x86_64.tar.gz) |
+
+> 💡 **Note**: These links automatically redirect to the latest version. For historical versions, please visit the [Releases Page](https://github.com/g-brook/brook/releases).
+
+---
+
+## 🚀 Server Quick Start Guide
+
+### Step 1: Extract and Enter Directory
+
+```bash
 mkdir -p ./brook-sev && tar -xzf brook-sev_Linux-arm64.tar.gz -C ./brook-sev
 cd brook-sev
 ```
 
-2) Edit `server.json`
+### Step 2: Edit `server.json` Configuration File
 
 ```json
 {
@@ -56,47 +68,59 @@ cd brook-sev
   "webPort": 8000,
   "serverPort": 8909,
   "tunnelPort": 8919,
-  "token": "", // set a static token here when Web is disabled
-  "logger": { "logLevel": "info", "logPath": "./", "outs": "file" }
+  "token": "", // If Web mode is not enabled, a static token can be set here
+  "logger": {
+    "logLevel": "info",
+    "logPath": "./",
+    "outs": "file"
+  }
 }
 ```
 
-3) Start the server
+### Step 3: Start Server
 
-```sh
+```bash
 ./brook-sev -c ./server.json
 ```
 
-4) Open the management UI
+### Step 4: Access Management Interface
 
-- Visit `http://localhost:8000/index`
-- First login requires initialization:
-  - Set admin username and password
-  - Log in and initialize the Token
+Open your browser and visit `http://localhost:8000/index`. The first login requires initializing account information.
 
-<img src="img_1.png" alt="Init" style="zoom:60%;" />
-<img src="img_2.png" alt="Login" style="zoom:60%;" />
-<img src="img_3.png" alt="Init Token" style="zoom:60%;" />
-<img src="img_4.png" alt="Setup Tunnels" style="zoom:60%;" />
+#### Initialization Process:
+1. Set administrator account and password
+2. Generate Token after login
+
+Related screenshots:
+
+<p align="center">
+  <img src="document/img_1.png" alt="Initialization" width="45%" />
+  <img src="document/img_2.png" alt="Login" width="45%" />
+  <br/>
+  <img src="document/img_3.png" alt="Initialize Token" width="45%" />
+  <img src="document/img_4.png" alt="Set Channel Information" width="45%" />
+</p>
 
 ---
 
-## Client Quick Start
+## 🧩 Client Quick Start Guide
 
-1) Extract the package and enter the directory
+### Step 1: Extract and Enter Directory
 
-```sh
+```bash
 mkdir -p ./brook-cli && tar -xzf brook-cli_Linux-arm64.tar.gz -C ./brook-cli
 cd brook-cli
 ```
 
-2) Prepare `client.json` (download a template from the server UI and modify)
+### Step 2: Prepare `client.json` Configuration File
+
+You can download the template from the server management interface and modify it according to your actual needs:
 
 ```json
 {
   "serverPort": 8909,
   "serverHost": "127.0.0.1",
-  "token": "<Token generated in server UI>",
+  "token": "<Token generated in the management backend>",
   "pingTime": 2000,
   "tunnels": [
     {
@@ -114,81 +138,104 @@ cd brook-cli
 }
 ```
 
-3) Start the client
+### Step 3: Start Client
 
-```sh
+```bash
 ./brook-cli -c ./client.json
 ```
 
-4) Retrieve templates and identifiers
+### Step 4: Get Template and Identifiers
 
-- Get `ProxyId` from the server:
-  <img src="img_8.png" alt="Get ProxyId" style="zoom:60%;" />
-- Get `httpId` (required for HTTP/HTTPS tunnels):
-  <img src="img_9.png" alt="Get HttpId" style="zoom:60%;" />
+- Get `ProxyId` template:
+  <p align="center"><img src="document/img_8.png" alt="Get ProxyId" width="60%" /></p>
 
----
-
-## Configuration Reference
-
-Server `server.json` keys:
-
-- `enableWeb`: enable/disable web UI
-- `webPort`: web UI port (default 8000, recommended 4000–9000)
-- `serverPort`: control port (default 8909)
-- `tunnelPort`: data tunnel port (default `serverPort + 10`)
-- `token`: static authentication token when Web UI is disabled
-- `logger`: logging configs (`logLevel`, `logPath`, `outs`)
-
-Client `client.json` keys:
-
-- `serverHost`: server address (IP or domain)
-- `serverPort`: control port (match server config)
-- `token`: token generated in server UI, used for login and tunnel binding
-- `pingTime`: heartbeat interval in ms (recommended ≥ 2000)
-- `tunnels`: array of tunnel definitions
-  - `type`: tunnel type (`tcp` / `udp` / `http` / `websocket`)
-  - `destination`: local forwarding target, e.g., `127.0.0.1:8081`
-  - `proxyId`: identifier generated when creating a tunnel on the server
-  - `httpId`: required for HTTP/HTTPS tunnels, must match the server Web setting
-
-CLI flags:
-
-- Server: `./brook-sev -c ./server.json` or `./brook-sev --configs ./server.json`
-- Server background start: `nohup ./brook-sev > app.log 2>&1 &`
-- Client: `./brook-cli -c ./client.json` or `./brook-cli --configs ./client.json`
-- Client background start: `nohup ./brook-cli > app.log 2>&1 &`
+- Get `httpId` (HTTP/HTTPS tunnels only):
+  <p align="center"><img src="document/img_9.png" alt="Get HttpId" width="60%" /></p>
 
 ---
 
-## Build from Source
+## ⚙️ Configuration Details
 
-- Server:
-  - Go to `server/` and run: `bash gobuild.sh`
-  - Choose platform/arch interactively; packages are created under `server/dist/brook-sev_*.tar.gz`
+### Server Configuration (`server.json`) Key Fields:
 
-- Client:
-  - Go to `client/` and run: `bash gobuild.sh`
-  - Packages are created under `client/dist/brook-cli_*.tar.gz`
+| Field | Description |
+|-------|-------------|
+| `enableWeb` | Whether to enable the web management interface |
+| `webPort` | Web management interface listening port, default is `8000` |
+| `serverPort` | Master control communication port, default is `8909` |
+| `tunnelPort` | Data tunnel listening port, default is `serverPort + 10` |
+| `token` | Static authentication token in non-Web mode |
+| `logger` | Log configuration object |
+
+### Client Configuration (`client.json`) Key Fields:
+
+| Field | Description |
+|-------|-------------|
+| `serverHost` | Server host address |
+| `serverPort` | Server control port |
+| `token` | Authentication token from server management interface |
+| `pingTime` | Heartbeat detection interval (milliseconds), recommended not less than 2000ms |
+| `tunnels` | Tunnel list |
+| `type` | Tunnel type (tcp / udp / http / websocket) |
+| `destination` | Local target address |
+| `proxyId` | Unique identifier assigned by server |
+| `httpId` | HTTP/HTTPS tunnel dedicated ID, must match server configuration |
+
+### CLI Startup Commands
+
+#### Server Startup:
+
+```bash
+./brook-sev -c ./server.json
+# Or using long parameter form
+./brook-sev --configs ./server.json
+```
+
+#### Client Startup:
+
+```bash
+./brook-cli -c ./client.json
+# Or using long parameter form
+./brook-cli --configs ./client.json
+```
+
+##### Background Running on Linux (requires systemd support):
+
+```bash
+sudo ./brook-cli start
+# Check help for more command options
+./brook-cli help
+```
 
 ---
 
-## FAQ
+## ❓ FAQ (Frequently Asked Questions)
 
-- Wrong extraction command: use `tar -xzf <file>.tar.gz` (not `tar -czvf`, which creates archives).
-- Connection issues: verify `serverHost`, `serverPort`, and `token`; ensure the server is running and firewall allows the ports.
-- HTTP/HTTPS tunnel: client `httpId` must match the server’s Web settings.
-- Port conflicts: if 8000/8909/8919 are occupied, change them in the configs to available ports.
-- Logs: check files under `logger.logPath`; set `logLevel` to `debug` if needed.
+- **Extraction failed?**
+  > Use the correct command: `tar -xzf <file>.tar.gz`, avoid misusing the packaging command `tar -czvf`.
+
+- **Cannot connect to server?**
+  > Please check if `serverHost`, `serverPort`, and `token` are correct; confirm the server is running normally and the firewall allows access to the corresponding ports.
+
+- **HTTP/HTTPS tunnel abnormal?**
+  > The `httpId` in the client must exactly match the server's web settings.
+
+- **Port conflict?**
+  > If default ports (such as 8000/8909/8919) are occupied, you can change to other free ports in the configuration.
+
+- **How to debug issues?**
+  > Check the log files in `logger.logPath`. If necessary, temporarily adjust `logLevel` to `debug` to get more detailed information.
 
 ---
 
-## Project Structure
+## 🗂️ Project Structure Overview
 
-- `server/`: server application and web management
-- `client/`: client application and CLI UI
-- `common/`: shared components (configs, logging, transport, protocols, etc.)
-- `portal/server/`: web front-end (Vite)
-- `document/`: screenshots and resources
+```
+├── server/               # Server core logic and web management interface
+├── client/               # Client core logic and CLI interface
+├── common/               # Common modules (configuration parsing, logging system, transmission encapsulation, etc.)
+├── portal/server/        # Frontend management page (built with Vite)
+└── document/             # Documentation, screenshots, and other auxiliary resources
+```
 
-For more examples and protocol details, refer to the source code and comments in each module.
+For further details on functionality or extended protocol support, please refer to the source code and comments in each directory.

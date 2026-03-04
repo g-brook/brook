@@ -17,7 +17,12 @@
 
 ---
 
-## 📦 下载与安装
+## 🌐 在线安装
+```shell
+bash -c "$(curl -fsSL https://www.brook.cc/install.sh)"
+```
+
+## 📦 下载与安装 (手动安装)
 
 前往 [GitHub Releases](https://github.com/g-brook/brook/releases) 页面下载适合您系统的预编译包：
 
@@ -163,6 +168,8 @@ cd brook-cli
 | `destination` | 本地目标地址                                       |
 | `proxyId`     | 服务端分配的唯一标识符                             |
 | `httpId`      | HTTP/HTTPS 隧道专用 ID，必须和服务端一致           |
+
+
 
 ### CLI 启动命令
 
