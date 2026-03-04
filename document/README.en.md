@@ -1,6 +1,6 @@
 # <img src="logo.svg" alt="svg.png" width="50" height="50" /> <img src="font-dark.svg" alt="svg.png" width="200" height="50" />  ![Latest Release](https://img.shields.io/github/v/release/g-brook/brook?label=Latest&style=flat-square)
 
-[中文](README.md)
+[中文](/README.md)
 
 **Brook** is a high-performance network tunnel and proxy tool designed for intranet penetration. It's cross-platform (Linux/macOS/Windows) and developed in Go. It supports multiple transmission protocols including TCP, UDP, HTTP(S), and WebSocket, while being compatible with mainstream application protocols such as SSH, HTTP, Redis, and MySQL. It also provides an intuitive visual management interface for easy configuration and real-time monitoring.
 
