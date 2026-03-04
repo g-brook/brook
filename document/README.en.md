@@ -1,4 +1,4 @@
-# <img src="document/logo.svg" alt="svg.png" width="50" height="50" /> <img src="document/font-dark.svg" alt="svg.png" width="200" height="50" />  ![Latest Release](https://img.shields.io/github/v/release/g-brook/brook?label=Latest&style=flat-square)
+# <img src="logo.svg" alt="svg.png" width="50" height="50" /> <img src="font-dark.svg" alt="svg.png" width="200" height="50" />  ![Latest Release](https://img.shields.io/github/v/release/g-brook/brook?label=Latest&style=flat-square)
 
 [中文](README.md)
 
