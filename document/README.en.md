@@ -20,7 +20,7 @@
 ## 🌐 Online Installation
 
 ```shell
-bash -c "$(curl -fsSL https://dev.gbrook.cc/install.sh)"
+bash -c "$(curl -fsSL https://www.gbrook.cc/install.sh)"
 ```
 
 ## 📦 Download & Installation (Manual)
