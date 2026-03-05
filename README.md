@@ -88,13 +88,21 @@ cd brook-sev
 
 相关截图说明：
 
-<p align="center">
-  <img src="document/img_1.png" alt="初始化" width="45%" />
-  <img src="document/img_2.png" alt="登录" width="45%" />
-  <br/>
-  <img src="document/img_3.png" alt="初始化Token" width="45%" />
-  <img src="document/img_4.png" alt="设置通道信息" width="45%" />
-</p>
+##### 　1、初次使用进行初始化
+
+  <img src="document/img_1.png" alt="初始化" width="100%" />
+
+##### 　2、登录
+
+  <img src="document/img_2.png" alt="登录" width="100%" />
+
+##### 　3、登录成功，进行token初始化
+
+  <img src="document/img_3.png" alt="初始化Token" width="100%" />
+
+##### 　4、设置代理信息
+
+<img src="document/img_4.png" alt="设置通道信息" width="100%" />
 
 ---
 
@@ -141,10 +149,10 @@ cd brook-cli
 ### 步骤四：获取模板与标识符
 
 - 获取 `ProxyId` 模板：
-  <p align="center"><img src="document/img_8.png" alt="获取ProxyId" width="60%" /></p>
+  <p align="center"><img src="document/img_8.png" alt="获取ProxyId" width="100%" /></p>
 
 - 获取 `httpId`（仅限 HTTP/HTTPS 隧道）：
-  <p align="center"><img src="document/img_9.png" alt="获取HttpId" width="60%" /></p>
+  <p align="center"><img src="document/img_9.png" alt="获取HttpId" width="100%" /></p>
 
 ---
 
