@@ -15,6 +15,8 @@ github.com/dustin/go-humanize v1.0.1 h1:GzkhY7T5VNhEkwH0PVJgjz+fX1rhBrR7pRT3mDkp
 github.com/dustin/go-humanize v1.0.1/go.mod h1:Mu1zIs6XwVuF/gI1OepvI0qD18qycQx+mFykh5fBlto=
 github.com/g-brook/brook/common v0.0.0-20260228074557-fff376a8bc2d h1:fbpaz2Ed0LEPIaHGJ9Xm0xz30FuJCVUjau0VMGkopPM=
 github.com/g-brook/brook/common v0.0.0-20260228074557-fff376a8bc2d/go.mod h1:5ctVI+k3gqAN9d6MxgVJ4CmnU06s6NklLiHHx0dF9ec=
+github.com/g-brook/brook/common v0.0.0-20260306043312-cedbabe070aa h1:bNlT8O9TdjsiXCSa4I8U6P9FAaUvn1QP88hB/jJ1fzw=
+github.com/g-brook/brook/common v0.0.0-20260306043312-cedbabe070aa/go.mod h1:5ctVI+k3gqAN9d6MxgVJ4CmnU06s6NklLiHHx0dF9ec=
 github.com/g-brook/brook/server v0.0.0-20260228074557-fff376a8bc2d h1:f3/wsaimAgNqGPR0W/q0s0Wjui6oHES3WdK9O2fy2KM=
 github.com/g-brook/brook/server v0.0.0-20260228074557-fff376a8bc2d/go.mod h1:W6xpoPsrOkDLf5tl2KJDSiEqSTsomQGbLgNqtgZprVM=
 github.com/g-brook/brook/server v0.0.0-20260228075209-31969bb2ce66 h1:m+dtKlHhQAxSpeTSzr/9CJb1IT83LjNU4eaPIlwS7iQ=

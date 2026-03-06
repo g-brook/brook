@@ -4,7 +4,7 @@ go 1.24.2
 
 require (
 	github.com/dgraph-io/badger/v4 v4.9.1
-	github.com/g-brook/brook/common v0.0.0-20260228074557-fff376a8bc2d
+	github.com/g-brook/brook/common v0.0.0-20260306043312-cedbabe070aa
 	github.com/g-brook/brook/server v0.0.0-20260228075209-31969bb2ce66
 	github.com/gorilla/mux v1.8.1
 	github.com/spf13/cobra v1.10.2
