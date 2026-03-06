@@ -36,9 +36,10 @@ echo "2) Linux ARM64"
 echo "3) macOS ARM64 (Apple M)"
 echo "4) macOS Intel"
 echo "5) Windows x86_64"
-echo "6) Docker ARM64"
-echo "7) Docker AMD64"
-printf "Choose [1-7, comma separated]: "
+echo "6) Windows ARM64"
+echo "7) Docker ARM64"
+echo "8) Docker AMD64"
+printf "Choose [1-8, comma separated]: "
 read OS_CHOICES
 
 printf "Copy resource directories? (y/n, default y): "
@@ -68,8 +69,10 @@ resolve_target() {
         5)
             BUILD_OS="windows"; BUILD_ARCH="amd64"; FILE_DESC="Windows-x86_64"; DOCKER_BUILD=""; PLATFORM="" ;;
         6)
-            BUILD_OS="linux"; BUILD_ARCH="arm64"; FILE_DESC="Docker-ARM64"; DOCKER_BUILD="true"; PLATFORM="linux/arm64" ;;
+            BUILD_OS="windows"; BUILD_ARCH="arm64"; FILE_DESC="Windows-ARM64"; DOCKER_BUILD=""; PLATFORM="" ;;
         7)
+            BUILD_OS="linux"; BUILD_ARCH="arm64"; FILE_DESC="Docker-ARM64"; DOCKER_BUILD="true"; PLATFORM="linux/arm64" ;;
+        8)
             BUILD_OS="linux"; BUILD_ARCH="amd64"; FILE_DESC="Docker-AMD64"; DOCKER_BUILD="true"; PLATFORM="linux/amd64" ;;
         *)
             echo "⚠️  Invalid choice: $choice"; return 1 ;;
