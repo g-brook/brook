@@ -18,6 +18,7 @@ package configs
 
 import (
 	"fmt"
+	"os"
 	"time"
 
 	"github.com/g-brook/brook/common/jsonx"
@@ -101,6 +102,16 @@ func WriterConfig(cfgPath string, cfg *ClientConfig) error {
 		return err
 	}
 	return nil
+}
+
+func IsExist(cfgPath string) bool {
+	_, err := os.Stat(cfgPath)
+	if err == nil {
+		return true
+	} else if os.IsNotExist(err) {
+		return false
+	}
+	return false
 }
 
 // ClientConfig

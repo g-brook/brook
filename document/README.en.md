@@ -94,11 +94,11 @@ Open your browser and visit `http://localhost:8000/index`. The first login requi
 Related screenshots:
 
 <p align="center">
-  <img src="document/img_1.png" alt="Initialization" width="45%" />
-  <img src="document/img_2.png" alt="Login" width="45%" />
+  <img src="img_1.png" alt="Initialization" width="45%" />
+  <img src="img_2.png" alt="Login" width="45%" />
   <br/>
-  <img src="document/img_3.png" alt="Initialize Token" width="45%" />
-  <img src="document/img_4.png" alt="Set Channel Information" width="45%" />
+  <img src="img_3.png" alt="Initialize Token" width="45%" />
+  <img src="img_4.png" alt="Set Channel Information" width="45%" />
 </p>
 
 ---
@@ -147,10 +147,10 @@ You can download the template from the server management interface and modify it
 ### Step 4: Get Template and Identifiers
 
 - Get `ProxyId` template:
-  <p align="center"><img src="document/img_8.png" alt="Get ProxyId" width="60%" /></p>
+  <p align="center"><img src="img_8.png" alt="Get ProxyId" width="60%" /></p>
 
 - Get `httpId` (HTTP/HTTPS tunnels only):
-  <p align="center"><img src="document/img_9.png" alt="Get HttpId" width="60%" /></p>
+  <p align="center"><img src="img_9.png" alt="Get HttpId" width="60%" /></p>
 
 ---
 

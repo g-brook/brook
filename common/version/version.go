@@ -40,18 +40,35 @@ func GetDbVersion() int {
 	return DBVersion
 }
 
-func Banner(version string) string {
+func Banner(version string, sv string) string {
 	banner := `
     __                     __  
    / /__________________  / /__
   / __  / ___/ __ \/ __ \/ //_/
  / /_/ / /  / /_/ / /_/ / ,<   
 /_.___/_/   \____/\____/_/|_|  
-           v%s
+%s
+
+Version: v%s
+Website: https://www.gbrook.cc
+
 `
-	return fmt.Sprintf(banner, version)
+	return fmt.Sprintf(banner, sv, version)
 }
 
-func ShowBanner(version string) {
-	fmt.Print(Banner(version))
+func ShowBanner(version string, sv string) {
+	gradientLine(Banner(version, sv), 0, 200, 255, 120, 255, 120)
+}
+
+func gradientLine(text string, startR, startG, startB, endR, endG, endB int) {
+
+	length := len(text)
+
+	for i, c := range text {
+		r := startR + (endR-startR)*i/length
+		g := startG + (endG-startG)*i/length
+		b := startB + (endB-startB)*i/length
+		fmt.Printf("\x1b[38;2;%d;%d;%dm%c", r, g, b, c)
+	}
+	fmt.Print("\x1b[0m\n")
 }

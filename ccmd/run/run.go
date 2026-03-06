@@ -41,6 +41,7 @@ var (
 	config   *configs.ClientConfig
 	cmdValue = cmd.NewCliCmdValue()
 	service  *run.Service
+	name     = "Brook Tunnel Client(brook-cli)"
 )
 
 func init() {
@@ -53,22 +54,30 @@ func init() {
 var rootCmd = &cobra.Command{
 	Use:     "start",
 	Version: version.GetBuildVersion(),
-	Long:    version.Banner(version.BuildVersion) + "\nBrook is a cross-platform, high-performance network tunneling and proxy toolkit implemented in Go.\nIt supports a wide range of transport protocols, including TCP, UDP, HTTP(S), and WebSocket, ensuring compatibility with popular application protocols such as SSH, HTTP, Redis, and MySQL.\nA built-in web UI simplifies configuration.",
+	Long:    version.Banner(version.BuildVersion, name) + "\nBrook is a cross-platform, high-performance network tunneling and proxy toolkit implemented in Go.\nIt supports a wide range of transport protocols, including TCP, UDP, HTTP(S), and WebSocket, ensuring compatibility with popular application protocols such as SSH, HTTP, Redis, and MySQL.\nA built-in web UI simplifies configuration.",
 	Run:     rootRun,
 }
 
 func rootRun(cmd *cobra.Command, args []string) {
-	fmt.Println("brook starting; hello world!! 👋")
-	version.ShowBanner(version.GetBuildVersion())
+	log.Info("brook starting; hello world!! 👋")
+	version.ShowBanner(version.GetBuildVersion(), name)
 	sysCtx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM, syscall.SIGINT)
 	defer stop()
 	if cmdValue.ConfigPath == "" {
 		log.Error("configs is null, please use -c or --configs to set configs file")
 		os.Exit(1)
 	}
-	if err := configs.WriterConfig(cmdValue.ConfigPath, config); err != nil {
-		log.Error(err.Error())
+	exist := configs.IsExist(cmdValue.ConfigPath)
+	if exist {
+		if err := configs.WriterConfig(cmdValue.ConfigPath, config); err != nil {
+			log.Error(err.Error())
+			_ = notify.NotifyStopping()
+			os.Exit(1)
+		}
+	} else {
+		_ = notify.NotifyStopping()
 		os.Exit(1)
+		return
 	}
 	log.NewLogger(config.Logger)
 	run.LoadTunnel()
@@ -136,6 +145,7 @@ func startServer(config *configs.ClientConfig) {
 
 func shutdown() {
 	log.Info("brook exiting; bye bye!! 👋")
+	_ = notify.NotifyStopping()
 	os.Exit(0)
 }
 
