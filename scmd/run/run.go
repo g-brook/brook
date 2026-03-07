@@ -124,9 +124,7 @@ func run() {
 	standard.InitTunnelConfig(&serverConfig)
 	afterRun(&serverConfig)
 	pid.CreatePidFile()
-	defer func() {
-		_ = pid.DeletePidFile()
-	}()
+
 }
 
 // afterRun is a function that sets the authentication token based on the server configuration
@@ -144,6 +142,7 @@ func afterRun(config *configs.ServerConfig) {
 
 func shutdown() {
 	log.Info("brook exiting; bye bye!! 👋")
+	_ = pid.DeletePidFile()
 	if remote.Inserver != nil {
 		remote.Inserver.Shutdown()
 	}

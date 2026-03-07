@@ -7,7 +7,7 @@ echo Starting brook service...
 cd /d "%~dp0"
 
 REM Start brook in a separate window so batch can continue
-start "" .\brook-sev.exe start
+.\brook-sev.exe
 
 REM Wait a few seconds for the service to initialize
 timeout /t 3 > nul
