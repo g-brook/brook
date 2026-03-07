@@ -121,7 +121,7 @@ build_target() {
     if [ "$BUILD_OS" = "windows" ]; then
       cp run.bat "$OUTPUT_DIR"
       BUILD_ARGS="-ldflags=-H=windowsgui"
-      GOOS=$BUILD_OS GOARCH=$BUILD_ARCH go build $BUILD_ARGS -o "$OUTPUT_FILE" ./main.go
+      GOOS=$BUILD_OS GOARCH=$BUILD_ARCH go build -o "$OUTPUT_FILE" ./main.go
     else
       GOOS=$BUILD_OS GOARCH=$BUILD_ARCH go build -ldflags="-s -w" -o "$OUTPUT_FILE" ./main.go
     fi

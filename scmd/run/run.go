@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
+	"runtime"
 	"syscall"
 
 	"github.com/g-brook/brook/common/cmd"
@@ -110,7 +111,11 @@ func run() {
 			log.Error("notify readiness error: %v", err)
 		}
 	}()
-	if serverConfig.EnableWeb {
+	isStartWeb := runtime.GOOS == "windows"
+	if isStartWeb {
+		log.Info("windows system, force start web server...")
+	}
+	if serverConfig.EnableWeb || isStartWeb {
 		web.NewWebServer(serverConfig.WebPort)
 	}
 	//Start In-Server.

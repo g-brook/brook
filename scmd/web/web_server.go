@@ -65,6 +65,7 @@ func NewWebServer(port int) {
 			panic("start web server err: " + err.Error())
 		}
 	})
+	log.Info("web server url is: http://localhost:%d", port)
 }
 
 func doRoute() {
@@ -80,7 +81,6 @@ func doRoute() {
 	// static source
 	r.PathPrefix("/assets/").Handler(http.FileServer(http.FS(staticFs)))
 	r.NotFoundHandler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		//http.ServeFile(w, r, filepath.Join(root, "index.html"))
 		// 直接从 embed 中读取
 		file, err := fs.ReadFile(staticFs, "index.html")
 		if err != nil {

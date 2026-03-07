@@ -224,7 +224,7 @@ npm run build
 
 ```shell
 cd server/
-bash gobuild.sh
+bash build.sh
 # 根据提示选择平台和架构
 # 输出路径：server/dist/brook-sev_*.tar.gz
 ```
@@ -233,7 +233,7 @@ bash gobuild.sh
 
 ```shell
 cd client/
-bash gobuild.sh
+bash build.sh
 # 输出路径：client/dist/brook-cli_*.tar.gz
 ```
 ---
