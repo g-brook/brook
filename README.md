@@ -98,7 +98,7 @@ cd brook-sev
 
 ##### 　3、登录成功，进行token初始化
 
-  <img src="document/img_3.png" alt="初始化Token" width="100%" />
+  <img src="document/img_7.png" alt="初始化Token" width="100%" />
 
 ##### 　4、设置代理信息
 
