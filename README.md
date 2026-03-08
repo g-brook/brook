@@ -35,16 +35,18 @@ bash -c "$(curl -fsSL https://www.gbrook.cc/install.sh)"
 | macOS    | ARM64 (Apple M)  | `brook-sev_macOS-ARM64(Apple-M).tar.gz`       | Server | [Download](https://github.com/g-brook/brook/releases/latest/download/brook-sev_macOS-ARM64.Apple-M.tar.gz) |
 | macOS    | Intel            | `brook-sev_macOS-Intel.tar.gz`                | Server | [Download](https://github.com/g-brook/brook/releases/latest/download/brook-sev_macOS-Intel.tar.gz) |
 | Windows  | x86_64           | `brook-sev_Windows-x86_64.tar.gz`             | Server | [Download](https://github.com/g-brook/brook/releases/latest/download/brook-sev_Windows-x86_64.tar.gz) |
+| Windows  | x86_64           | `brook-sev_Windows-ARM64.tar.gz`             | Server | [Download](https://github.com/g-brook/brook/releases/latest/download/brook-sev_Windows-ARM64.tar.gz) |
 
 ### 客户端（Client）
 
-| 平台     | 架构            | 文件名                                         | 类型   | 下载链接                                                                                          |
-|----------|------------------|------------------------------------------------|--------|---------------------------------------------------------------------------------------------------|
-| Linux    | x86_64 (amd64)   | `brook-cli_Linux-x86_64(amd64).tar.gz`        | Client | [Download](https://github.com/g-brook/brook/releases/latest/download/brook-cli_Linux-arm64.tar.gz) |
-| Linux    | arm64            | `brook-cli_Linux-arm64.tar.gz`                | Client | [Download](https://github.com/g-brook/brook/releases/latest/download/brook-cli_Linux-arm64.tar.gz) |
+| 平台     | 架构            | 文件名                                         | 类型   | 下载链接                                                                                                     |
+|----------|------------------|------------------------------------------------|--------|----------------------------------------------------------------------------------------------------------|
+| Linux    | x86_64 (amd64)   | `brook-cli_Linux-x86_64(amd64).tar.gz`        | Client | [Download](https://github.com/g-brook/brook/releases/latest/download/brook-cli_Linux-arm64.tar.gz)       |
+| Linux    | arm64            | `brook-cli_Linux-arm64.tar.gz`                | Client | [Download](https://github.com/g-brook/brook/releases/latest/download/brook-cli_Linux-arm64.tar.gz)       |
 | macOS    | ARM64 (Apple M)  | `brook-cli_macOS-ARM64(Apple-M).tar.gz`       | Client | [Download](https://github.com/g-brook/brook/releases/latest/download/brook-sev_macOS-ARM64.Apple-M.tar.gz) |
-| macOS    | Intel            | `brook-cli_macOS-Intel.tar.gz`                | Client | [Download](https://github.com/g-brook/brook/releases/latest/download/brook-cli_macOS-Intel.tar.gz) |
-| Windows  | x86_64           | `brook-cli_Windows-x86_64.tar.gz`             | Client | [Download](https://github.com/g-brook/brook/releases/latest/download/brook-cli_Windows-x86_64.tar.gz) |
+| macOS    | Intel            | `brook-cli_macOS-Intel.tar.gz`                | Client | [Download](https://github.com/g-brook/brook/releases/latest/download/brook-cli_macOS-Intel.tar.gz)       |
+| Windows  | x86_64           | `brook-cli_Windows-x86_64.tar.gz`             | Client | [Download](https://github.com/g-brook/brook/releases/latest/download/brook-cli_Windows-x86_64.tar.gz)    |
+| Windows  | x86_64           | `brook-cli_Windows-arm64.tar.gz`             | Client | [Download](https://github.com/g-brook/brook/releases/latest/download/brook-cli_Windows-arm64.tar.gz)          |
 
 > 💡 **提示**：上述链接将自动跳转到最新版本。若需查看历史版本，请访问 [Releases 页面](https://github.com/g-brook/brook/releases)。
 

@@ -39,7 +39,7 @@ echo "5) Windows x86_64"
 echo "6) Windows ARM64"
 echo "7) Docker ARM64"
 echo "8) Docker AMD64"
-printf "Choose [1-7, comma separated]: "
+printf "Choose [1-8, comma separated]: "
 read -r OS_CHOICES
 
 printf "Copy resource directories? (y/n, default y): "
