@@ -92,14 +92,6 @@ const handleInit = async () => {
   <div class="min-h-screen flex items-center justify-center bg-gradient-to-br from-sky-50 to-indigo-100">
     <div class="transform">
       <div class="card-container w-[480px] p-[2px] rounded-2xl relative">
-        <!-- Logo 区域 -->
-        <div class="absolute -top-12 left-1/2 -translate-x-1/2 flex items-center justify-center">
-          <div class="relative">
-            <div class="absolute inset-1 w-30 h-30 rounded-full bg-gradient-to-r from-sky-300 via-blue-400 to-indigo-400 opacity-40 blur-2xl"></div>
-            <img src="@/assets/logo.svg" class="w-30 h-auto relative z-10 drop-shadow-md" />
-          </div>
-        </div>
-
         <!-- 主卡片 -->
         <div class="card-content backdrop-blur-xl bg-white/60 border border-white/40 shadow-xl rounded-2xl p-8 relative z-10">
           <!-- 标题区域 -->

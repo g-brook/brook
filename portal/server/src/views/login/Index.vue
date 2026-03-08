@@ -61,7 +61,10 @@ onMounted(() => {
              border-primary">
       <!-- 操作按钮区域 -->
       <div class="flex items-center justify-between">
-        <img src="@/assets/logo.svg" class="w-10 h-10"/>
+        <div class="flex justify-between">
+          <img src="@/assets/logo.svg" class="w-10 h-10"/>
+          <img src="@/assets/font-dark.svg" class="w-18 pt-2"/>
+        </div>
         <div class="flex items-center gap-2 justify-end">
           <button class="btn btn-ghost btn-sm btn-square" @click="handleGithubClick">
             <Icon icon="brook-github" style="font-size: 20px; pointer-events: none;"/>

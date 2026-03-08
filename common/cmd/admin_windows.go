@@ -57,7 +57,7 @@ func status(service string) {
 		return
 	}
 
-	proc, err := os.FindProcess(cpid)
+	proc, err := os.FindProcess(cpid)　
 	if err != nil {
 		fmt.Println("Server PID file exists but process not found:", cpid)
 		return
