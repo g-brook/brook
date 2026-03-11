@@ -28,6 +28,8 @@ import (
 	"gopkg.in/natefinch/lumberjack.v2"
 )
 
+var writers = map[string]zapcore.WriteSyncer{} // Changed from var writers = map[string] zapcore.WriteSyncer
+
 type LoggerSetting struct {
 	level   string
 	logPath string
@@ -38,7 +40,7 @@ var sugar *zap.SugaredLogger
 
 func defaultSetting() *LoggerSetting {
 	return &LoggerSetting{
-		level:   "info",
+		level:   "debug",
 		logPath: "./logs/current_brook.log",
 		outs:    hash.NewSet[string]("stdout", "file"),
 	}
@@ -87,10 +89,15 @@ func initLogger(setting *LoggerSetting) {
 		MaxBackups: 10,
 		Compress:   true,
 	})
-	level := parseLevel(setting.level)
+	level := ParseLevel(setting.level)
 	var cores []zapcore.Core
 	if setting.outs.Contains("stdout") {
 		core := zapcore.NewCore(encoder, zapcore.AddSync(os.Stdout), level)
+		cores = append(cores, core)
+	}
+	if setting.outs.Contains("cli") && writers["cli"] != nil {
+		syncer := writers["cli"]
+		core := zapcore.NewCore(encoder, syncer, level)
 		cores = append(cores, core)
 	}
 	if setting.outs.Contains("file") {
@@ -121,10 +128,10 @@ func newSetting(setting *LoggerSetting) *LoggerSetting {
 	return setting
 }
 
-// parseLevel converts a string level to zapcore.Level
+// ParseLevel converts a string level to zapcore.Level
 // It maps common log level names to their corresponding zapcore values
 // If the input is not recognized, it returns InfoLevel as default
-func parseLevel(levelStr string) zapcore.Level {
+func ParseLevel(levelStr string) zapcore.Level {
 	switch levelStr {
 	case "debug":
 		return zapcore.DebugLevel
@@ -167,6 +174,10 @@ func Debug(msg string, args ...any) {
 		return
 	}
 	sugar.Debugf(msg, args...)
+}
+
+func AddWriter(key string, writer zapcore.WriteSyncer) {
+	writers[key] = writer
 }
 
 // Warn

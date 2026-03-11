@@ -23,7 +23,7 @@ import (
 	"os/signal"
 	"syscall"
 
-	tea "github.com/charmbracelet/bubbletea"
+	tea "charm.land/bubbletea/v2"
 	"github.com/g-brook/brook/client/cli"
 	"github.com/g-brook/brook/client/run"
 	"github.com/g-brook/brook/common/cmd"
@@ -79,13 +79,27 @@ func rootRun(cmd *cobra.Command, args []string) {
 		os.Exit(1)
 		return
 	}
-	log.NewLogger(config.Logger)
+	loggerInit()
 	run.LoadTunnel()
 	verilyBaseConfig(config)
 	startServer(config)
 	// wait for exit
 	<-sysCtx.Done()
 	shutdown()
+}
+
+func loggerInit() {
+	if isatty.IsTerminal(os.Stdin.Fd()) {
+		if config.Logger == nil {
+			config.Logger = &configs.LoggerConfig{}
+			config.Logger.LoggLevel = "info"
+			config.Logger.Outs = "cli,file"
+		} else {
+			config.Logger.Outs = "cli,file"
+		}
+		log.AddWriter("cli", cli.NewCLIWriteSyncer(config.Logger.LoggLevel))
+	}
+	log.NewLogger(config.Logger)
 }
 
 func verilyBaseConfig(c *configs.ClientConfig) {
@@ -98,7 +112,6 @@ func verilyBaseConfig(c *configs.ClientConfig) {
 	if c.Token == "" {
 		panic("Token is nil, system exit")
 	}
-	cli.Page.RemoteAddress = fmt.Sprintf("%s:%d", c.ServerHost, c.ServerPort)
 	if c.PingTime <= lang.DefaultPingTime {
 		c.PingTime = lang.DefaultPingTime
 	}
@@ -153,8 +166,10 @@ func OpenCli() {
 	if !isatty.IsTerminal(os.Stdin.Fd()) {
 		return
 	}
-	program := tea.NewProgram(cli.InitModel(), tea.WithInput(os.Stdin), tea.WithoutSignals(),
+	model := cli.NewTUIModel(fmt.Sprintf("%s:%d", config.ServerHost, config.ServerPort))
+	program := tea.NewProgram(model, tea.WithInput(os.Stdin), tea.WithoutSignals(),
 		tea.WithOutput(os.Stdout))
+	cli.SetGlobalProgram(program)
 	_, err := program.Run()
 	if err != nil {
 		log.Error(err.Error())

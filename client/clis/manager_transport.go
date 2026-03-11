@@ -64,7 +64,7 @@ func (b *managerTransport) Read(r *exchange.Protocol, cct *ClientControl) error 
 		t, _ := exchange.Parse[exchange.Heartbeat](r.Data)
 		startTime := t.StartTime
 		endTime := time.Now().UnixMilli()
-		cli.UpdateSpell(endTime - startTime)
+		cli.UpdateLatency(endTime - startTime)
 		return nil
 	}
 	return b.PushMessage(r)
