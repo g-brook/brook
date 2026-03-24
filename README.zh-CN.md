@@ -109,6 +109,34 @@ bash -c "$(curl -fsSL https://www.gbrook.cc/install.sh)"
    ./brook-cli -c ./client.json
    ```
 
+### 4. Linux 后台启动 (systemd)
+
+在支持 `systemd` 的 Linux 发行版上，Brook 内置了服务管理命令。首次执行 `start` 会自动在 `/etc/systemd/system/` 生成对应的 service 文件，然后启动服务。
+
+服务端：
+```shell
+sudo ./brook-sev start -c ./server.json
+sudo ./brook-sev restart
+sudo ./brook-sev stop
+sudo ./brook-sev status
+./brook-sev version
+```
+
+客户端：
+```shell
+sudo ./brook-cli start -c ./client.json
+sudo ./brook-cli restart
+sudo ./brook-cli stop
+sudo ./brook-cli status
+./brook-cli version
+```
+
+### 5. Windows 运行方式
+
+- 前台运行（控制台）：在解压目录打开 `cmd`，执行 `brook-sev.exe -c server.json` / `brook-cli.exe -c client.json`
+- 控制台启动：使用 `run.bat` 启动并保持控制台窗口不退出
+- 后台运行：`brook-sev.exe start` / `brook-cli.exe start`（再用 `restart` / `stop` / `status` / `version` 管理）
+
 ---
 
 ## 📥 资源下载
