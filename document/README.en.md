@@ -1,241 +1,163 @@
-# <img src="logo.svg" alt="svg.png" width="50" height="50" /> <img src="font-dark.svg" alt="svg.png" width="200" height="50" />  ![Latest Release](https://img.shields.io/github/v/release/g-brook/brook?label=Latest&style=flat-square)
+<p align="center">
+  <img src="logo.svg" alt="Brook Logo" width="120" height="120" />
+</p>
 
-[中文](/README.md)
-
-**Brook** is a high-performance network tunnel and proxy tool designed for intranet penetration. It's cross-platform (Linux/macOS/Windows) and developed in Go. It supports multiple transmission protocols including TCP, UDP, HTTP(S), and WebSocket, while being compatible with mainstream application protocols such as SSH, HTTP, Redis, and MySQL. It also provides an intuitive visual management interface for easy configuration and real-time monitoring.
-
----
-
-## 🌟 Features
-
-- ✅ **Multi-Protocol Support**: TCP / UDP / HTTP(S) / WebSocket tunnels
-- 🔧 **Wide Compatibility**: Compatible with SSH, HTTP(S), MySQL, Redis, and other common protocols
-- 🖥️ **Visual Interface**: Built-in web management panel supporting initialization, configuration, and status monitoring
-- ⚙️ **Easy to Use**: Quick setup via `client.json` and `server.json`, with auto-reconnection and logging support
-- 🚀 **Lightweight & Efficient**: Low resource consumption, suitable for various application scenarios
-- 🌍 **Cross-Platform Deployment**: Supports mainstream operating systems, flexibly adapting to different environments
-
----
-
-## 🌐 Online Installation
-
-```shell
-bash -c "$(curl -fsSL https://www.gbrook.cc/install.sh)"
-```
-
-## 📦 Download & Installation (Manual)
-
-Download pre-compiled packages for your system from the [GitHub Releases](https://github.com/g-brook/brook/releases) page:
-
-### Server
-
-| Platform | Architecture | Filename | Type | Download Link |
-|----------|--------------|----------|------|---------------|
-| Linux | x86_64 (amd64) | `brook-sev_Linux-x86_64(amd64).tar.gz` | Server | [Download](https://github.com/g-brook/brook/releases/latest/download/brook-sev_Linux-arm64.tar.gz) |
-| Linux | arm64 | `brook-sev_Linux-arm64.tar.gz` | Server | [Download](https://github.com/g-brook/brook/releases/latest/download/brook-sev_Linux-arm64.tar.gz) |
-| macOS | ARM64 (Apple M) | `brook-sev_macOS-ARM64(Apple-M).tar.gz` | Server | [Download](https://github.com/g-brook/brook/releases/latest/download/brook-sev_macOS-ARM64.Apple-M.tar.gz) |
-| macOS | Intel | `brook-sev_macOS-Intel.tar.gz` | Server | [Download](https://github.com/g-brook/brook/releases/latest/download/brook-sev_macOS-Intel.tar.gz) |
-| Windows | x86_64 | `brook-sev_Windows-x86_64.tar.gz` | Server | [Download](https://github.com/g-brook/brook/releases/latest/download/brook-sev_Windows-x86_64.tar.gz) |
-
-### Client
-
-| Platform | Architecture | Filename | Type | Download Link |
-|----------|--------------|----------|------|---------------|
-| Linux | x86_64 (amd64) | `brook-cli_Linux-x86_64(amd64).tar.gz` | Client | [Download](https://github.com/g-brook/brook/releases/latest/download/brook-cli_Linux-arm64.tar.gz) |
-| Linux | arm64 | `brook-cli_Linux-arm64.tar.gz` | Client | [Download](https://github.com/g-brook/brook/releases/latest/download/brook-cli_Linux-arm64.tar.gz) |
-| macOS | ARM64 (Apple M) | `brook-cli_macOS-ARM64(Apple-M).tar.gz` | Client | [Download](https://github.com/g-brook/brook/releases/latest/download/brook-sev_macOS-ARM64.Apple-M.tar.gz) |
-| macOS | Intel | `brook-cli_macOS-Intel.tar.gz` | Client | [Download](https://github.com/g-brook/brook/releases/latest/download/brook-cli_macOS-Intel.tar.gz) |
-| Windows | x86_64 | `brook-cli_Windows-x86_64.tar.gz` | Client | [Download](https://github.com/g-brook/brook/releases/latest/download/brook-cli_Windows-x86_64.tar.gz) |
-
-> 💡 **Note**: These links automatically redirect to the latest version. For historical versions, please visit the [Releases Page](https://github.com/g-brook/brook/releases).
-
----
-
-## 🚀 Server Quick Start Guide
-
-### Step 1: Extract and Enter Directory
-
-```bash
-mkdir -p ./brook-sev && tar -xzf brook-sev_Linux-arm64.tar.gz -C ./brook-sev
-cd brook-sev
-```
-
-### Step 2: Edit `server.json` Configuration File
-
-```json
-{
-  "enableWeb": true,
-  "webPort": 8000,
-  "serverPort": 8909,
-  "tunnelPort": 8919,
-  "token": "", // If Web mode is not enabled, a static token can be set here
-  "logger": {
-    "logLevel": "info",
-    "logPath": "./",
-    "outs": "file"
-  }
-}
-```
-
-### Step 3: Start Server
-
-```bash
-./brook-sev -c ./server.json
-```
-
-### Step 4: Access Management Interface
-
-Open your browser and visit `http://localhost:8000/index`. The first login requires initializing account information.
-
-#### Initialization Process:
-1. Set administrator account and password
-2. Generate Token after login
-
-Related screenshots:
+<h1 align="center">Brook</h1>
 
 <p align="center">
-  <img src="img_1.png" alt="Initialization" width="45%" />
-  <img src="img_2.png" alt="Login" width="45%" />
-  <br/>
-  <img src="img_3.png" alt="Initialize Token" width="45%" />
-  <img src="img_4.png" alt="Set Channel Information" width="45%" />
+  <strong>High-performance, Cross-platform, Minimal Configuration Intranet Penetration & Proxy Tool</strong>
+</p>
+
+<p align="center">
+  <a href="https://github.com/g-brook/brook/releases">
+    <img src="https://img.shields.io/github/v/release/g-brook/brook?label=Latest&style=flat-square&color=blue" alt="Latest Release" />
+  </a>
+  <a href="https://github.com/g-brook/brook/stargazers">
+    <img src="https://img.shields.io/github/stars/g-brook/brook?style=flat-square&logo=github" alt="Stars" />
+  </a>
+  <a href="https://github.com/g-brook/brook/network/members">
+    <img src="https://img.shields.io/github/forks/g-brook/brook?style=flat-square&logo=github" alt="Forks" />
+  </a>
+  <a href="https://github.com/g-brook/brook/blob/main/LICENSE">
+    <img src="https://img.shields.io/github/license/g-brook/brook?style=flat-square&color=orange" alt="License" />
+  </a>
+  <img src="https://img.shields.io/github/go-mod/go-version/g-brook/brook?style=flat-square&logo=go" alt="Go Version" />
+  <a href="https://github.com/g-brook/brook/issues">
+    <img src="https://img.shields.io/github/issues/g-brook/brook?style=flat-square&color=red" alt="Issues" />
+  </a>
+</p>
+
+<p align="center">
+  <a href="../README.zh-CN.md">中文文档</a> | 
+  <a href="https://www.gbrook.cc">Official Website</a> | 
+  <a href="#-quick-start">Quick Start</a> | 
+  <a href="#-faq">FAQ</a>
 </p>
 
 ---
 
-## 🧩 Client Quick Start Guide
+**Brook** is a high-performance network tunnel tool designed specifically for intranet penetration, developed in Go. It not only supports multiple transmission protocols (TCP, UDP, HTTP, WebSocket) but also simplifies complex tunnel configurations through an intuitive Web management interface. Whether for developer debugging, exposing intranet services, or building private network channels, Brook is your ideal choice.
 
-### Step 1: Extract and Enter Directory
+## ✨ Key Highlights
 
-```bash
-mkdir -p ./brook-cli && tar -xzf brook-cli_Linux-arm64.tar.gz -C ./brook-cli
-cd brook-cli
-```
-
-### Step 2: Prepare `client.json` Configuration File
-
-You can download the template from the server management interface and modify it according to your actual needs:
-
-```json
-{
-  "serverPort": 8909,
-  "serverHost": "127.0.0.1",
-  "token": "<Token generated in the management backend>",
-  "pingTime": 2000,
-  "tunnels": [
-    {
-      "type": "udp",
-      "destination": "127.0.0.1:9000",
-      "proxyId": "333223"
-    },
-    {
-      "type": "http",
-      "destination": "127.0.0.1:8081",
-      "proxyId": "HttpLocal-2",
-      "httpId": "local"
-    }
-  ]
-}
-```
-
-### Step 3: Start Client
-
-```bash
-./brook-cli -c ./client.json
-```
-
-### Step 4: Get Template and Identifiers
-
-- Get `ProxyId` template:
-  <p align="center"><img src="img_8.png" alt="Get ProxyId" width="60%" /></p>
-
-- Get `httpId` (HTTP/HTTPS tunnels only):
-  <p align="center"><img src="img_9.png" alt="Get HttpId" width="60%" /></p>
+- 🚀 **Blazing Fast Performance**: High-concurrency architecture based on Go routines, with low latency and low resource consumption.
+- 🛡️ **All-around Compatibility**: Supports SSH, HTTP/HTTPS, MySQL, Redis, RDP, and almost all mainstream application protocols.
+- 🎨 **Visual Management**: Built-in modern Web panel for one-click initialization, real-time traffic monitoring, and connection status.
+- 🔗 **Versatile Protocols**: Native support for TCP / UDP / HTTP(S) / WebSocket tunnels, easily handling various network environments (including CDN and firewall restrictions).
+- 🛠️ **Minimal Configuration**: Only one JSON file needed, with auto-reconnection for worry-free operation.
+- 💻 **Cross-platform Support**: Pre-compiled packages for Linux, macOS (Intel/M-series), and Windows (x64/ARM64).
 
 ---
 
-## ⚙️ Configuration Details
+## 📸 Interface Preview
 
-### Server Configuration (`server.json`) Key Fields:
+<details>
+<summary>Click to expand and view management interface screenshots</summary>
 
-| Field | Description |
-|-------|-------------|
-| `enableWeb` | Whether to enable the web management interface |
-| `webPort` | Web management interface listening port, default is `8000` |
-| `serverPort` | Master control communication port, default is `8909` |
-| `tunnelPort` | Data tunnel listening port, default is `serverPort + 10` |
-| `token` | Static authentication token in non-Web mode |
-| `logger` | Log configuration object |
+| **Initialization Wizard** | **Secure Login** |
+|:---:|:---:|
+| <img src="img_1.png" width="400" /> | <img src="img_2.png" width="400" /> |
+| **Token Management** | **Tunnel Configuration** |
+| <img src="img_7.png" width="400" /> | <img src="img_4.png" width="400" /> |
 
-### Client Configuration (`client.json`) Key Fields:
+</details>
 
-| Field | Description |
-|-------|-------------|
-| `serverHost` | Server host address |
-| `serverPort` | Server control port |
-| `token` | Authentication token from server management interface |
-| `pingTime` | Heartbeat detection interval (milliseconds), recommended not less than 2000ms |
-| `tunnels` | Tunnel list |
-| `type` | Tunnel type (tcp / udp / http / websocket) |
-| `destination` | Local target address |
-| `proxyId` | Unique identifier assigned by server |
-| `httpId` | HTTP/HTTPS tunnel dedicated ID, must match server configuration |
+---
 
-### CLI Startup Commands
+## ⚡ Quick Start
 
-#### Server Startup:
-
-```bash
-./brook-sev -c ./server.json
-# Or using long parameter form
-./brook-sev --configs ./server.json
+### 1. One-click Online Installation (Recommended)
+```shell
+bash -c "$(curl -fsSL https://www.gbrook.cc/install.sh)"
 ```
 
-#### Client Startup:
+### 2. Manual Server Deployment
+1. **Download and Extract**: Download the `brook-sev` for your platform from [GitHub Releases](https://github.com/g-brook/brook/releases).
+2. **Prepare Configuration** (`server.json`):
+   ```json
+   {
+     "enableWeb": true,
+     "webPort": 8000,
+     "serverPort": 8909,
+     "tunnelPort": 8919,
+     "logger": { "logLevel": "info", "logPath": "./", "outs": "file" }
+   }
+   ```
+3. **Start Service**:
+   ```shell
+   ./brook-sev -c ./server.json
+   ```
+4. **Access Panel**: Open your browser and visit `http://your-ip:8000/index` for initialization.
 
+### 3. Client Configuration
+1. **Get Token**: Generate it in the Web management backend.
+2. **Prepare Configuration** (`client.json`):
+   ```json
+   {
+     "serverHost": "your-server-ip",
+     "serverPort": 8909,
+     "token": "YOUR_GENERATED_TOKEN",
+     "tunnels": [
+       { "type": "tcp", "destination": "127.0.0.1:80", "proxyId": "web-proxy-1" }
+     ]
+   }
+   ```
+3. **Start Client**:
+   ```shell
+   ./brook-cli -c ./client.json
+   ```
+
+---
+
+## 📥 Resource Download
+
+| Platform | Architecture | Server | Client |
+| :--- | :--- | :---: | :---: |
+| **Linux** | x86_64 / arm64 | [⬇️ Download](https://github.com/g-brook/brook/releases/latest) | [⬇️ Download](https://github.com/g-brook/brook/releases/latest) |
+| **macOS** | Intel / Apple M | [⬇️ Download](https://github.com/g-brook/brook/releases/latest) | [⬇️ Download](https://github.com/g-brook/brook/releases/latest) |
+| **Windows** | x64 / ARM64 | [⬇️ Download](https://github.com/g-brook/brook/releases/latest) | [⬇️ Download](https://github.com/g-brook/brook/releases/latest) |
+
+---
+
+## 🛠️ Advanced Development
+
+### Build from Source
 ```bash
-./brook-cli -c ./client.json
-# Or using long parameter form
-./brook-cli --configs ./client.json
-```
+# Frontend Build
+cd portal/server/ && npm install && npm run build
 
-##### Background Running on Linux (requires systemd support):
-
-```bash
-sudo ./brook-cli start
-# Check help for more command options
-./brook-cli help
+# Server/Client Build
+cd server/ && bash build.sh
+cd client/ && bash build.sh
 ```
 
 ---
 
-## ❓ FAQ (Frequently Asked Questions)
+## ❓ FAQ
 
-- **Extraction failed?**
-  > Use the correct command: `tar -xzf <file>.tar.gz`, avoid misusing the packaging command `tar -czvf`.
+<details>
+<summary>How to solve connection timeouts?</summary>
+Please ensure that ports 8909 and 8919 on the server side are open in the firewall/security group.
+</details>
 
-- **Cannot connect to server?**
-  > Please check if `serverHost`, `serverPort`, and `token` are correct; confirm the server is running normally and the firewall allows access to the corresponding ports.
+<details>
+<summary>Does it support CDN forwarding?</summary>
+Yes, by using WebSocket protocol tunnels, you can implement CDN forwarding with Nginx or Cloudflare.
+</details>
 
-- **HTTP/HTTPS tunnel abnormal?**
-  > The `httpId` in the client must exactly match the server's web settings.
-
-- **Port conflict?**
-  > If default ports (such as 8000/8909/8919) are occupied, you can change to other free ports in the configuration.
-
-- **How to debug issues?**
-  > Check the log files in `logger.logPath`. If necessary, temporarily adjust `logLevel` to `debug` to get more detailed information.
+<details>
+<summary>How to run in the background?</summary>
+Linux users can use `systemd` scripts or directly run `sudo ./brook-cli start`.
+</details>
 
 ---
 
-## 🗂️ Project Structure Overview
+## 📄 Open Source License
+This project is open-sourced under the [Apache License 2.0](../LICENSE) agreement.
 
-```
-├── server/               # Server core logic and web management interface
-├── client/               # Client core logic and CLI interface
-├── common/               # Common modules (configuration parsing, logging system, transmission encapsulation, etc.)
-├── portal/server/        # Frontend management page (built with Vite)
-└── document/             # Documentation, screenshots, and other auxiliary resources
-```
+---
 
-For further details on functionality or extended protocol support, please refer to the source code and comments in each directory.
+<p align="center">
+  <b>If Brook helps you, please give it a ⭐ Star!</b><br/>
+  <img src="https://img.shields.io/badge/Made%20with-Go-00ADD8?style=flat-square&logo=go" alt="Made with Go" />
+</p>

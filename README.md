@@ -1,270 +1,166 @@
-# <img src="document/logo.svg" alt="svg.png" width="50" height="50" /> <img src="document/font-dark.svg" alt="svg.png" width="200" height="50" />  ![Latest Release](https://img.shields.io/github/v/release/g-brook/brook?label=Latest&style=flat-square)
+<p align="center">
+  <img src="document/logo.svg" alt="Brook Logo" width="120" height="120" />
+</p>
 
-[English](document/README.en.md)
+<p align="center">
+  <img src="document/font-dark.svg" alt="Brook" width="260" height="60" />
+</p>
 
-**Brook** 是一款跨平台（Linux/macOS/Windows）的高性能网络隧道与代理工具，专为内网穿透设计，采用 Go 语言开发。它支持多种传输协议，包括 TCP、UDP、HTTP(S) 和 WebSocket，并兼容 SSH、HTTP、Redis、MySQL 等主流应用协议，同时提供直观的可视化管理界面，方便进行配置和实时监控。
+<p align="center">
+  <strong>High-performance, Cross-platform, Minimal Configuration Intranet Penetration & Proxy Tool</strong>
+</p>
+
+<p align="center">
+  <a href="https://github.com/g-brook/brook/releases">
+    <img src="https://img.shields.io/github/v/release/g-brook/brook?label=Latest&style=flat-square&color=blue" alt="Latest Release" />
+  </a>
+  <a href="https://github.com/g-brook/brook/stargazers">
+    <img src="https://img.shields.io/github/stars/g-brook/brook?style=flat-square&logo=github" alt="Stars" />
+  </a>
+  <a href="https://github.com/g-brook/brook/network/members">
+    <img src="https://img.shields.io/github/forks/g-brook/brook?style=flat-square&logo=github" alt="Forks" />
+  </a>
+  <a href="https://github.com/g-brook/brook/blob/main/LICENSE">
+    <img src="https://img.shields.io/github/license/g-brook/brook?style=flat-square&color=orange" alt="License" />
+  </a>
+  <img src="https://img.shields.io/github/go-mod/go-version/g-brook/brook?style=flat-square&logo=go" alt="Go Version" />
+  <a href="https://github.com/g-brook/brook/issues">
+    <img src="https://img.shields.io/github/issues/g-brook/brook?style=flat-square&color=red" alt="Issues" />
+  </a>
+</p>
+
+<p align="center">
+  <a href="README.zh-CN.md">中文文档</a> | 
+  <a href="document/README.en.md">English (Docs)</a> |
+  <a href="https://www.gbrook.cc">Official Website</a> | 
+  <a href="#-quick-start">Quick Start</a> | 
+  <a href="#-faq">FAQ</a>
+</p>
 
 ---
 
-## 🌟 功能特性
+**Brook** is a high-performance network tunnel tool designed specifically for intranet penetration, developed in Go. It not only supports multiple transmission protocols (TCP, UDP, HTTP, WebSocket) but also simplifies complex tunnel configurations through an intuitive Web management interface. Whether for developer debugging, exposing intranet services, or building private network channels, Brook is your ideal choice.
 
-- ✅ **多协议支持**：TCP / UDP / HTTP(S) / WebSocket 隧道
-- 🔧 **广泛兼容性**：兼容 SSH、HTTP(S)、MySQL、Redis 等常见协议
-- 🖥️ **可视化界面**：内置 Web 管理面板，支持初始化、配置与状态监控
-- ⚙️ **简单易用**：通过 `client.json` 和 `server.json` 快速完成配置，支持自动重连和日志记录
-- 🚀 **轻量高效**：资源占用低，适用于各种规模的应用场景
-- 🌍 **跨平台部署**：支持主流操作系统，灵活适应不同环境需求
+## ✨ Key Highlights
+
+- 🚀 **Blazing Fast Performance**: High-concurrency architecture based on Go routines, with low latency and low resource consumption.
+- 🛡️ **All-around Compatibility**: Supports SSH, HTTP/HTTPS, MySQL, Redis, RDP, and almost all mainstream application protocols.
+- 🎨 **Visual Management**: Built-in modern Web panel for one-click initialization, real-time traffic monitoring, and connection status.
+- 🔗 **Versatile Protocols**: Native support for TCP / UDP / HTTP(S) / WebSocket tunnels, easily handling various network environments (including CDN and firewall restrictions).
+- 🛠️ **Minimal Configuration**: Only one JSON file needed, with auto-reconnection for worry-free operation.
+- 💻 **Cross-platform Support**: Pre-compiled packages for Linux, macOS (Intel/M-series), and Windows (x64/ARM64).
 
 ---
 
-## 🌐 在线安装
+## 📸 Interface Preview
+
+<details>
+<summary>Click to expand and view management interface screenshots</summary>
+
+| **Initialization Wizard** | **Secure Login** |
+|:---:|:---:|
+| <img src="document/img_1.png" width="400" /> | <img src="document/img_2.png" width="400" /> |
+| **Token Management** | **Tunnel Configuration** |
+| <img src="document/img_7.png" width="400" /> | <img src="document/img_4.png" width="400" /> |
+
+</details>
+
+---
+
+## ⚡ Quick Start
+
+### 1. One-click Online Installation (Recommended)
 ```shell
 bash -c "$(curl -fsSL https://www.gbrook.cc/install.sh)"
 ```
 
-## 📦 下载与安装 (手动安装)
+### 2. Manual Server Deployment
+1. **Download and Extract**: Download the `brook-sev` for your platform from [GitHub Releases](https://github.com/g-brook/brook/releases).
+2. **Prepare Configuration** (`server.json`):
+   ```json
+   {
+     "enableWeb": true,
+     "webPort": 8000,
+     "serverPort": 8909,
+     "tunnelPort": 8919,
+     "logger": { "logLevel": "info", "logPath": "./", "outs": "file" }
+   }
+   ```
+3. **Start Service**:
+   ```shell
+   ./brook-sev -c ./server.json
+   ```
+4. **Access Panel**: Open your browser and visit `http://your-ip:8000/index` for initialization.
 
-前往 [GitHub Releases](https://github.com/g-brook/brook/releases) 页面下载适合您系统的预编译包：
-
-### 服务端（Server）
-
-| 平台     | 架构            | 文件名                                         | 类型   | 下载链接                                                                                           |
-|----------|------------------|------------------------------------------------|--------|----------------------------------------------------------------------------------------------------|
-| Linux    | x86_64 (amd64)   | `brook-sev_Linux-x86_64(amd64).tar.gz`        | Server | [Download](https://github.com/g-brook/brook/releases/latest/download/brook-sev_Linux-arm64.tar.gz) |
-| Linux    | arm64            | `brook-sev_Linux-arm64.tar.gz`                | Server | [Download](https://github.com/g-brook/brook/releases/latest/download/brook-sev_Linux-arm64.tar.gz) |
-| macOS    | ARM64 (Apple M)  | `brook-sev_macOS-ARM64(Apple-M).tar.gz`       | Server | [Download](https://github.com/g-brook/brook/releases/latest/download/brook-sev_macOS-ARM64.Apple-M.tar.gz) |
-| macOS    | Intel            | `brook-sev_macOS-Intel.tar.gz`                | Server | [Download](https://github.com/g-brook/brook/releases/latest/download/brook-sev_macOS-Intel.tar.gz) |
-| Windows  | x86_64           | `brook-sev_Windows-x86_64.tar.gz`             | Server | [Download](https://github.com/g-brook/brook/releases/latest/download/brook-sev_Windows-x86_64.tar.gz) |
-| Windows  | arm64           | `brook-sev_Windows-ARM64.tar.gz`             | Server | [Download](https://github.com/g-brook/brook/releases/latest/download/brook-sev_Windows-ARM64.tar.gz) |
-
-### 客户端（Client）
-
-| 平台     | 架构            | 文件名                                         | 类型   | 下载链接                                                                                                     |
-|----------|------------------|------------------------------------------------|--------|----------------------------------------------------------------------------------------------------------|
-| Linux    | x86_64 (amd64)   | `brook-cli_Linux-x86_64(amd64).tar.gz`        | Client | [Download](https://github.com/g-brook/brook/releases/latest/download/brook-cli_Linux-arm64.tar.gz)       |
-| Linux    | arm64            | `brook-cli_Linux-arm64.tar.gz`                | Client | [Download](https://github.com/g-brook/brook/releases/latest/download/brook-cli_Linux-arm64.tar.gz)       |
-| macOS    | ARM64 (Apple M)  | `brook-cli_macOS-ARM64(Apple-M).tar.gz`       | Client | [Download](https://github.com/g-brook/brook/releases/latest/download/brook-sev_macOS-ARM64.Apple-M.tar.gz) |
-| macOS    | Intel            | `brook-cli_macOS-Intel.tar.gz`                | Client | [Download](https://github.com/g-brook/brook/releases/latest/download/brook-cli_macOS-Intel.tar.gz)       |
-| Windows  | x86_64           | `brook-cli_Windows-x86_64.tar.gz`             | Client | [Download](https://github.com/g-brook/brook/releases/latest/download/brook-cli_Windows-x86_64.tar.gz)    |
-| Windows  | arm64           | `brook-cli_Windows-arm64.tar.gz`             | Client | [Download](https://github.com/g-brook/brook/releases/latest/download/brook-cli_Windows-arm64.tar.gz)          |
-
-> 💡 **提示**：上述链接将自动跳转到最新版本。若需查看历史版本，请访问 [Releases 页面](https://github.com/g-brook/brook/releases)。
-
----
-
-## 🚀 服务端快速上手指南
-
-### 步骤一：解压并进入目录
-
-```shell
-mkdir -p ./brook-sev && tar -xzf brook-sev_Linux-arm64.tar.gz -C ./brook-sev
-cd brook-sev
-````
-### 步骤二：编辑 `server.json` 配置文件
-```json
-{
-  "enableWeb": true,
-  "webPort": 8000,
-  "serverPort": 8909,
-  "tunnelPort": 8919,
-  "token": "", // 若不启用 Web 模式，可在此设置静态 token
-  "logger": {
-    "logLevel": "info",
-    "logPath": "./",
-    "outs": "file"
-  }
-}
-```
-### 步骤三：启动服务端
-
-```shell
-./brook-sev -c ./server.json
-````
-### 步骤四：访问管理界面
-
-打开浏览器访问 `http://localhost:8000/index`，首次登录需要初始化账户信息。
-
-#### 初始化流程：
-1. 设置管理员账号与密码  
-2. 登录后生成 Token  
-
-相关截图说明：
-
-##### 　1、初次使用进行初始化
-
-  <img src="document/img_1.png" alt="初始化" width="100%" />
-
-##### 　2、登录
-
-  <img src="document/img_2.png" alt="登录" width="100%" />
-
-##### 　3、登录成功，进行token初始化
-
-  <img src="document/img_7.png" alt="初始化Token" width="100%" />
-
-##### 　4、设置代理信息
-
-<img src="document/img_4.png" alt="设置通道信息" width="100%" />
+### 3. Client Configuration
+1. **Get Token**: Generate it in the Web management backend.
+2. **Prepare Configuration** (`client.json`):
+   ```json
+   {
+     "serverHost": "your-server-ip",
+     "serverPort": 8909,
+     "token": "YOUR_GENERATED_TOKEN",
+     "tunnels": [
+       { "type": "tcp", "destination": "127.0.0.1:80", "proxyId": "web-proxy-1" }
+     ]
+   }
+   ```
+3. **Start Client**:
+   ```shell
+   ./brook-cli -c ./client.json
+   ```
 
 ---
 
-## 🧩 客户端快速上手指南
+## 📥 Resource Download
 
-### 步骤一：解压并进入目录
-
-```shell
-mkdir -p ./brook-cli && tar -xzf brook-cli_Linux-arm64.tar.gz -C ./brook-cli
-cd brook-cli
-```
-
-### 步骤二：准备 `client.json` 配置文件
-
-您可以从服务端管理界面下载模板并根据实际需求修改：
-```json
-{
-  "serverPort": 8909,
-  "serverHost": "127.0.0.1",
-  "token": "<在管理后台生成的Token>",
-  "pingTime": 2000,
-  "tunnels": [
-    {
-      "type": "udp",
-      "destination": "127.0.0.1:9000",
-      "proxyId": "333223"
-    },
-    {
-      "type": "http",
-      "destination": "127.0.0.1:8081",
-      "proxyId": "HttpLocal-2",
-      "httpId": "local"
-    }
-  ]
-}
-```
-
-### 步骤三：启动客户端
-
-```shell
-./brook-cli -c ./client.json
-```
-
-### 步骤四：获取模板与标识符
-
-- 获取 `ProxyId` 模板：
-  <p align="center"><img src="document/img_8.png" alt="获取ProxyId" width="100%" /></p>
-
-- 获取 `httpId`（仅限 HTTP/HTTPS 隧道）：
-  <p align="center"><img src="document/img_9.png" alt="获取HttpId" width="100%" /></p>
+| Platform | Architecture | Server | Client |
+| :--- | :--- | :---: | :---: |
+| **Linux** | x86_64 / arm64 | [⬇️ Download](https://github.com/g-brook/brook/releases/latest) | [⬇️ Download](https://github.com/g-brook/brook/releases/latest) |
+| **macOS** | Intel / Apple M | [⬇️ Download](https://github.com/g-brook/brook/releases/latest) | [⬇️ Download](https://github.com/g-brook/brook/releases/latest) |
+| **Windows** | x64 / ARM64 | [⬇️ Download](https://github.com/g-brook/brook/releases/latest) | [⬇️ Download](https://github.com/g-brook/brook/releases/latest) |
 
 ---
 
-## ⚙️ 配置详解
+## 🛠️ Advanced Development
 
-### 服务端配置 (`server.json`) 关键字段说明：
+### Build from Source
+```bash
+# Frontend Build
+cd portal/server/ && npm install && npm run build
 
-| 字段         | 描述                                       |
-|--------------|--------------------------------------------|
-| `enableWeb`  | 是否启用 Web 管理界面                      |
-| `webPort`    | Web 管理界面监听端口，默认为 `8000`        |
-| `serverPort` | 主控通信端口，默认为 `8909`                |
-| `tunnelPort` | 数据隧道监听端口，默认为 `serverPort + 10` |
-| `token`      | 非 Web 模式下的静态身份验证令牌            |
-| `logger`     | 日志配置对象                               |
-
-### 客户端配置 (`client.json`) 关键字段说明：
-
-| 字段          | 描述                                               |
-|---------------|----------------------------------------------------|
-| `serverHost`  | 服务端主机地址                                     |
-| `serverPort`  | 服务端控制端口                                     |
-| `token`       | 来自服务端管理界面的身份验证令牌                   |
-| `pingTime`    | 心跳检测时间间隔（单位：毫秒），建议不少于 2000ms  |
-| `tunnels`     | 隧道列表                                           |
-| `type`        | 隧道类型（tcp / udp / http / websocket）           |
-| `destination` | 本地目标地址                                       |
-| `proxyId`     | 服务端分配的唯一标识符                             |
-| `httpId`      | HTTP/HTTPS 隧道专用 ID，必须和服务端一致           |
-
-
-
-### CLI 启动命令
-
-#### 服务端启动方式：
-```shell
-./brook-sev -c ./server.json
-# 或者使用长参数形式
-./brook-sev --configs ./server.json
-```
-#### 客户端启动方式：
-
-```shell
-./brook-cli -c ./client.json
-# 或者使用长参数形式
-./brook-cli --configs ./client.json
-```
-
-##### Linux 系统后台运行（需要 systemd 支持）：
-
-```shell
-sudo ./brook-cli start
-# 查看帮助了解更多命令选项
-./brook-cli help
+# Server/Client Build
+cd server/ && bash build.sh
+cd client/ && bash build.sh
 ```
 
 ---
 
-## 🔨 从源码构建
+## ❓ FAQ
 
-### 前端构建（用于服务端 UI 页面）
+<details>
+<summary>How to solve connection timeouts?</summary>
+Please ensure that ports 8909 and 8919 on the server side are open in the firewall/security group.
+</details>
 
-```shell
-cd portal/server/
-npm install
-npm run build
-```
-### 服务端构建
+<details>
+<summary>Does it support CDN forwarding?</summary>
+Yes, by using WebSocket protocol tunnels, you can implement CDN forwarding with Nginx or Cloudflare.
+</details>
 
-```shell
-cd server/
-bash build.sh
-# 根据提示选择平台和架构
-# 输出路径：server/dist/brook-sev_*.tar.gz
-```
-
-### 客户端构建
-
-```shell
-cd client/
-bash build.sh
-# 输出路径：client/dist/brook-cli_*.tar.gz
-```
----
-
-## ❓ 常见问题解答（FAQ）
-
-- **解压失败？**
-  > 使用正确的命令：`tar -xzf <file>.tar.gz`，避免误用打包命令 `tar -czvf`。
-
-- **连接不上服务端？**
-  > 请检查 `serverHost`、`serverPort` 和 `token` 是否正确；确认服务端是否正常运行且防火墙允许对应端口访问。
-
-- **HTTP/HTTPS 隧道异常？**
-  > 客户端中的 `httpId` 必须与服务端 Web 设置完全匹配。
-
-- **端口冲突？**
-  > 如果默认端口（如 8000/8909/8919）已被占用，可以在配置中更换其他空闲端口。
-
-- **如何调试问题？**
-  > 查阅 `logger.logPath` 中的日志文件，如有必要，可临时将 `logLevel` 调整为 `debug` 获取更详细的信息。
+<details>
+<summary>How to run in the background?</summary>
+Linux users can use `systemd` scripts or directly run `sudo ./brook-cli start`.
+</details>
 
 ---
 
-## 🗂️ 项目结构概览
+## 📄 Open Source License
+This project is open-sourced under the [Apache License 2.0](LICENSE) agreement.
 
-├── server/               # 服务端核心逻辑与 Web 管理界面</br>
-├── client/               # 客户端核心逻辑与 CLI 接口</br>
-├── common/               # 公共模块（配置解析、日志系统、传输封装等）</br>
-├── portal/server/        # 前端管理页面（基于 Vite 构建）</br>
-└── document/             # 文档资料、截图和其他辅助资源</br>
+---
 
-如需进一步了解功能细节或扩展协议支持，请参阅各目录下的源代码及注释。
+<p align="center">
+  <b>If Brook helps you, please give it a ⭐ Star!</b><br/>
+  <img src="https://img.shields.io/badge/Made%20with-Go-00ADD8?style=flat-square&logo=go" alt="Made with Go" />
+</p>
