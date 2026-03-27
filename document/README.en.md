@@ -107,6 +107,34 @@ bash -c "$(curl -fsSL https://www.gbrook.cc/install.sh)"
    ./brook-cli -c ./client.json
    ```
 
+### 4. Linux Background Mode (systemd)
+
+On Linux distributions with `systemd`, Brook provides built-in service management commands. The first time you run `start`, it will automatically create the unit file under `/etc/systemd/system/` and then start the service.
+
+Server:
+```shell
+sudo ./brook-sev start -c ./server.json
+sudo ./brook-sev restart
+sudo ./brook-sev stop
+sudo ./brook-sev status
+./brook-sev version
+```
+
+Client:
+```shell
+sudo ./brook-cli start -c ./client.json
+sudo ./brook-cli restart
+sudo ./brook-cli stop
+sudo ./brook-cli status
+./brook-cli version
+```
+
+### 5. Windows Startup
+
+- Foreground (run in console): open `cmd` in the extracted directory and run `brook-sev.exe -c server.json` / `brook-cli.exe -c client.json`
+- Console helper: use `run.bat` to launch and keep the console window open
+- Background mode: `brook-sev.exe start` / `brook-cli.exe start` (then use `restart` / `stop` / `status` / `version`)
+
 ---
 
 ## 📥 Resource Download

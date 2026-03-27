@@ -173,8 +173,8 @@ sudo ./brook-cli status
 cd portal/server/ && npm install && npm run build
 
 # 服务端/客户端构建
-cd server/ && bash build.sh
-cd client/ && bash build.sh
+cd scmd/ && bash build.sh
+cd ccmd/ && bash build.sh
 ```
 
 ---

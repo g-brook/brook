@@ -174,8 +174,8 @@ sudo ./brook-cli status
 cd portal/server/ && npm install && npm run build
 
 # Server/Client Build
-cd server/ && bash build.sh
-cd client/ && bash build.sh
+cd scmd/ && bash build.sh
+cd ccmd/ && bash build.sh
 ```
 
 ---
