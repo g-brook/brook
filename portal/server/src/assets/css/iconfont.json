@@ -6,6 +6,34 @@
   "description": "",
   "glyphs": [
     {
+      "icon_id": "8394691",
+      "name": "https",
+      "font_class": "https",
+      "unicode": "e670",
+      "unicode_decimal": 58992
+    },
+    {
+      "icon_id": "27885757",
+      "name": "01_UDP-2",
+      "font_class": "a-01_UDP-2",
+      "unicode": "100b8",
+      "unicode_decimal": 65720
+    },
+    {
+      "icon_id": "6804049",
+      "name": "Firewall-Off",
+      "font_class": "Firewall-Off",
+      "unicode": "e84e",
+      "unicode_decimal": 59470
+    },
+    {
+      "icon_id": "6812556",
+      "name": "communication-36_clo",
+      "font_class": "communication-_clo",
+      "unicode": "ef36",
+      "unicode_decimal": 61238
+    },
+    {
       "icon_id": "17412036",
       "name": "Certificate-1",
       "font_class": "Certificate-1",

@@ -22,7 +22,7 @@ import (
 )
 
 func InitServerConfig(moduleId modules.ModuleID, sc []*sf.ServerTunnelConfig) error {
-	module, err := modules.GetModule(string(moduleId))
+	module, err := modules.GetModule(moduleId)
 	if err != nil {
 		return err
 	}

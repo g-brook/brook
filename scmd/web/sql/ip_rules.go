@@ -14,8 +14,4 @@
  * limitations under the License.
  */
 
-package standard
-
-import (
-	_ "github.com/g-brook/brook/scmd/plugins"
-)
+package sql

@@ -16,6 +16,10 @@
 
 package exchange
 
+import (
+	"github.com/g-brook/brook/common/configs"
+)
+
 type LoginReq struct {
 	Token string `json:"token"`
 }
@@ -32,11 +36,13 @@ func (r *LoginReq) Cmd() Cmd {
 // LoginResp
 // @Description: Resp.
 type LoginResp struct {
+	TunnelHost string `json:"tunnel_host"`
+
 	TunnelPort int `json:"tunnel_port"`
 
 	UnId string `json:"un_id"`
 
-	AutoTunnel bool `json:"auto_login"`
+	Tunnels []*configs.ClientTunnelConfig `json:"tunnels"`
 }
 
 func (r *LoginReq) QueryTunnelResp() Cmd {

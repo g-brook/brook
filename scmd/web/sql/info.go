@@ -19,7 +19,9 @@ package sql
 import (
 	"embed"
 	"io/fs"
+	"regexp"
 	"strconv"
+	"strings"
 
 	"github.com/g-brook/brook/common/log"
 	"github.com/g-brook/brook/common/version"
@@ -147,10 +149,24 @@ func UpdateTableStruct() error {
 			return err
 		}
 		sqlText := string(sqlContent)
-		log.Info("executing sql file %v", sqlText)
-		if err := Exec(sqlText); err != nil {
-			log.Warn("error executing sql %v:%v,%v", sqlFile, sqlText, err)
-			return err
+		newCsql := removeSQLComments(sqlText)
+		sqlList := strings.Split(newCsql, ";")
+		for _, sql := range sqlList {
+			sql = strings.TrimSpace(sql)
+			if sql == "" {
+				continue
+			}
+			log.Debug("current execute sql: %v", sql)
+			err = Exec(sql)
+			if err != nil {
+				errStr := err.Error()
+				if strings.Contains(errStr, "duplicate column name") {
+					log.Info("duplicate column skip  %s", sql)
+					continue
+				}
+				log.Warn("sql execute error: %s, err: %v", sql, err)
+				return err
+			}
 		}
 		return nil
 	}
@@ -167,4 +183,10 @@ func UpdateTableStruct() error {
 		return err
 	}
 	return nil
+}
+
+func removeSQLComments(sql string) string {
+	// 匹配 /* 开头 */ 结尾的所有注释
+	re := regexp.MustCompile(`/\*[\s\S]*?\*/`)
+	return re.ReplaceAllString(sql, "")
 }

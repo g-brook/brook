@@ -41,6 +41,7 @@ interface ConfigItem {
   isExistWeb: boolean;
   clients: number;
   destination: string;
+  strategyId: number | null;
 }
 
 const {t} = useI18n();
@@ -65,6 +66,26 @@ const getConfigs = async () => {
   }
 };
 
+// IP 策略 Mock 数据 (实际应调用接口获取)
+const strategies = ref<any[]>([
+  { id: 1, name: 'Default Whitelist' },
+  { id: 2, name: 'Block Malicious IPs' },
+  { id: 3, name: 'Internal Only' }
+]);
+
+const getStrategyName = (id: number | null) => {
+  if (!id) return null;
+  return strategies.value.find(s => s.id === id)?.name;
+};
+
+// 协议图标映射
+const protocolIcons: Record<string, { icon: string, class: string }> = {
+  'HTTP': { icon: 'brook-web', class: 'badge-info' },
+  'HTTPS': { icon: 'brook-https', class: 'badge-success' },
+  'TCP': { icon: 'brook-technology_usb-cable', class: 'badge-warning' },
+  'UDP': { icon: 'brook-a-01_UDP-2', class: 'badge-secondary' },
+};
+
 // 组件挂载时获取数据
 onMounted(() => {
   getConfigs();
@@ -80,11 +101,12 @@ const openWebConfig = (item: ConfigItem) => {
 
 const handleAdd = () => {
   let formApi: { handleSubmit: () => Promise<boolean> } | null = null;
-  Modal.open(ConfigForm, {
+  let modalId = '';
+  modalId = Modal.open(ConfigForm, {
     title: t('configuration.addTunnelConfig'),
     size: 'auto',
     closable: true,
-    maskClosable: false,
+    maskClosable: true,
     showFooter: true,
     props: {
       onRegister: (api) => {
@@ -97,12 +119,11 @@ const handleAdd = () => {
           const formData = await formApi.handleSubmit();
           if (formData) {
             await getConfigs();
-            return true
+            Modal.close(modalId);
           }
         } catch (error) {
           console.error('Failed to submit form:', error);
         }
-        return false
       }
     },
   });
@@ -118,14 +139,14 @@ const handleDelete = (id: number) => {
           message.info(t("common.success"));
         }
       })
-      return true
     }
   });
 };
 
 const handleUpdate = (cfg) => {
   let formApi: { handleSubmit: () => Promise<boolean> } | null = null;
-  Modal.open(ConfigForm, {
+  let modalId = '';
+  modalId = Modal.open(ConfigForm, {
     title: t('configuration.editTunnelConfig'),
     size: 'auto',
     closable: true,
@@ -144,12 +165,11 @@ const handleUpdate = (cfg) => {
           const formData = await formApi.handleSubmit();
           if (formData) {
             await getConfigs();
-            return true
+            Modal.close(modalId);
           }
         } catch (error) {
           console.error('Failed to submit form:', error);
         }
-        return false
       }
     },
   });
@@ -181,144 +201,138 @@ const handleClickDownload = () => {
     <Drawer ref="downloadDrawerRef" :title="t('configuration.template')" icon="brook-empty" width="50%">
       <DownloadConfig/>
     </Drawer>
-    <!-- 操作栏 -->
-    <div
-        class="flex sticky border-t-1 border-base-300/50 top-0 items-center h-auto min-h-12 justify-between gap-2 mb-1 p-2 rounded-b-2xl bg-base-100/85 backdrop-blur-sm z-0 shadow-xs">
-      <!-- 左侧信息 -->
-      <div class="flex items-center gap-4">
-        <div class="text-sm text-base-content/60">
-          {{ t('configuration.totalConfigs', {count: totalConfigs}) }}
-        </div>
-        <div class="text-sm text-base-content/60">
-          {{ t('configuration.enabledConfigs', {count: enabledConfigs}) }}
-        </div>
-        <div class="text-sm text-base-content/60">
-          {{ t('configuration.runningConfigs', {count: runningConfigs}) }}
+    <!-- 极简页头：整合统计与操作 -->
+    <div class="flex sticky top-0 items-center h-14 justify-between gap-4 mb-3 px-5 py-2 rounded-xl bg-base-100/80 backdrop-blur-md z-30 border border-base-content/5 shadow-sm mx-1">
+      <div class="flex items-center gap-6">
+        <!-- 垂直分割线 -->
+        <!-- 整合后的微缩统计 -->
+        <div class="flex items-center gap-4">
+          <div class="flex items-center gap-1.5 group cursor-help" :title="t('configuration.totalConfigsTitle')">
+            <div class="w-1.5 h-1.5 rounded-full bg-primary opacity-40"></div>
+            <span class="text-xs font-black uppercase opacity-50 tracking-tighter">{{ t('common.total') || 'Total' }}</span>
+            <span class="text-sm font-black tracking-tighter">{{ totalConfigs }}</span>
+          </div>
+          <div class="flex items-center gap-1.5 group cursor-help" :title="t('configuration.enabledConfigsTitle')">
+            <div class="w-1.5 h-1.5 rounded-full bg-success opacity-40"></div>
+            <span class="text-xs font-black uppercase opacity-50 tracking-tighter">{{ t('configuration.enabled') || 'Enabled' }}</span>
+            <span class="text-sm font-black tracking-tighter text-success">{{ enabledConfigs }}</span>
+          </div>
+          <div class="flex items-center gap-1.5 group cursor-help" :title="t('configuration.runningConfigsTitle')">
+            <div class="w-1.5 h-1.5 rounded-full bg-info opacity-40"></div>
+            <span class="text-xs font-black uppercase opacity-50 tracking-tighter">{{ t('common.running') || 'Running' }}</span>
+            <span class="text-sm font-black tracking-tighter text-info">{{ runningConfigs }}</span>
+          </div>
         </div>
       </div>
 
-      <!-- 右侧操作按钮 -->
-      <div class="flex items-center">
-        <button class="btn  btn-ghost btn-sm" @click="handleClickDownload">
+      <div class="flex items-center gap-1.5">
+        <button class="btn btn-ghost btn-xs h-8 gap-1.5 font-bold px-2 hover:bg-base-content/5 text-xs uppercase tracking-widest opacity-60 hover:opacity-100" @click="handleClickDownload">
           <Icon icon="brook-empty" style="font-size: 12px;"/>
           {{ t('configuration.template') }}
         </button>
-        <button class="btn  btn-ghost btn-sm" @click="handleAdd">
+        <button class="btn btn-primary btn-xs h-8 gap-1.5 font-bold px-3 shadow-md shadow-primary/20 text-xs uppercase tracking-widest" @click="handleAdd">
           <Icon icon="brook-add" style="font-size: 12px;"/>
           {{ t('common.add') }}
         </button>
-
-        <button class="btn btn-circle " @click="getConfigs">
-          <Icon icon="brook-refresh"/>
+        <div class="divider divider-horizontal mx-0.5 w-px h-4 self-center opacity-10"></div>
+        <button class="btn btn-circle btn-xs h-8 w-8 btn-ghost hover:rotate-180 transition-transform duration-500" @click="getConfigs">
+          <Icon icon="brook-refresh" style="font-size: 14px;"/>
         </button>
       </div>
     </div>
 
-    <!-- 配置表格 -->
-    <div class="overflow-x-auto rounded-box border border-base-content/5 bg-base-100 h-full overflow-y-auto mx-1">
-      <table class="table">
+    <!-- 配置表格 - 优化列宽与视觉样式 -->
+    <div class="overflow-x-auto rounded-3xl border border-base-content/5 bg-base-100 shadow-sm mx-1">
+      <table class="table table-md">
         <!-- head -->
-        <thead class="sticky top-0 z-20 bg-base-100">
+        <thead class="bg-base-200/50">
         <tr>
-          <th class="bg-base-100 font-semibold" style="width: 80px">{{ t('configuration.serialNumber') }}
-          </th>
-          <th class="bg-base-100 font-semibold">{{ t('configuration.nameAndTag') }}</th>
-          <th class="bg-base-100 font-semibold" style="width: 100px">{{ t('configuration.remotePort') }}
-          </th>
-          <th class="bg-base-100 font-semibold" style="width: 140px">{{ t('configuration.destination') }}(IP:PORT)</th>
-          <th class="bg-base-100 font-semibold" style="width: 140px">{{ t('configuration.proxyId') }}</th>
-          <th class="bg-base-100 font-semibold" style="width: 100px">{{ t('configuration.protocol') }}
-          </th>
-          <th class="bg-base-100 font-semibold" style="width: 100px">{{ t('configuration.status') }}</th>
-          <th class="bg-base-100 font-semibold" style="width: 180px">{{ t('server.runtime') }}</th>
-          <th class="bg-base-100 font-semibold" style="width: 140px">{{ t('common.running') }}</th>
-          <th class="bg-base-100 font-semibold" style="width: 240px">{{ t('configuration.actions') }}</th>
+          <th class="font-black text-[13px] uppercase opacity-60 tracking-[0.1em] text-center" style="width: 40px">#</th>
+          <th class="font-black text-[13px] uppercase opacity-60 tracking-[0.1em]">{{ t('configuration.nameAndTag') }}</th>
+          <th class="font-black text-[13px] uppercase opacity-60 tracking-[0.1em]" style="width: 220px">{{ t('configuration.proxyId') }}</th>
+          <th class="font-black text-[13px] uppercase opacity-60 tracking-[0.1em]" style="width: 100px">{{ t('configuration.remotePort') }}</th>
+          <th class="font-black text-[13px] uppercase opacity-60 tracking-[0.1em]" style="width: 180px">{{ t('configuration.destination') }}</th>
+          <th class="font-black text-[13px] uppercase opacity-60 tracking-[0.1em]" style="width: 100px">{{ t('configuration.protocol') }}</th>
+          <th class="font-black text-[13px] uppercase opacity-60 tracking-[0.1em]" style="width: 190px">{{ t('configuration.status') }}</th>
+          <th class="font-black text-[13px] uppercase opacity-60 tracking-[0.1em]" style="width: 150px">{{ t('server.runtime') }}</th>
+          <th class="font-black text-[13px] uppercase opacity-60 tracking-[0.1em] text-center">{{ t('configuration.actions') }}</th>
         </tr>
         </thead>
         <tbody>
-        <!-- 动态渲染配置数据 -->
-        <tr v-for="(config, index) in configs" :key="config.id" class="hover">
-          <th>
+        <tr v-for="(config, index) in configs" :key="config.id" class="hover:bg-base-200/40 transition-colors group">
+          <th class="text-center opacity-30 font-mono text-xs">{{ index + 1 }}</th>
+          <td>
+            <div class="flex flex-col gap-0.5">
+              <div class="flex items-center gap-2">
+                <div class="relative flex items-center justify-center">
+                  <div v-if="config.isRunning" class="absolute w-2 h-2 bg-success rounded-full animate-ping opacity-75"></div>
+                  <div :class="['w-2 h-2 rounded-full relative z-10', config.isRunning ? 'bg-success' : 'bg-base-300']"></div>
+                </div>
+                <span class="font-black text-sm tracking-tight">{{ config.name }}</span>
+                <span v-if="config.tag" :class="['badge badge-xs font-black px-1.5 py-2 scale-95', config.isRunning ? 'badge-success' : 'badge-ghost opacity-50']">
+                  {{ config.tag }}
+                </span>
+              </div>
+              <div v-if="config.strategyId" class="flex items-center gap-1 opacity-40 scale-95 origin-left">
+                <Icon icon="brook-security" style="font-size: 10px;" />
+                <span class="text-[10px] font-black uppercase tracking-widest">{{ getStrategyName(config.strategyId) }}</span>
+              </div>
+            </div>
+          </td>
+          <td>
             <div class="flex items-center gap-2">
-              {{ index + 1 }}
-            </div>
-
-          </th>
-          <td>
-            <div class="flex items-center">
-
-              <div class="text-sm font-bold">
-                <div class="inline-grid *:[grid-area:1/1]" v-if="config.isRunning">
-                  <div class="status status-success animate-ping"></div>
-                  <div class="status status-success"></div>
-                </div>
-                <div class="status status-error" v-else/>
-                {{ config.name }}
-              </div>
-              <div class="ml-2" v-if="config.tag">
-                                    <span class="badge badge-xs"
-                                          :class="config.isRunning ? 'badge-success' : 'badge-warning'">{{
-                                        config.tag
-                                      }} </span>
-              </div>
-              　
+              <span class="text-[10px] font-black opacity-20 uppercase tracking-tighter">ID:</span>
+              <code class="text-sm font-black text-primary tracking-tight">{{ config.proxyId }}</code>
             </div>
           </td>
-          <td>{{ config.remotePort }}</td>
-          <td>{{ config.destination }}</td>
-          <td>{{ config.proxyId }}</td>
+          <td class="font-mono font-black text-sm tracking-tighter">{{ config.remotePort }}</td>
           <td>
-            <div class="badge badge-soft badge-secondary w-16">{{ config.protocol }}</div>
+            <div class="flex flex-col gap-0">
+              <span class="text-sm font-black tracking-tight opacity-70">{{ config.destination }}</span>
+              <span class="text-[10px] opacity-30 uppercase font-black tracking-widest">Target</span>
+            </div>
           </td>
           <td>
-            <div class="form-control">
-              <label class="cursor-pointer label gap-2">
-                <input type="checkbox" class="toggle toggle-primary toggle-sm "
+            <div :class="['badge badge-soft flex items-center gap-1.5 w-fit px-3 py-2.5 border border-current/5', protocolIcons[config.protocol]?.class || 'badge-ghost']">
+              <Icon :icon="protocolIcons[config.protocol]?.icon || 'brook-Down-'" style="font-size: 14px;" />
+              <span class="font-black text-[10px] tracking-widest uppercase">{{ config.protocol }}</span>
+            </div>
+          </td>
+          <td>
+            <div class="flex flex-col gap-1.5">
+              <div class="flex items-center gap-2">
+                <input type="checkbox" class="toggle toggle-primary toggle-sm"
                        :checked="config.state" @change="handleToggleStatus(config.id, config.state)"/>
-                <span class="label-text text-xs">
-                                        {{ config.state ? t('configuration.enabled') : t('configuration.disabled') }}
-                                    </span>
-              </label>
-            </div>
-          </td>
-          <td>
-                            <span>
-                                {{ config.runtime }}
-                            </span>
-          </td>
-          <td>
-            <div class="badge text-xs text-base-100"
-                 :class="config.isRunning ? 'badge-primary' : 'badge-error'">
-              <Icon icon="brook-Right-1" style="font-size: 12px;" v-if="config.isRunning"/>
-              {{ config.isRunning ? t('server.start') : t('server.stop') }}
-            </div>
-            <p class="list-col-wrap text-xs">
-              {{ t('server.fields.clients') }}:{{ config.clients }}
-            </p>
-          </td>
-          <td>
-            <div class="flex items-center gap-1">
-
-              <button class="btn btn-ghost btn-sm btn-square" @click="openWebConfig(config)"
-                      :title="t('configuration.delete')"
-                      v-if="config.protocol === `HTTP` || config.protocol === `HTTPS`">
-                <div class="tooltip tooltip-open tooltip-warning animate-bounce tooltip-left"
-                     :data-tip="t('configuration.webNotSet')" v-if="!config.isExistWeb">
-                  <Icon icon="brook-web"/>
-                </div>
-                <div v-else>
-                  <Icon icon="brook-web"/>
-                </div>
-              </button>
-              <div v-else>
-                <button class="btn btn-ghost btn-sm btn-square btn-disabled"></button>
+                <span :class="['text-[10px] font-black uppercase tracking-[0.1em]', config.state ? 'text-primary' : 'opacity-20']">
+                  {{ config.state ? t('configuration.enabled') : t('configuration.disabled') }}
+                </span>
               </div>
-              <button class="btn btn-ghost btn-sm btn-square" @click="handleUpdate(config)">
-                <Icon icon="brook-edit"/>
+              <div :class="['badge badge-xs gap-1 font-black border-none py-2 origin-left scale-90', config.isRunning ? 'bg-success/10 text-success' : 'bg-error/10 text-error']">
+                <div :class="['w-1 h-1 rounded-full', config.isRunning ? 'bg-success' : 'bg-error']"></div>
+                <span class="text-[10px] uppercase tracking-tighter">{{ config.isRunning ? t('server.start') : t('server.stop') }}</span>
+                <span class="opacity-40 text-[10px] ml-0.5">({{ config.clients }})</span>
+              </div>
+            </div>
+          </td>
+          <td class="text-[11px] font-black opacity-40 font-mono tracking-tighter">{{ config.runtime }}</td>
+          <td>
+            <div class="flex items-center justify-center gap-1">
+              <button v-if="config.protocol === 'HTTP' || config.protocol === 'HTTPS'"
+                      class="btn btn-ghost btn-sm btn-square hover:bg-primary hover:text-primary-content transition-all"
+                      @click="openWebConfig(config)">
+                <div v-if="!config.isExistWeb" class="indicator">
+                  <span class="indicator-item badge badge-warning badge-[8px] animate-bounce border-none"></span> 
+                  <Icon icon="brook-web" style="font-size: 18px;" />
+                </div>
+                <Icon v-else icon="brook-web" style="font-size: 18px;" />
               </button>
-              <button class="btn btn-ghost btn-sm btn-square" @click="handleDelete(config.id)"
-                      :title="t('configuration.delete')">
-                <Icon icon="brook-delete"/>
+              <div v-else class="w-8"></div>
+              
+              <button class="btn btn-ghost btn-sm btn-square hover:bg-info hover:text-info-content transition-all" @click="handleUpdate(config)">
+                <Icon icon="brook-edit" style="font-size: 18px;" />
+              </button>
+              <button class="btn btn-ghost btn-sm btn-square hover:bg-error hover:text-error-content transition-all" @click="handleDelete(config.id)">
+                <Icon icon="brook-delete" style="font-size: 18px;" />
               </button>
             </div>
           </td>
@@ -326,21 +340,20 @@ const handleClickDownload = () => {
 
         <!-- 空状态提示 -->
         <tr v-if="configs.length === 0">
-          <td colspan="10" class="text-center py-12">
-            <div
-                class="w-18 h-18 bg-base-200 rounded-full flex items-center justify-center mx-auto mb-4">
-              <Icon icon="brook-technology_usb-cable" class="text-base-content/40"
-                    style="font-size: 48px;"/>
+          <td colspan="10" class="text-center py-20 bg-base-100">
+            <div class="flex flex-col items-center justify-center max-w-xs mx-auto">
+              <div class="w-20 h-20 bg-base-200 rounded-3xl flex items-center justify-center mb-6 rotate-12 group-hover:rotate-0 transition-transform duration-500">
+                <Icon icon="brook-technology_usb-cable" class="text-primary/20" style="font-size: 40px;"/>
+              </div>
+              <h3 class="text-lg font-black tracking-tight mb-2 opacity-80">{{ t('configuration.noConfigurations') }}</h3>
+              <p class="text-xs font-medium opacity-40 leading-relaxed mb-8">
+                {{ t('configuration.noConfigurationsDesc') }}
+              </p>
+              <button class="btn btn-primary btn-md gap-3 px-8 shadow-xl shadow-primary/20 font-black uppercase tracking-widest text-xs" @click="handleAdd">
+                <Icon icon="brook-add" style="font-size: 18px;"/>
+                {{ t('configuration.addConfiguration') }}
+              </button>
             </div>
-            <h3 class="text-lg font-medium text-base-content/60 mb-2">{{
-                t('configuration.noConfigurations')
-              }}</h3>
-            <p class="text-sm text-base-content/40 mb-4">{{ t('configuration.noConfigurationsDesc') }}
-            </p>
-            <button class="btn btn-primary gap-2" @click="handleAdd">
-              <Icon icon="brook-add" style="font-size: 16px;"/>
-              {{ t('configuration.addConfiguration') }}
-            </button>
           </td>
         </tr>
         </tbody>

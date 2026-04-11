@@ -20,11 +20,11 @@ import (
 	"fmt"
 )
 
-const BuildVersion = "0.2.3"
+const BuildVersion = "0.2.4"
 
 const Version = 2
 
-const DBVersion = 3
+const DBVersion = 4
 
 // GetBuildVersion application version.
 func GetBuildVersion() string {

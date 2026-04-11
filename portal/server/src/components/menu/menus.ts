@@ -15,59 +15,77 @@
  */
 
 class Menu {
-  title: string;
-  describe: string;
-  icon: string;
-  children?: Menu[];
-  comp: string | any;
-  active?: boolean;
-  parentTitle?: string;
-  constructor(
-    title: string,
-    describe: string,
-    icon: string,
-    active?: boolean,
-    children?: Menu[],
-    comp?: any,
-    parentTitle?: string
-  ) {
-    this.title = title;
-    this.describe = describe;
-    this.icon = icon;
-    this.children = children;
-    this.comp = comp || null;
-    this.active = active
-    this.parentTitle = parentTitle;
-  }
+    title: string;
+    describe: string;
+    icon: string;
+    children?: Menu[];
+    comp: string | any;
+    active?: boolean;
+    expanded?: boolean;
+
+    constructor(
+        title: string,
+        describe: string,
+        icon: string,
+        active?: boolean,
+        children?: Menu[],
+        comp?: any,
+        expanded?: boolean
+    ) {
+        this.title = title;
+        this.describe = describe;
+        this.icon = icon;
+        this.children = children;
+        this.comp = comp || null;
+        this.active = active
+        this.expanded = expanded
+    }
 }
 
 const menus: Menu[] = [
-  new Menu(
-    // 使用 i18n 键而非硬编码文案
-    'menu.onlineServer.title',
-    'menu.onlineServer.description',
-    'brook-Diagram-',
-    true,
-    [],
-    () => import('@/views/serverlist/Index.vue'),
-  ),
-  new Menu(
-    'menu.tunnelConfiguration.title',
-    'menu.tunnelConfiguration.description',
-    'brook-technology_usb-cable',
-    false,
-    [],
-    () => import('@/views/proxys/Configuration.vue'),
-  ),
-  new Menu(
-    'menu.mySetting.title',
-    'menu.mySetting.description',
-    'brook-Gear-',
-    false,
-    [],
-    () => import('@/views/mysetting/MySetting.vue'),
-    'Setting'
-  ),
+    new Menu(
+        // 使用 i18n 键而非硬编码文案
+        'menu.onlineServer.title',
+        'menu.onlineServer.description',
+        'brook-Diagram-',
+        true,
+        [],
+        () => import('@/views/serverlist/Index.vue'),
+    ),
+    new Menu(
+        'menu.tunnelConfiguration.manager',
+        'menu.tunnelConfiguration.description',
+        'brook-communication-_clo',
+        false,
+        [
+            new Menu(
+                'menu.tunnelConfiguration.title',
+                'menu.tunnelConfiguration.description',
+                'brook-technology_usb-cable',
+                false,
+                [],
+                () => import('@/views/proxys/Configuration.vue'),
+            ),
+            new Menu(
+                'menu.tunnelConfiguration.security',
+                'menu.tunnelConfiguration.securityDescription',
+                'brook-Firewall-Off',
+                false,
+                [],
+                () => import('@/views/proxys/SecrityConfig.vue'),
+            )
+        ],
+        () => import('@/views/proxys/Configuration.vue'),
+        true,
+    ),
+    new Menu(
+        'menu.mySetting.title',
+        'menu.mySetting.description',
+        'brook-Gear-',
+        false,
+        [],
+        () => import('@/views/mysetting/MySetting.vue'),
+    ),
 ]
 
-export { Menu, menus };
+export {Menu, menus};

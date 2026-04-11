@@ -57,6 +57,36 @@ const getRandomPort = <Q>(parmas: any): Promise<Response<Q>> => {
   return Http.post("/api/getRandomPort", parmas);
 };
 
+// IP 策略相关接口
+const getIpStrategies = <Q>(): Promise<Response<Q>> => {
+  return Http.post("/api/getIpStrategies");
+};
+
+const addIpStrategy = <Q>(params: any): Promise<Response<Q>> => {
+  return Http.post("/api/addIpStrategy", params);
+};
+
+const delIpStrategy = <Q>(id: number): Promise<Response<Q>> => {
+  return Http.post("/api/delIpStrategy", { id });
+};
+
+const updateIpStrategy = <Q>(params: any): Promise<Response<Q>> => {
+  return Http.post("/api/updateIpStrategy", params);
+};
+
+// IP 规则相关接口
+const getIpRules = <Q>(strategyId: number): Promise<Response<Q>> => {
+  return Http.post("/api/getIpRules", { strategyId });
+};
+
+const addIpRule = <Q>(params: any): Promise<Response<Q>> => {
+  return Http.post("/api/addIpRule", params);
+};
+
+const delIpRule = <Q>(id: number): Promise<Response<Q>> => {
+  return Http.post("/api/delIpRule", { id });
+};
+
 const functions = {
   genClientConfig,
   getProxyConfigs,
@@ -66,7 +96,14 @@ const functions = {
   updateProxyState,
   addWebConfigs,
   getWebConfigs,
-  getRandomPort
+  getRandomPort,
+  getIpStrategies,
+  addIpStrategy,
+  delIpStrategy,
+  updateIpStrategy,
+  getIpRules,
+  addIpRule,
+  delIpRule
 };
 
 export default functions;

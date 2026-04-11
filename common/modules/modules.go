@@ -22,28 +22,40 @@ import (
 )
 
 var (
-	modules   = make(map[string]ModuleInfo)
-	modulesMu sync.RWMutex
+	modules       = make(map[ModuleID]ModuleInfo)
+	modulesToType = make(map[ModuleType][]ModuleID)
+	modulesMu     sync.RWMutex
 )
 
 type ModuleID string
+
+type ModuleType string
 
 type Module interface {
 	Module() ModuleInfo
 }
 
+const (
+	TunnelPluginsModule = ModuleType("tunnelPlugins")
+
+	ConfigsModule = ModuleType("configs")
+)
+
 type ModuleInfo struct {
 	ID ModuleID
+
+	ModuleType ModuleType
 
 	New func() Module
 }
 
 func RegisterModule(instance Module) {
-
 	mod := instance.Module()
-
 	if mod.ID == "" {
 		panic("module ID cannot be empty")
+	}
+	if mod.ModuleType == "" {
+		panic("moduleType cannot be empty")
 	}
 	if mod.New == nil {
 		panic("module New function cannot be nil")
@@ -51,18 +63,32 @@ func RegisterModule(instance Module) {
 	if val := mod.New(); val == nil {
 		panic("module New function must be nil")
 	}
-	if _, ok := modules[string(mod.ID)]; ok {
+	if _, ok := modules[mod.ID]; ok {
 		panic("module already registered: " + string(mod.ID))
 	}
-
-	modules[string(mod.ID)] = mod
+	modules[mod.ID] = mod
+	modulesToType[mod.ModuleType] = append(modulesToType[mod.ModuleType], mod.ID)
 }
 
-func GetModule(name string) (ModuleInfo, error) {
+func GetModule(name ModuleID) (ModuleInfo, error) {
 	modulesMu.RLock()
 	defer modulesMu.RUnlock()
 	if mod, ok := modules[name]; ok {
 		return mod, nil
 	}
-	return ModuleInfo{}, errors.New("module not found: " + name)
+	return ModuleInfo{}, errors.New("module not found: " + string(name))
+}
+
+func GetModuleByType(name ModuleType) ([]ModuleInfo, error) {
+	modulesMu.RLock()
+	defer modulesMu.RUnlock()
+	var info []ModuleInfo
+	if ids, ok := modulesToType[name]; ok {
+		for _, id := range ids {
+			if t, ok := modules[id]; ok {
+				info = append(info, t)
+			}
+		}
+	}
+	return info, nil
 }

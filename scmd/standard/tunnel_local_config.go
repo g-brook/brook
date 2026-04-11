@@ -18,7 +18,6 @@ package standard
 
 import (
 	"encoding/json"
-
 	sf "github.com/g-brook/brook/common/configs"
 	"github.com/g-brook/brook/common/hash"
 	"github.com/g-brook/brook/common/lang"
@@ -44,8 +43,9 @@ func (receiver *LocalTunnelConfig) Store(cfgId string, cfg *base.ConfigNode) {
 
 func (receiver *LocalTunnelConfig) Module() modules.ModuleInfo {
 	return modules.ModuleInfo{
-		ID:  moduleName,
-		New: func() modules.Module { return NewLocalTunnelConfig() },
+		ID:         moduleName,
+		ModuleType: modules.ConfigsModule,
+		New:        func() modules.Module { return NewLocalTunnelConfig() },
 	}
 }
 

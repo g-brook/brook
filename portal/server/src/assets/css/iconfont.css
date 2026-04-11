@@ -1,8 +1,8 @@
 @font-face {
   font-family: "iconfont"; /* Project id 5010444 */
-  src: url('iconfont.woff2?t=1768816236096') format('woff2'),
-       url('iconfont.woff?t=1768816236096') format('woff'),
-       url('iconfont.ttf?t=1768816236096') format('truetype');
+  src: url('iconfont.woff2?t=1775920838768') format('woff2'),
+       url('iconfont.woff?t=1775920838768') format('woff'),
+       url('iconfont.ttf?t=1775920838768') format('truetype');
 }
 
 .iconfont {
@@ -11,6 +11,22 @@
   font-style: normal;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+.brook-https:before {
+  content: "\e670";
+}
+
+.brook-a-01_UDP-2:before {
+  content: "\100b8";
+}
+
+.brook-Firewall-Off:before {
+  content: "\e84e";
+}
+
+.brook-communication-_clo:before {
+  content: "\ef36";
 }
 
 .brook-Certificate-1:before {

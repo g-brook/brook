@@ -28,6 +28,7 @@ import (
 	"github.com/g-brook/brook/common/hash"
 	"github.com/g-brook/brook/common/lang"
 	"github.com/g-brook/brook/common/log"
+	"github.com/g-brook/brook/common/modules"
 	"github.com/g-brook/brook/common/threading"
 	"github.com/g-brook/brook/common/transport"
 	"github.com/g-brook/brook/server/metrics"
@@ -70,6 +71,7 @@ func (b *BaseTunnelServer) Id() string {
 	return b.Cfg.Id
 
 }
+
 func (b *BaseTunnelServer) Type() string {
 	return string(b.Cfg.Type)
 }
@@ -145,6 +147,17 @@ func (b *BaseTunnelServer) Boot(_ srv.BootServer, _ srv.TraverseBy) error {
 func (b *BaseTunnelServer) Start(network lang.Network) error {
 	threading.GoSafe(func() {
 		b.Server = srv.NewServer(b.port)
+		//get plugins.
+		modes, err2 := modules.GetModuleByType(modules.TunnelPluginsModule)
+		if err2 == nil {
+			for _, handler := range modes {
+				serverHandler, ok := handler.New().(srv.ServerHandler)
+				if ok {
+					b.Server.AddHandler(serverHandler)
+					log.Info("register plugins:%s-%s", handler.ModuleType, handler.ID)
+				}
+			}
+		}
 		b.Server.AddHandler(b)
 		err := b.Server.Start(srv.WithNetwork(network), srv.WithNewChannelFunc(func(ch transport.Channel) transport.Channel {
 			return metrics.NewMetricsChannel(ch, b.trafficMetrics)

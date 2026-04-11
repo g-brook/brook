@@ -22,26 +22,27 @@ import (
 )
 
 type ProxyConfig struct {
-	Idx         int            `db:"idx"`
-	Name        string         `db:"name"`
-	Tag         string         `db:"tag"`
-	RemotePort  int            `db:"remote_port"`
-	ProxyID     string         `db:"proxy_id"`
-	Protocol    string         `db:"protocol"`
-	State       int            `db:"state"`
-	Destination sql.NullString `db:"destination"`
-	RunState    int            `db:"run_state"`
+	Idx          int            `db:"idx"`
+	Name         string         `db:"name"`
+	Tag          string         `db:"tag"`
+	RemotePort   int            `db:"remote_port"`
+	ProxyID      string         `db:"proxy_id"`
+	Protocol     string         `db:"protocol"`
+	State        int            `db:"state"`
+	Destination  sql.NullString `db:"destination"`
+	IpStrategies sql.NullString `db:"ip_strategies"`
+	RunState     int            `db:"run_state"`
 }
 
 var (
-	ProxyQuerySQL = "idx,name, tag, remote_port, proxy_id, protocol,state,run_state,destination"
+	ProxyQuerySQL = "idx,name, tag, remote_port, proxy_id, protocol,state,run_state,destination,ip_strategies"
 )
 
 func AddProxyConfig(p *ProxyConfig) (error, int64) {
 	id, err := ExecWithId(`
-            INSERT INTO proxy_config(name, tag, remote_port, proxy_id, protocol,state,run_state, destination)
-            VALUES (?, ?, ?, ?, ?,?,?,?);
-        `, p.Name, p.Tag, p.RemotePort, p.ProxyID, p.Protocol, p.State, p.RunState, p.Destination)
+            INSERT INTO proxy_config(name, tag, remote_port, proxy_id, protocol,state,run_state, destination,ip_strategies)
+            VALUES (?, ?, ?, ?, ?,?,?,?,?);
+        `, p.Name, p.Tag, p.RemotePort, p.ProxyID, p.Protocol, p.State, p.RunState, p.Destination, p.IpStrategies)
 	return err, id
 }
 
@@ -51,7 +52,7 @@ func DelProxyConfig(id int) error {
 }
 
 func UpdateProxyConfig(p *ProxyConfig) error {
-	err := Exec("update proxy_config set name=?,tag=?,proxy_id=?,protocol=?,destination=? where idx=?", p.Name, p.Tag, p.ProxyID, p.Protocol, p.Destination.String, p.Idx)
+	err := Exec("update proxy_config set name=?,tag=?,proxy_id=?,protocol=?,destination=?,ip_strategies=? where idx=?", p.Name, p.Tag, p.ProxyID, p.Protocol, p.Destination.String, p.IpStrategies.String, p.Idx)
 	return err
 }
 

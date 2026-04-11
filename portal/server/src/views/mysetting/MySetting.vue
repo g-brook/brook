@@ -1,22 +1,22 @@
-
-<!--
-  - Copyright ©  sixh sixh@apache.org
-  -
-  - Licensed under the Apache License, Version 2.0 (the "License");
-  - you may not use this file except in compliance with the License.
-  - You may obtain a copy of the License at
-  -
-  -     http://www.apache.org/licenses/LICENSE-2.0
-  -
-  - Unless required by applicable law or agreed to in writing, software
-  - distributed under the License is distributed on an "AS IS" BASIS,
-  - WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-  - See the License for the specific language governing permissions and
-  - limitations under the License.
-  -->
+/*
+ * Copyright ©  sixh sixh@apache.org
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
 <script lang="ts" setup>
 import {computed, onMounted, ref} from 'vue'
+import Icon from '@/components/icon/Index.vue';
 import ms, {AuthToken} from '@/service/mysetting'
 import Message from '@/components/message'
 import useI18n from '@/components/lang/useI18n'
@@ -102,84 +102,103 @@ const { t } = useI18n()
 </script>
 
 <template>
-  <div>
-    <div class="max-w-6xl mx-auto p-6 space-y-2 fade-in">
-      <!-- Token 管理 - 简洁展示 -->
-      <div class="space-y-4">
-        <div class="border card border-base-300 rounded-lg p-6 w-full">
-          <div class="card-title">
-            <i class="iconfont brook-token" style="font-size: 24px"></i>
-            <div class="text-base-content text-xl">{{ t('mysetting.title') }}</div>
-            <p class="text-xs text-base-content/60">{{ t('mysetting.subtitle') }}</p>
+  <div class="overflow-hidden">
+    <!-- 极简页头：参考 Configuration.vue -->
+    <div class="flex sticky top-0 items-center h-14 justify-between gap-4 mb-3 px-5 py-2 rounded-xl bg-base-100/80 backdrop-blur-md z-30 border border-base-content/5 shadow-sm mx-1">
+      <div class="flex items-center gap-6">
+        <!-- 标题 -->
+        <div class="flex items-center gap-2.5">
+          <div class="w-8 h-8 rounded-lg bg-primary flex items-center justify-center text-primary-content shadow-md shadow-primary/20">
+            <Icon icon="brook-token" style="font-size: 16px;" />
           </div>
-          <!-- Token 显示 -->
-          <div v-if="tokenInfo.token" class="space-y-4">
-            <div class="form-control">
-              <label class="label">
-                <span class="label-text font-medium">{{ t('mysetting.currentToken') }}</span>
-                <span class="badge  badge-sm">{{ tokenInfo.createTime }}</span>
-              </label>
-              <div class="flex items-center gap-2">
-                <div class="join w-full">
-                <input :value="showToken ? tokenInfo.token : maskedToken" type="text"
-                  class="input input-ghost flex-1 font-mono text-sm bg-base-200 join-item input-bordered" readonly />
-                  <button  class="btn rounded-r-full border-0 join-item"
-                           :title="showToken ? t('mysetting.hideToken') : t('mysetting.showToken')" @click="tolgenToken">
-                    <svg v-if="!showToken" xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none"
-                         viewBox="0 0 24 24" stroke="currentColor">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                    </svg>
-                    <svg v-else xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24"
-                         stroke="currentColor">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L3 3m6.878 6.878L21 21" />
-                    </svg>
-                  </button>
-                </div>
-                  <button class="btn btn-primary btn-soft btn-sm " :title="t('mysetting.copyToken')" @click="copyToken">
-                    {{ t('common.copy') }}
-                  </button>
+          <h1 class="text-base font-black tracking-tight hidden sm:block uppercase">{{ t('mysetting.title') }}</h1>
+        </div>
+
+        <!-- 垂直分割线 -->
+        <div class="divider divider-horizontal mx-0 w-px h-6 self-center opacity-10"></div>
+
+        <div class="flex items-center">
+          <p class="text-[11px] font-black uppercase opacity-40 tracking-widest">{{ t('mysetting.subtitle') }}</p>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-1.5">
+        <button class="btn btn-circle btn-xs h-8 w-8 btn-ghost hover:rotate-180 transition-transform duration-500" @click="getToken">
+          <Icon icon="brook-refresh" style="font-size: 14px;"/>
+        </button>
+      </div>
+    </div>
+
+    <div class="max-w-6xl mx-auto p-1 space-y-4 fade-in">
+      <!-- Token 管理 - 参考 ConfigForm 风格 -->
+      <div class="bg-base-200/40 rounded-3xl p-6 border border-base-content/5 space-y-6 shadow-sm mx-1">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
+              <Icon icon="brook-token" style="font-size: 20px" />
+            </div>
+            <div>
+              <h3 class="text-sm font-black uppercase tracking-widest">{{ t('mysetting.currentToken') }}</h3>
+              <p v-if="tokenInfo.token" class="text-[10px] font-black opacity-30 uppercase tracking-tighter">Created: {{ tokenInfo.createTime }}</p>
+            </div>
+          </div>
+          <div v-if="tokenInfo.token" class="flex gap-2">
+            <button @click="copyToken" class="btn btn-ghost btn-xs h-8 px-3 font-black uppercase tracking-widest hover:bg-primary hover:text-primary-content transition-all">
+              <Icon icon="brook-copy" class="mr-1" />
+              {{ t('common.copy') }}
+            </button>
+          </div>
+        </div>
+
+        <!-- Token 显示区域 -->
+        <div v-if="tokenInfo.token" class="space-y-4">
+          <div class="form-control w-full">
+            <div class="relative group">
+              <input :value="showToken ? tokenInfo.token : maskedToken" type="text"
+                class="input input-bordered focus:input-primary w-full h-11 font-mono text-sm font-black tracking-tight bg-base-100/30 hover:bg-base-100/50 focus:bg-base-100 transition-all shadow-sm border-base-content/5 pr-24" readonly />
+              
+              <div class="absolute right-1 top-1 join">
+                <button class="btn btn-ghost btn-sm h-9 join-item px-3 hover:bg-base-content/5" 
+                        :title="showToken ? t('mysetting.hideToken') : t('mysetting.showToken')" @click="tolgenToken">
+                  <Icon :icon="showToken ? 'brook-eye-close' : 'brook-eye'" style="font-size: 16px;" class="opacity-40" />
+                </button>
               </div>
             </div>
           </div>
 
-          <!-- 无 Token 状态 -->
-          <div v-else class="text-center py-8">
-            <div class="w-16 h-16 bg-base-200 rounded-full flex items-center justify-center mx-auto mb-4">
-              <i class="iconfont brook-token" style="font-size: 48px;"></i>
-            </div>
-            <h4 class="text-lg font-semibold text-base-content mb-2">{{ t('mysetting.noTokenTitle') }}</h4>
-            <p class="text-sm text-base-content/60 mb-6">{{ t('mysetting.noTokenDesc') }}</p>
-          </div>
-
-          <!-- Token 操作按钮 -->
-          <div class="flex gap-3 mt-6">
-            <button @click="generateToken" class="btn btn-primary flex-1" :class="{ 'loading': isGenerating }"
+          <div class="flex gap-3 pt-2">
+            <button @click="generateToken" class="btn btn-primary h-11 flex-1 font-black uppercase tracking-widest shadow-lg shadow-primary/20" :class="{ 'loading': isGenerating }"
               :disabled="isGenerating">
-              <svg v-if="!isGenerating" xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none"
-                viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-              </svg>
-              {{ tokenInfo.token ? t('mysetting.regenerate') : t('mysetting.generate') }}
+              <Icon v-if="!isGenerating" icon="brook-refresh" class="mr-2" />
+              {{ t('mysetting.regenerate') }}
             </button>
 
-            <button v-if="tokenInfo.token" @click="revokeToken" class="btn btn-error btn-outline" :disabled="isRevoking">
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24"
-                stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                  d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-              </svg>
+            <button @click="revokeToken" class="btn btn-error btn-outline h-11 px-6 font-black uppercase tracking-widest border-2 hover:border-error" :disabled="isRevoking">
+              <Icon icon="brook-delete" class="mr-2" />
               {{ t('mysetting.revoke') }}
             </button>
           </div>
         </div>
+
+        <!-- 无 Token 状态 -->
+        <div v-else class="text-center py-12 bg-base-100/30 rounded-2xl border border-dashed border-base-content/10">
+          <div class="w-20 h-20 bg-base-200 rounded-3xl flex items-center justify-center mx-auto mb-6 rotate-12">
+            <Icon icon="brook-token" class="text-primary/20" style="font-size: 48px;" />
+          </div>
+          <h4 class="text-lg font-black tracking-tight mb-2 opacity-80">{{ t('mysetting.noTokenTitle') }}</h4>
+          <p class="text-xs font-medium opacity-40 leading-relaxed mb-8 max-w-xs mx-auto">{{ t('mysetting.noTokenDesc') }}</p>
+          
+          <button @click="generateToken" class="btn btn-primary btn-md gap-3 px-10 shadow-xl shadow-primary/20 font-black uppercase tracking-widest text-xs" :class="{ 'loading': isGenerating }" :disabled="isGenerating">
+            <Icon v-if="!isGenerating" icon="brook-add" style="font-size: 18px;"/>
+            {{ t('mysetting.generate') }}
+          </button>
+        </div>
       </div>
-      <TlsSetting/>
+
+      <!-- TLS 设置部分 -->
+      <div class="mx-1">
+        <TlsSetting/>
+      </div>
     </div>
   </div>
 </template>
-
-

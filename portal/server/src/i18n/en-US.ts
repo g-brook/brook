@@ -153,7 +153,10 @@ export default {
         },
         tunnelConfiguration: {
             title: "Tunnel Configuration",
-            description: "Manage and configure tunnel server settings",
+            manager: "Tunnel Management",
+            security: "Security Settings",
+            securityDescription: "Configure security policies and protection rules",
+            description: "Manage and configure tunnel server settings management",
         },
         mySetting: {
             title: "My Settings",
@@ -182,9 +185,38 @@ export default {
             description: "Monitor network traffic and performance",
         },
         security: {
-            title: "Security Settings",
-            description: "Configure security policies and protection rules",
+        title: "Security Settings",
+        description: "Configure security policies and protection rules",
+        strategy: {
+            title: "IP Strategy",
+            name: "Strategy Name",
+            type: "Strategy Type",
+            bindHandler: "Bind Handler",
+            bindHandlerPlaceholder: "e.g. proxy-server-1",
+            bindHandlerDesc: "Unique identifier for the tunnel",
+            allowPrivate: "Allow Private",
+            status: "Status",
+            actions: "Actions",
+            whitelist: "Whitelist",
+            blacklist: "Blacklist",
+            privateOnly: "Private Only",
+            add: "Add Strategy",
+            edit: "Edit Strategy",
+            delete: "Delete Strategy",
+            rules: "Manage Rules",
+            noStrategies: "No IP Strategies",
+            noStrategiesDesc: "Create an IP strategy to manage access control",
         },
+        rules: {
+            title: "IP Rules",
+            ip: "IP / CIDR",
+            remark: "Remark",
+            remarkPlaceholder: "Enter remark",
+            add: "Add Rule",
+            delete: "Delete Rule",
+            placeholder: "Enter IP address or CIDR (e.g., 192.168.1.1 or 10.0.0.0/24)",
+        }
+    },
     },
 
     // Dashboard
@@ -265,7 +297,7 @@ export default {
         destination: "Destination",
         proxyId: "ProxyId",
         protocol: "Protocol",
-        status: "Auto Start",
+        status: "Status",
         actions: "Actions",
         enabled: "Enabled",
         disabled: "Disabled",
@@ -297,6 +329,24 @@ export default {
         noProxyTip: "No proxy configurations. Click \"Add Row\" to add",
         proxyIdTip: "Used by clients to connect",
         certInfoEmpty: "No certificates available for selection, please go to my settings to add",
+        protocols: {
+            http: {
+                title: "HTTP",
+                desc: "Standard web proxy for normal web access"
+            },
+            https: {
+                title: "HTTPS",
+                desc: "Secure web proxy with TLS encryption"
+            },
+            tcp: {
+                title: "TCP",
+                desc: "Reliable general tunnel for SSH, DB, etc."
+            },
+            udp: {
+                title: "UDP",
+                desc: "Low-latency tunnel for gaming, streaming, etc."
+            }
+        },
         form: {
             proxyIdPlaceholder: "Please enter ProxyId",
             namePlaceholder: "Please enter configuration name",

@@ -33,6 +33,7 @@ interface ConfigForm {
   destinationAddr: string | null;
   destinationPort: number | null;
   destination: string;
+  strategyId: number | null;
 }
 
 // 错误信息类型
@@ -42,6 +43,8 @@ interface FormErrors {
   remotePort?: string;
   proxyId?: string;
   protocol?: string;
+  destinationAddr?: string;
+  destinationPort?: string;
 }
 
 // Props
@@ -58,10 +61,10 @@ defineEmits<{
 }>();
 // 协议类型选项
 const protocolTypes = [
-  {value: 'HTTP', label: 'HTTP'},
-  {value: 'HTTPS', label: 'HTTPS'},
-  {value: 'TCP', label: 'TCP'},
-  {value: 'UDP', label: 'UDP'},
+  {value: 'HTTP', label: 'HTTP', icon: 'brook-web', color: 'text-blue-500'},
+  {value: 'HTTPS', label: 'HTTPS', icon: 'brook-https', color: 'text-green-500'},
+  {value: 'TCP', label: 'TCP', icon: 'brook-technology_usb-cable', color: 'text-orange-500'},
+  {value: 'UDP', label: 'UDP', icon: 'brook-a-01_UDP-2', color: 'text-purple-500'},
 ];
 
 // 响应式数据
@@ -73,8 +76,10 @@ const form = reactive<ConfigForm>({
   remotePort: props.initialData?.remotePort || 10000,
   proxyId: props.initialData?.proxyId || '',
   protocol: props.initialData?.protocol || '',
-  destinationAddr: props.initialData?.destination.split(":")[0] || '',
-  destinationPort: props.initialData?.destination.split(":")[1] || 0,
+  destinationAddr: props.initialData?.destination?.split(":")[0] || '',
+  destinationPort: props.initialData?.destination?.split(":")[1] ? parseInt(props.initialData.destination.split(":")[1]) : 0,
+  destination: props.initialData?.destination || '',
+  strategyId: props.initialData?.strategyId || null,
 });
 
 const errors = reactive<FormErrors>({});
@@ -83,6 +88,22 @@ const errors = reactive<FormErrors>({});
 const isEdit = computed(() => props.isEdit || false);
 
 const {t} = useI18n();
+
+// IP 策略 Mock 数据 (实际应调用接口获取)
+const strategies = ref<any[]>([
+  { id: 1, name: 'Default Whitelist' },
+  { id: 2, name: 'Block Malicious IPs' },
+  { id: 3, name: 'Internal Only' }
+]);
+
+// 获取所有策略
+const getIpStrategies = async () => {
+  // Mock 数据已在上面定义，真实环境应调用接口
+  // try {
+  //   const res = await config.getIpStrategies();
+  //   strategies.value = res.data || [];
+  // } catch (e) {}
+};
 
 // 表单验证
 const validateForm = (): boolean => {
@@ -193,98 +214,147 @@ onMounted(() => {
   if (!props.isEdit) {
     getPort();
   }
+  getIpStrategies();
 });
 </script>
 <template>
-  <div class="w-[35rem] h-[20rem]">
-    <!-- name of each tab group should be unique -->
-    <form @submit.prevent="handleSubmit">
-      <div class="grid grid-cols-7 gap-2 items-center ml-4">
+  <div class="w-[34rem] p-2">
+    <form @submit.prevent="handleSubmit" class="space-y-4">
+      <!-- 现代化协议选择器 - 极简紧凑卡片 -->
+      <div class="grid grid-cols-4 gap-3">
         <label
-            class="flex justify-center flex-col items-center rounded-full bg-primary-content
-          h-16 w-16 cursor-pointer hover:bg-primary hover:cursor-pointer duration-300  hover:-translate-y-1 hover:scale-100 group"
-            v-for="type in protocolTypes" :key="type.value">
-          <input type="radio" name="types" v-model="form.protocol" :value="type.value"
-                 class="radio radio-accent radio-sm checked:bg-red-200 checked:text-red-600 checked:border-red-600  group-hover:border-base-100"/>
-          <p class="text-sm font-bold text-neutral">{{ type.label }}</p>
-        </label>
-        <label v-if="errors.protocol" class="label py-1">
-          <span class="label-text-alt text-red-500 text-xs">{{ errors.protocol }}</span>
+            v-for="type in protocolTypes"
+            :key="type.value"
+            :class="[
+              'relative flex flex-col items-center justify-center gap-1.5 py-3 px-2 rounded-2xl cursor-pointer transition-all duration-300 border-2 overflow-hidden group',
+              form.protocol === type.value
+                ? 'bg-primary text-primary-content border-primary shadow-md scale-[1.02]'
+                : 'bg-base-200/50 border-transparent hover:bg-base-200/80 hover:border-base-content/10'
+            ]"
+        >
+          <input type="radio" name="types" v-model="form.protocol" :value="type.value" class="hidden"/>
+
+          <!-- 图标容器 -->
+          <div
+              :class="[
+                'flex items-center justify-center w-9 h-9 rounded-xl transition-all duration-300',
+                form.protocol === type.value ? 'bg-white/20 text-white' : 'bg-base-100 text-base-content/40'
+              ]"
+          >
+            <Icon :icon="type.icon" style="font-size: 18px;"/>
+          </div>
+
+          <!-- 文字内容 -->
+          <span :class="['font-black text-[14px] tracking-widest uppercase', form.protocol === type.value ? 'text-white' : 'text-base-content/60']">
+            {{ type.label }}
+          </span>
         </label>
       </div>
-      <div class="flex flex-row gap-2 justify-between">
-        <div class="fieldset border-base-300 w-full p-4">
-          <!-- 代理ID -->
-          <div class="form-control">
-            <label class="label py-1 w-14">
-              <span class="label-text font-medium">{{ t('configuration.proxyId') }} <span class="text-red-500">*</span></span>
-            </label>
-            <div class="tooltip" :data-tip="t('configuration.proxyIdTip')">
-              <Icon icon="brook-exclamation-circle" style="font-size: 14px;"/>
-            </div>
-            <input type="text" v-model="form.proxyId"
-                   :class="['input  focus:input-primary w-full', { 'input-error': errors.proxyId }]"
-                   :placeholder="t('configuration.form.proxyIdPlaceholder')"/>
-            <label v-if="errors.proxyId" class="label py-1">
-              <span class="label-text-alt text-red-500 text-xs">{{ errors.proxyId }}</span>
-            </label>
-          </div>
 
-          <!-- 名称 -->
-          <div class="form-control">
-            <label class="label py-1 w-14">
-              <span class="label-text  font-medium">{{ t('common.name') }} <span class="text-red-500">*</span></span>
-            </label>
-            <input type="text" v-model="form.name"
-                   :class="['input  focus:input-primary w-full', { 'input-error': errors.name }]"
-                   :placeholder="t('configuration.form.namePlaceholder')"/>
-            <label v-if="errors.name" class="label py-0">
-              <span class="label-text-alt text-red-500 text-xs">{{ errors.name }}</span>
-            </label>
-          </div>
-          <div class="form-control"><label class="label py-1 w-14">
-            <span class="label-text  font-medium">{{ t('configuration.form.tagLabel') }}</span>
-          </label>
-            <input type="text" v-model="form.tag" class="input  focus:input-primary w-full"
-                   :placeholder="t('configuration.form.tagPlaceholder')"/>
+      <!-- 内容区块：统一使用极简淡色背景 -->
+      <div class="bg-base-200/40 rounded-3xl p-5 border border-base-content/5 space-y-5">
+        <!-- 第一部分：基础信息 -->
+        <div class="space-y-3">
+          <div class="grid grid-cols-2 gap-5">
+            <div class="form-control w-full">
+              <label class="label py-1">
+                <span class="label-text font-black text-[11px] opacity-40 uppercase tracking-[0.15em] flex items-center gap-1">
+                  {{ t('configuration.proxyId') }}
+                  <span class="text-error font-black">*</span>
+                </span>
+              </label>
+              <div class="relative group">
+                <input type="text" v-model="form.proxyId"
+                       :class="['input input-bordered focus:input-primary w-full h-11 text-sm font-black tracking-tight pr-10 bg-base-100/30 hover:bg-base-100/50 focus:bg-base-100 transition-all shadow-sm border-base-content/5', { 'input-error': errors.proxyId }]"
+                       :placeholder="t('configuration.form.proxyIdPlaceholder')"/>
+                <div class="absolute right-3 top-3 tooltip tooltip-left" :data-tip="t('configuration.proxyIdTip')">
+                  <Icon icon="brook-exclamation-circle" class="opacity-20 hover:opacity-100 transition-opacity cursor-help"/>
+                </div>
+              </div>
+            </div>
+
+            <div class="form-control w-full">
+              <label class="label py-1">
+                <span class="label-text font-black text-[11px] opacity-40 uppercase tracking-[0.15em] flex items-center gap-1">
+                  {{ t('common.name') }}
+                  <span class="text-error font-black">*</span>
+                </span>
+              </label>
+              <input type="text" v-model="form.name"
+                     :class="['input input-bordered focus:input-primary w-full h-11 text-sm font-black tracking-tight bg-base-100/30 hover:bg-base-100/50 focus:bg-base-100 transition-all shadow-sm border-base-content/5', { 'input-error': errors.name }]"
+                     :placeholder="t('configuration.form.namePlaceholder')"/>
+            </div>
           </div>
         </div>
-        <div class="fieldset border-base-300  rounded-box w-xs p-4"><!-- 端口 -->
-          <div class="form-control">
-            <label class="label py-1 w-14">
-              <span class="label-text  font-medium">{{ t('configuration.remotePort') }}(10000~65535) <span
-                  class="text-red-500">*</span></span>
-            </label>
-            <input type="number" v-model.number="form.remotePort" :disabled="isEdit"
-                   :class="['input  focus:input-primary w-full', { 'input-error': errors.remotePort }]"
-                   :placeholder="t('configuration.form.portPlaceholder')"
-                   min="10000" max="65535"/>
-            <label v-if="errors.remotePort" class="label py-1">
-              <span class="label-text-alt text-red-500 text-xs">{{ errors.remotePort }}</span>
-            </label>
-          </div>
 
-          <div class="form-control">
-            <label class="label py-1 w-14">
-              <span class="label-text  font-medium">{{ t('configuration.destination') }}(IP/Host)</span>
-            </label>
-            <input type="text" v-model="form.destinationAddr"
-                   :class="['input  focus:input-primary w-full', { 'input-error': errors.destinationAddr }]"
-                   :placeholder="t('configuration.form.destAddrPlaceholder')"/>
-          </div>
+        <!-- 极细分割线 -->
+        <div class="h-px bg-base-content/5 mx-2"></div>
 
-          <div class="form-control">
-            <label class="label py-1 w-14">
-              <span class="label-text  font-medium">{{ t('configuration.destination') }}PORT</span>
-            </label>
-            <input type="number" v-model.number="form.destinationPort"
-                   :class="['input  focus:input-primary w-full', { 'input-error': errors.destinationPort }]"
-                   :placeholder="t('configuration.form.destPortPlaceholder')" max="65535"/>
-          </div>
+        <!-- 第二部分：网络配置 -->
+        <div class="space-y-3">
+          <div class="grid grid-cols-12 gap-5 items-end">
+            <div class="form-control col-span-4">
+              <label class="label py-1">
+                <span class="label-text font-black text-[11px] opacity-40 uppercase tracking-[0.15em] flex items-center gap-1">
+                  {{ t('configuration.remotePort') }}
+                  <span class="text-error font-black">*</span>
+                </span>
+              </label>
+              <input type="number" v-model.number="form.remotePort" :disabled="isEdit"
+                     class="input input-bordered focus:input-primary w-full h-11 font-mono font-black text-sm bg-base-100/30 hover:bg-base-100/50 focus:bg-base-100 transition-all shadow-sm border-base-content/5"
+                     min="10000" max="65535"/>
+            </div>
 
+            <div class="form-control col-span-8">
+              <label class="label py-1">
+                <span class="label-text font-black text-[11px] opacity-40 uppercase tracking-[0.15em]">
+                  {{ t('configuration.destination') }}
+                </span>
+              </label>
+              <div class="join w-full h-11 shadow-sm border border-base-content/5 rounded-xl overflow-hidden bg-base-100/30">
+                <input type="text" v-model="form.destinationAddr"
+                       class="input input-ghost join-item focus:bg-base-100 flex-1 min-w-0 text-sm font-black tracking-tight px-4"
+                       :placeholder="t('configuration.form.destAddrPlaceholder')"/>
+                <div class="bg-base-content/5 flex items-center px-3 font-mono text-xs font-black opacity-30 border-x border-base-content/5">:</div>
+                <input type="number" v-model.number="form.destinationPort"
+                       class="input input-ghost join-item focus:bg-base-100 w-24 text-sm font-mono font-black px-4"
+                       placeholder="Port" max="65535"/>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 极细分割线 -->
+        <div class="h-px bg-base-content/5 mx-2"></div>
+
+        <!-- 第三部分：高级配置 -->
+        <div class="space-y-3">
+          <div class="grid grid-cols-2 gap-5">
+            <div class="form-control">
+              <label class="label py-1">
+                <span class="label-text font-black text-[11px] opacity-40 uppercase tracking-[0.15em]">{{ t('configuration.form.tagLabel') }}</span>
+              </label>
+              <input type="text" v-model="form.tag" class="input input-bordered focus:input-primary w-full h-11 bg-base-100/30 hover:bg-base-100/50 focus:bg-base-100 transition-all shadow-sm font-black text-sm tracking-tight border-base-content/5"
+                     :placeholder="t('configuration.form.tagPlaceholder')"/>
+            </div>
+
+            <div class="form-control">
+              <label class="label py-1">
+                <span class="label-text font-black text-[11px] opacity-40 uppercase tracking-[0.15em]">{{ t('menu.security.strategy.title') }}</span>
+              </label>
+              <div class="relative">
+                <select v-model="form.strategyId" class="select select-bordered focus:select-primary w-full h-11 font-black text-primary bg-base-100/30 hover:bg-base-100/50 focus:bg-base-100 transition-all shadow-sm appearance-none border-base-content/5 text-sm tracking-tight">
+                  <option :value="null">{{ t('common.none') || 'None' }}</option>
+                  <option v-for="s in strategies" :key="s.id" :value="s.id">{{ s.name }}</option>
+                </select>
+                <div class="absolute right-3 top-3.5 pointer-events-none opacity-20">
+                  <Icon icon="brook-Down-" style="font-size: 14px;" />
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </form>
   </div>
-
 </template>

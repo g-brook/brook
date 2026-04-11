@@ -46,3 +46,4 @@ go.work.sum
 /scmd/dist/
 /ccmd/dist/
 /ccmd/logs/
+/scmd/fdb/
