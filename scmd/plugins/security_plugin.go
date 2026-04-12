@@ -20,6 +20,7 @@ import (
 	"errors"
 	"net"
 
+	"github.com/g-brook/brook/common/configs"
 	"github.com/g-brook/brook/common/modules"
 	trp "github.com/g-brook/brook/common/transport"
 	"github.com/g-brook/brook/server/srv"
@@ -33,6 +34,10 @@ func init() {
 
 type SecurityPlugin struct {
 	srv.BaseServerHandler
+}
+
+func (b *SecurityPlugin) Bind(cfg *configs.ServerTunnelConfig) {
+
 }
 
 func (b *SecurityPlugin) Open(ch trp.Channel, traverse srv.TraverseBy) error {
@@ -69,7 +74,7 @@ func matchIPCIDR(ipStr string, cidrList []string) (bool, error) {
 	return false, nil
 }
 
-func (s *SecurityPlugin) Module() modules.ModuleInfo {
+func (b *SecurityPlugin) Module() modules.ModuleInfo {
 	return modules.ModuleInfo{
 		ID:         securityModeName,
 		ModuleType: modules.TunnelPluginsModule,

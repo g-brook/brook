@@ -151,8 +151,9 @@ func (b *BaseTunnelServer) Start(network lang.Network) error {
 		modes, err2 := modules.GetModuleByType(modules.TunnelPluginsModule)
 		if err2 == nil {
 			for _, handler := range modes {
-				serverHandler, ok := handler.New().(srv.ServerHandler)
+				serverHandler, ok := handler.New().(Plugin)
 				if ok {
+					serverHandler.Bind(b.Cfg)
 					b.Server.AddHandler(serverHandler)
 					log.Info("register plugins:%s-%s", handler.ModuleType, handler.ID)
 				}

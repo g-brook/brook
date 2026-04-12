@@ -119,6 +119,7 @@ const handleAdd = () => {
           const formData = await formApi.handleSubmit();
           if (formData) {
             await getConfigs();
+            message.info(t("common.success"));
             Modal.close(modalId);
           }
         } catch (error) {
@@ -165,6 +166,7 @@ const handleUpdate = (cfg) => {
           const formData = await formApi.handleSubmit();
           if (formData) {
             await getConfigs();
+            message.info(t("common.success"));
             Modal.close(modalId);
           }
         } catch (error) {

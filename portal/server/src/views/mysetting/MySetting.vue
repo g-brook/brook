@@ -97,37 +97,12 @@ onMounted(() => {
   getToken()
 })
 
-const { t } = useI18n()
+const { t, locale } = useI18n()
 
 </script>
 
 <template>
   <div class="overflow-hidden">
-    <!-- 极简页头：参考 Configuration.vue -->
-    <div class="flex sticky top-0 items-center h-14 justify-between gap-4 mb-3 px-5 py-2 rounded-xl bg-base-100/80 backdrop-blur-md z-30 border border-base-content/5 shadow-sm mx-1">
-      <div class="flex items-center gap-6">
-        <!-- 标题 -->
-        <div class="flex items-center gap-2.5">
-          <div class="w-8 h-8 rounded-lg bg-primary flex items-center justify-center text-primary-content shadow-md shadow-primary/20">
-            <Icon icon="brook-token" style="font-size: 16px;" />
-          </div>
-          <h1 class="text-base font-black tracking-tight hidden sm:block uppercase">{{ t('mysetting.title') }}</h1>
-        </div>
-
-        <!-- 垂直分割线 -->
-        <div class="divider divider-horizontal mx-0 w-px h-6 self-center opacity-10"></div>
-
-        <div class="flex items-center">
-          <p class="text-[11px] font-black uppercase opacity-40 tracking-widest">{{ t('mysetting.subtitle') }}</p>
-        </div>
-      </div>
-
-      <div class="flex items-center gap-1.5">
-        <button class="btn btn-circle btn-xs h-8 w-8 btn-ghost hover:rotate-180 transition-transform duration-500" @click="getToken">
-          <Icon icon="brook-refresh" style="font-size: 14px;"/>
-        </button>
-      </div>
-    </div>
 
     <div class="max-w-6xl mx-auto p-1 space-y-4 fade-in">
       <!-- Token 管理 - 参考 ConfigForm 风格 -->
@@ -139,7 +114,9 @@ const { t } = useI18n()
             </div>
             <div>
               <h3 class="text-sm font-black uppercase tracking-widest">{{ t('mysetting.currentToken') }}</h3>
-              <p v-if="tokenInfo.token" class="text-[10px] font-black opacity-30 uppercase tracking-tighter">Created: {{ tokenInfo.createTime }}</p>
+              <p v-if="tokenInfo.token" class="text-[10px] font-black opacity-30 uppercase tracking-tighter">
+                {{ t('mysetting.createdAt') }}: {{ tokenInfo.createTime }}
+              </p>
             </div>
           </div>
           <div v-if="tokenInfo.token" class="flex gap-2">
@@ -197,7 +174,7 @@ const { t } = useI18n()
 
       <!-- TLS 设置部分 -->
       <div class="mx-1">
-        <TlsSetting/>
+        <TlsSetting :key="`tls-setting-${locale}`"/>
       </div>
     </div>
   </div>

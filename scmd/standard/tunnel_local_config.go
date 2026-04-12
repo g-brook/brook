@@ -18,6 +18,7 @@ package standard
 
 import (
 	"encoding/json"
+
 	sf "github.com/g-brook/brook/common/configs"
 	"github.com/g-brook/brook/common/hash"
 	"github.com/g-brook/brook/common/lang"
@@ -132,6 +133,7 @@ func format(item *sql.ProxyConfig) *sf.ServerTunnelConfig {
 	st.Id = item.ProxyID
 	st.Port = item.RemotePort
 	st.Destination = item.Destination.String
+	st.IpStrategy = item.IpStrategies.String
 	protocol := base.TransformProtocol(item.Protocol)
 	if protocol == "" {
 		log.Error("protocol is not support: %s", item.Protocol)

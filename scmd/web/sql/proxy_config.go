@@ -163,6 +163,7 @@ func scanProxyConfig(rows *sql.Rows) (*ProxyConfig, error) {
 		&p.State,
 		&p.RunState,
 		&p.Destination,
+		&p.IpStrategies,
 	)
 	if err != nil {
 		return nil, err

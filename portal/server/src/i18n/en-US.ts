@@ -472,6 +472,7 @@ export default {
     mysetting: {
         title: "Access Token",
         subtitle: "Security token for client connections",
+        createdAt: "Created At",
         currentToken: "Current Token",
         copyToken: "Copy Token",
         noTokenTitle: "No token generated",
@@ -495,6 +496,20 @@ export default {
                 create: "Create Certificate",
                 view: "View",
                 delete: "Delete"
+            },
+            form: {
+                nameLabel: "Certificate Name",
+                namePlaceholder: "Please enter certificate name",
+                contentLabel: "Certificate Content",
+                contentPlaceholder: "-----BEGIN CERTIFICATE-----\n-----END CERTIFICATE-----",
+                privateKeyLabel: "Private Key Content",
+                privateKeyPlaceholder: "-----BEGIN PRIVATE KEY-----\n-----END PRIVATE KEY-----",
+                descLabel: "Description",
+                descPlaceholder: "Please enter description",
+                save: "Save Certificate",
+                messages: {
+                    addSuccess: "Certificate added successfully"
+                }
             },
         }
     },

@@ -475,6 +475,7 @@ export default {
     mysetting: {
         title: "访问令牌",
         subtitle: "用于客户端连接的安全令牌",
+        createdAt: "创建时间",
         currentToken: "当前令牌",
         copyToken: "复制令牌",
         noTokenTitle: "未生成令牌",
@@ -499,6 +500,20 @@ export default {
                 view: "查看",
                 delete: "删除"
             },
+            form: {
+                nameLabel: "证书名称",
+                namePlaceholder: "请输入证书名称",
+                contentLabel: "证书内容",
+                contentPlaceholder: "-----BEGIN CERTIFICATE-----\n-----END CERTIFICATE-----",
+                privateKeyLabel: "私钥内容",
+                privateKeyPlaceholder: "-----BEGIN PRIVATE KEY-----\n-----END PRIVATE KEY-----",
+                descLabel: "备注信息",
+                descPlaceholder: "请输入备注信息",
+                save: "保存证书信息",
+                messages: {
+                    addSuccess: "证书添加成功"
+                }
+            }
 
         }
     },

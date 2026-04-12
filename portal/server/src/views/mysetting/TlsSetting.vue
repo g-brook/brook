@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import useI18n from '@/components/lang/useI18n'
+import {useI18n} from '@/components/lang/useI18n'
 import Drawer from "@/components/drawer/Index.vue";
 import CertInfo from "@/views/mysetting/CertInfo.vue";
 import {onMounted, ref} from "vue";
@@ -7,7 +7,7 @@ import fun from "@/service/mysetting";
 import Modal from "@/components/modal";
 import Icon from "@/components/icon/Index.vue";
 
-const {t} = useI18n()
+const {t, locale} = useI18n()
 
 const drawerRef = ref<{ open: () => void } | null>(null);
 
@@ -57,12 +57,12 @@ onMounted(() => {
 </script>
 
 <template>
-  <Drawer ref="drawerRef" :title="t('mysetting.tls.title')" icon="brook-Certificate-1" width="50%">
+  <Drawer :key="`tls-drawer-${locale}`" ref="drawerRef" :title="t('mysetting.tls.title')" icon="brook-Certificate-1" width="50%">
     <CertInfo :cert-id="selectCertItem?.id" />
   </Drawer>
 
   <!-- TLS 管理 - 参考 Configuration.vue 风格 -->
-  <div class="bg-base-200/40 rounded-3xl p-6 border border-base-content/5 space-y-6 shadow-sm">
+  <div :key="`tls-panel-${locale}`" class="bg-base-200/40 rounded-3xl p-6 border border-base-content/5 space-y-6 shadow-sm">
     <div class="flex items-center justify-between">
       <div class="flex items-center gap-3">
         <div class="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary">

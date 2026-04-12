@@ -2,6 +2,7 @@
 import {ref, reactive, onMounted} from 'vue'
 import fun from '@/service/mysetting'
 import message from "@/components/message";
+import {useI18n} from '@/components/lang/useI18n';
 
 // 定义证书表单接口
 interface CertForm {
@@ -21,6 +22,7 @@ interface Props {
 const props = withDefaults(defineProps<Props>(), {
   certId: '',
 })
+const {t} = useI18n();
 
 // 表单数据
 const certForm = reactive<CertForm>({
@@ -53,7 +55,7 @@ const handleSubmit = async () => {
     // 这里应该调用API保存证书信息
     fun.addCertificate(certForm).then(e => {
       if (e.success()) {
-        message.success('Certificate added successfully.')
+        message.success(t('mysetting.tls.form.messages.addSuccess'))
       }
     })
     // 提交成功后的处理
@@ -101,7 +103,7 @@ const loadCertInfo = async (id: string) => {
         <form class="space-y-4">
           <div class="form-control w-full">
             <label class="label">
-              <span class="label-text">证书名称</span>
+              <span class="label-text">{{ t('mysetting.tls.form.nameLabel') }}</span>
               <div class="label">
                 <span class="label-text-alt">{{ certForm.name.length }}/20</span>
               </div>
@@ -109,7 +111,7 @@ const loadCertInfo = async (id: string) => {
             <input
                 v-model="certForm.name"
                 type="text"
-                placeholder="请输入证书名称"
+                :placeholder="t('mysetting.tls.form.namePlaceholder')"
                 :disabled="!certForm.isAdd"
                 maxlength="20"
                 class="input input-bordered w-full"
@@ -118,12 +120,12 @@ const loadCertInfo = async (id: string) => {
 
           <div class="form-control w-full">
             <label class="label">
-              <span class="label-text">证书内容</span>
+              <span class="label-text">{{ t('mysetting.tls.form.contentLabel') }}</span>
             </label>
             <textarea
                 v-model="certForm.content"
                 :readonly="!certForm.isAdd"
-                placeholder="-----BEGIN CERTIFICATE-----               -----END CERTIFICATE-----"
+                :placeholder="t('mysetting.tls.form.contentPlaceholder')"
                 rows="6"
                 class="textarea textarea-bordered w-full font-mono text-sm resize-none"
             ></textarea>
@@ -131,12 +133,12 @@ const loadCertInfo = async (id: string) => {
 
           <div class="form-control w-full">
             <label class="label">
-              <span class="label-text">私钥内容</span>
+              <span class="label-text">{{ t('mysetting.tls.form.privateKeyLabel') }}</span>
             </label>
             <textarea
                 :readonly="!certForm.isAdd"
                 v-model="certForm.privateKey"
-                placeholder="-----BEGIN PRIVATE KEY-----              -----END PRIVATE KEY-----"
+                :placeholder="t('mysetting.tls.form.privateKeyPlaceholder')"
                 rows="6"
                 class="textarea textarea-bordered w-full font-mono text-sm resize-none"
             ></textarea>
@@ -144,14 +146,15 @@ const loadCertInfo = async (id: string) => {
 
           <div class="form-control w-full">
             <label class="label">
-              <span class="label-text">备注信息   <div class="label">
-              <span class="label-text-alt">{{ certForm.desc.length }}/50</span>
-            </div></span>
+              <span class="label-text">{{ t('mysetting.tls.form.descLabel') }}</span>
+              <div class="label">
+                <span class="label-text-alt">{{ certForm.desc.length }}/50</span>
+              </div>
             </label>
             <input
                 v-model="certForm.desc"
                 :readonly="!certForm.isAdd"
-                placeholder="请输入备注信息"
+                :placeholder="t('mysetting.tls.form.descPlaceholder')"
                 maxlength="50"
                 class=" w-full input"
             />
@@ -165,7 +168,7 @@ const loadCertInfo = async (id: string) => {
                 class="btn btn-primary"
             >
               <span v-if="submitLoading" class="loading loading-spinner"></span>
-              保存证书信息
+              {{ t('mysetting.tls.form.save') }}
             </button>
           </div>
         </form>

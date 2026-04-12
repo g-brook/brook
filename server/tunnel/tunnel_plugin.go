@@ -14,20 +14,16 @@
  * limitations under the License.
  */
 
-package sql
+package tunnel
 
 import (
-	"time"
+	"github.com/g-brook/brook/common/configs"
+	"github.com/g-brook/brook/common/modules"
+	"github.com/g-brook/brook/server/srv"
 )
 
-type IpStrategy struct {
-	Id          int16     `db:"id"`
-	Name        string    `db:"name"`
-	Type        string    `db:"type"`
-	BindHandler string    `db:"bind_handler"`
-	Status      int16     `db:"status"`
-	CreatedAt   time.Time `db:"created_at"`
-	UpdatedAt   time.Time `db:"updated_at"`
+type Plugin interface {
+	srv.ServerHandler
+	modules.Module
+	Bind(cfg *configs.ServerTunnelConfig)
 }
-
-var sqltext = "id,name,type,bind_handler,status,created_at,updated_at"

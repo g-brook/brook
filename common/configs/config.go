@@ -59,6 +59,7 @@ type ServerTunnelConfig struct {
 	KeyContent  string            `json:"-"`
 	CertContent string            `json:"-"`
 	IsFileCert  bool              `json:"-"`
+	IpStrategy  string            `json:"-"`
 }
 
 type HttpRunnelProxy struct {

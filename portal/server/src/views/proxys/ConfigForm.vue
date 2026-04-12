@@ -19,7 +19,6 @@ import config from "@/service/config";
 import {computed, onMounted, reactive, ref} from 'vue';
 import Icon from "@/components/icon/Index.vue";
 import {useI18n} from '@/components/lang/useI18n';
-import message from "@/components/message";
 
 
 // 表单数据类型
@@ -145,6 +144,10 @@ const validateForm = (): boolean => {
   return isValid;
 };
 
+const clearFieldError = (field: keyof FormErrors) => {
+  delete errors[field];
+};
+
 // 提交表单
 const handleSubmit = async () => {
   if (!validateForm()) {
@@ -221,34 +224,43 @@ onMounted(() => {
   <div class="w-[34rem] p-2">
     <form @submit.prevent="handleSubmit" class="space-y-4">
       <!-- 现代化协议选择器 - 极简紧凑卡片 -->
-      <div class="grid grid-cols-4 gap-3">
-        <label
-            v-for="type in protocolTypes"
-            :key="type.value"
-            :class="[
-              'relative flex flex-col items-center justify-center gap-1.5 py-3 px-2 rounded-2xl cursor-pointer transition-all duration-300 border-2 overflow-hidden group',
-              form.protocol === type.value
-                ? 'bg-primary text-primary-content border-primary shadow-md scale-[1.02]'
-                : 'bg-base-200/50 border-transparent hover:bg-base-200/80 hover:border-base-content/10'
-            ]"
-        >
-          <input type="radio" name="types" v-model="form.protocol" :value="type.value" class="hidden"/>
-
-          <!-- 图标容器 -->
-          <div
+      <div class="relative pt-1">
+        <div class="grid grid-cols-4 gap-3">
+          <label
+              v-for="type in protocolTypes"
+              :key="type.value"
               :class="[
-                'flex items-center justify-center w-9 h-9 rounded-xl transition-all duration-300',
-                form.protocol === type.value ? 'bg-white/20 text-white' : 'bg-base-100 text-base-content/40'
+                'relative flex flex-col items-center justify-center gap-1.5 py-3 px-2 rounded-2xl cursor-pointer transition-[background-color,border-color,color,transform,box-shadow] duration-200 border-2 overflow-hidden group will-change-transform',
+                form.protocol === type.value
+                  ? 'bg-primary text-primary-content border-primary shadow-md scale-[1.02]'
+                  : errors.protocol
+                    ? 'bg-base-200/50 border-error/70 hover:bg-base-200/80 ring-1 ring-error/25'
+                    : 'bg-base-200/50 border-transparent hover:bg-base-200/80 hover:border-base-content/10'
               ]"
           >
-            <Icon :icon="type.icon" style="font-size: 18px;"/>
-          </div>
+            <input type="radio" name="types" v-model="form.protocol" :value="type.value" class="hidden" @change="clearFieldError('protocol')"/>
+            <!-- 图标容器 -->
+            <div
+                :class="[
+                  'flex items-center justify-center w-9 h-9 rounded-xl transition-colors duration-200',
+                  form.protocol === type.value ? 'bg-white/20 text-white' : 'bg-base-100 text-base-content/40'
+                ]"
+            >
+              <Icon :icon="type.icon" style="font-size: 18px;"/>
+            </div>
 
-          <!-- 文字内容 -->
-          <span :class="['font-black text-[14px] tracking-widest uppercase', form.protocol === type.value ? 'text-white' : 'text-base-content/60']">
-            {{ type.label }}
-          </span>
-        </label>
+            <!-- 文字内容 -->
+            <span :class="['font-black text-[14px] tracking-widest uppercase', form.protocol === type.value ? 'text-white' : 'text-base-content/60']">
+              {{ type.label }}
+            </span>
+
+          </label>
+        </div>
+        <Transition name="field-error">
+          <p v-if="errors.protocol" class="field-error pointer-events-none absolute left-0 z-20 text-xs font-medium text-error">
+            {{ errors.protocol }}
+          </p>
+        </Transition>
       </div>
 
       <!-- 内容区块：统一使用极简淡色背景 -->
@@ -263,13 +275,23 @@ onMounted(() => {
                   <span class="text-error font-black">*</span>
                 </span>
               </label>
-              <div class="relative group">
+              <div class="relative group field-shell">
                 <input type="text" v-model="form.proxyId"
-                       :class="['input input-bordered focus:input-primary w-full h-11 text-sm font-black tracking-tight pr-10 bg-base-100/30 hover:bg-base-100/50 focus:bg-base-100 transition-all shadow-sm border-base-content/5', { 'input-error': errors.proxyId }]"
-                       :placeholder="t('configuration.form.proxyIdPlaceholder')"/>
+                       :class="[
+                         'input input-bordered focus:input-primary w-full h-11 text-sm font-black tracking-tight pr-10 bg-base-100/30 hover:bg-base-100/50 focus:bg-base-100 transition-colors duration-150 shadow-sm',
+                         { 'input-error border-error ring-1 ring-error/25': errors.proxyId, 'border-base-content/5': !errors.proxyId }
+                       ]"
+                       :placeholder="t('configuration.form.proxyIdPlaceholder')"
+                       :aria-invalid="!!errors.proxyId"
+                       @input="clearFieldError('proxyId')"/>
                 <div class="absolute right-3 top-3 tooltip tooltip-left" :data-tip="t('configuration.proxyIdTip')">
                   <Icon icon="brook-exclamation-circle" class="opacity-20 hover:opacity-100 transition-opacity cursor-help"/>
                 </div>
+                <Transition name="field-error">
+                  <p v-if="errors.proxyId" class="field-error pointer-events-none absolute left-0 z-20 text-xs text-error">
+                    {{ errors.proxyId }}
+                  </p>
+                </Transition>
               </div>
             </div>
 
@@ -280,9 +302,21 @@ onMounted(() => {
                   <span class="text-error font-black">*</span>
                 </span>
               </label>
-              <input type="text" v-model="form.name"
-                     :class="['input input-bordered focus:input-primary w-full h-11 text-sm font-black tracking-tight bg-base-100/30 hover:bg-base-100/50 focus:bg-base-100 transition-all shadow-sm border-base-content/5', { 'input-error': errors.name }]"
-                     :placeholder="t('configuration.form.namePlaceholder')"/>
+              <div class="relative field-shell">
+                <input type="text" v-model="form.name"
+                       :class="[
+                         'input input-bordered focus:input-primary w-full h-11 text-sm font-black tracking-tight bg-base-100/30 hover:bg-base-100/50 focus:bg-base-100 transition-colors duration-150 shadow-sm',
+                         { 'input-error border-error ring-1 ring-error/25': errors.name, 'border-base-content/5': !errors.name }
+                       ]"
+                       :placeholder="t('configuration.form.namePlaceholder')"
+                       :aria-invalid="!!errors.name"
+                       @input="clearFieldError('name')"/>
+                <Transition name="field-error">
+                  <p v-if="errors.name" class="field-error pointer-events-none absolute left-0 z-20 text-xs text-error">
+                    {{ errors.name }}
+                  </p>
+                </Transition>
+              </div>
             </div>
           </div>
         </div>
@@ -300,9 +334,21 @@ onMounted(() => {
                   <span class="text-error font-black">*</span>
                 </span>
               </label>
-              <input type="number" v-model.number="form.remotePort" :disabled="isEdit"
-                     class="input input-bordered focus:input-primary w-full h-11 font-mono font-black text-sm bg-base-100/30 hover:bg-base-100/50 focus:bg-base-100 transition-all shadow-sm border-base-content/5"
-                     min="10000" max="65535"/>
+              <div class="relative field-shell">
+                <input type="number" v-model.number="form.remotePort" :disabled="isEdit"
+                       :class="[
+                         'input input-bordered focus:input-primary w-full h-11 font-mono font-black text-sm bg-base-100/30 hover:bg-base-100/50 focus:bg-base-100 transition-colors duration-150 shadow-sm',
+                         { 'input-error border-error ring-1 ring-error/25': errors.remotePort, 'border-base-content/5': !errors.remotePort }
+                       ]"
+                       min="10000" max="65535"
+                       :aria-invalid="!!errors.remotePort"
+                       @input="clearFieldError('remotePort')"/>
+                <Transition name="field-error">
+                  <p v-if="errors.remotePort" class="field-error pointer-events-none absolute left-0 z-20 text-xs text-error">
+                    {{ errors.remotePort }}
+                  </p>
+                </Transition>
+              </div>
             </div>
 
             <div class="form-control col-span-8">
@@ -334,7 +380,7 @@ onMounted(() => {
               <label class="label py-1">
                 <span class="label-text font-black text-[11px] opacity-40 uppercase tracking-[0.15em]">{{ t('configuration.form.tagLabel') }}</span>
               </label>
-              <input type="text" v-model="form.tag" class="input input-bordered focus:input-primary w-full h-11 bg-base-100/30 hover:bg-base-100/50 focus:bg-base-100 transition-all shadow-sm font-black text-sm tracking-tight border-base-content/5"
+              <input type="text" v-model="form.tag" class="input input-bordered focus:input-primary w-full h-11 bg-base-100/30 hover:bg-base-100/50 focus:bg-base-100 transition-colors duration-200 shadow-sm font-black text-sm tracking-tight border-base-content/5"
                      :placeholder="t('configuration.form.tagPlaceholder')"/>
             </div>
 
@@ -343,7 +389,7 @@ onMounted(() => {
                 <span class="label-text font-black text-[11px] opacity-40 uppercase tracking-[0.15em]">{{ t('menu.security.strategy.title') }}</span>
               </label>
               <div class="relative">
-                <select v-model="form.strategyId" class="select select-bordered focus:select-primary w-full h-11 font-black text-primary bg-base-100/30 hover:bg-base-100/50 focus:bg-base-100 transition-all shadow-sm appearance-none border-base-content/5 text-sm tracking-tight">
+                <select v-model="form.strategyId" class="select select-bordered focus:select-primary w-full h-11 font-black text-primary bg-base-100/30 hover:bg-base-100/50 focus:bg-base-100 transition-colors duration-200 shadow-sm appearance-none border-base-content/5 text-sm tracking-tight">
                   <option :value="null">{{ t('common.none') || 'None' }}</option>
                   <option v-for="s in strategies" :key="s.id" :value="s.id">{{ s.name }}</option>
                 </select>
@@ -358,3 +404,42 @@ onMounted(() => {
     </form>
   </div>
 </template>
+
+<style scoped>
+.field-error {
+  top: 0;
+  transform: translate3d(0, calc(-100% - 8px), 0);
+  max-width: min(88%, 22rem);
+  padding: 2px 10px;
+  border-radius: 9999px;
+  background: rgba(239, 68, 68, 0.08);
+  border: 1px solid rgba(239, 68, 68, 0.28);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  box-shadow: 0 6px 18px -14px rgba(239, 68, 68, 0.55);
+  will-change: transform, opacity;
+}
+
+.field-error-enter-active,
+.field-error-leave-active {
+  transition: opacity 0.16s ease, transform 0.16s ease;
+}
+
+.field-error-enter-from,
+.field-error-leave-to {
+  opacity: 0;
+  transform: translate3d(0, calc(-100% - 3px), 0);
+}
+
+.field-shell {
+  isolation: isolate;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .field-error-enter-active,
+  .field-error-leave-active {
+    transition: opacity 0.01s linear;
+  }
+}
+</style>
