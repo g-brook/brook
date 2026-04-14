@@ -127,12 +127,12 @@ func (sever *Server) GetConnection(id string) (*GChannel, bool) {
 func (sever *Server) OnBoot(engine gnet.Engine) (action gnet.Action) {
 	sever.engine = engine
 	log.Info("Server started %d", sever.port)
-	sever.next(func(s ServerHandler, conn trp.Channel) bool {
+	_ = sever.next(func(s ServerHandler, conn trp.Channel) (bool, error) {
 		b := true
-		_ = s.Boot(sever, func() {
+		err := s.Boot(sever, func() {
 			b = false
 		})
-		return b
+		return b, err
 	}, nil)
 	return gnet.None
 }
@@ -142,12 +142,12 @@ func (sever *Server) OnClose(c gnet.Conn, _ error) gnet.Action {
 	conn := NewChannel(c, sever)
 	defer sever.removeIfConnection(conn)
 	_ = conn.Close()
-	sever.next(func(s ServerHandler, newCh trp.Channel) bool {
+	_ = sever.next(func(s ServerHandler, newCh trp.Channel) (bool, error) {
 		b := true
-		_ = s.Close(newCh, func() {
+		err := s.Close(newCh, func() {
 			b = false
 		})
-		return b
+		return b, err
 	}, conn)
 
 	return gnet.None
@@ -158,13 +158,17 @@ func (sever *Server) OnOpen(c gnet.Conn) (out []byte, action gnet.Action) {
 	c.SetContext(NewConnContext(false, ""))
 	conn := NewChannel(c, sever)
 	defer sever.removeIfConnection(conn)
-	sever.next(func(s ServerHandler, newCh trp.Channel) bool {
+	err := sever.next(func(s ServerHandler, newCh trp.Channel) (bool, error) {
 		b := true
-		_ = s.Open(newCh, func() {
+		err := s.Open(newCh, func() {
 			b = false
 		})
-		return b
+		return b, err
 	}, conn)
+	if err != nil {
+		_ = conn.Close()
+		return nil, gnet.Close
+	}
 	return nil, gnet.None
 }
 
@@ -176,17 +180,17 @@ func (sever *Server) OnTraffic(c gnet.Conn) gnet.Action {
 	}
 	defer sever.removeIfConnection(conn)
 	conn.GetContext().LastActive()
-	sever.next(func(s ServerHandler, newCh trp.Channel) bool {
+	sever.next(func(s ServerHandler, newCh trp.Channel) (bool, error) {
 		b := true
-		_ = s.Reader(newCh, func() {
+		err := s.Reader(newCh, func() {
 			b = false
 		})
-		return b
+		return b, err
 	}, conn)
 	return gnet.None
 }
 
-func (sever *Server) next(fun func(s ServerHandler, conn trp.Channel) bool, conn *GChannel) {
+func (sever *Server) next(fun func(s ServerHandler, conn trp.Channel) (bool, error), conn *GChannel) error {
 	for i := 0; i < len(sever.handlers); i++ {
 		var newCh trp.Channel
 		channelFunc := sever.opts.newChannelFunc
@@ -195,11 +199,12 @@ func (sever *Server) next(fun func(s ServerHandler, conn trp.Channel) bool, conn
 		} else {
 			newCh = conn
 		}
-		b := fun(sever.handlers[i], newCh)
+		b, err := fun(sever.handlers[i], newCh)
 		if b {
-			break
+			return err
 		}
 	}
+	return nil
 }
 
 // isDatagram checks if the server is using UDP protocol and initializes the event engine accordingly

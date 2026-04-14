@@ -15,3 +15,52 @@
  */
 
 package sql
+
+import (
+	"database/sql"
+	"fmt"
+	"time"
+)
+
+type IpRules struct {
+	Id         int16     `db:"id"`
+	StrategyId int16     `db:"strategy_id"`
+	Ip         string    `db:"ip"`
+	Remark     string    `db:"remark"`
+	CreateAt   time.Time `db:"created_at"`
+}
+
+var ipRulesSql = "id,strategy_id,ip,remark,created_at"
+
+func SelectByStrategyId(strategyId int16) ([]*IpRules, error) {
+	selectSQL := fmt.Sprintf("select %s from ip_rules where strategy_id = ?", ipRulesSql)
+	res, err := Query(selectSQL, strategyId)
+	if err != nil {
+		return nil, err
+	}
+	defer res.Close()
+	var list []*IpRules
+	for res.rows.Next() {
+		if p, err := scanIpRules(res.rows); err != nil {
+			return nil, err
+		} else {
+			list = append(list, p)
+		}
+	}
+	return list, nil
+}
+
+func scanIpRules(rows *sql.Rows) (*IpRules, error) {
+	var p IpRules
+	err := rows.Scan(
+		&p.Id,
+		&p.StrategyId,
+		&p.Ip,
+		&p.Remark,
+		&p.CreateAt,
+	)
+	if err != nil {
+		return nil, err
+	}
+	return &p, nil
+}

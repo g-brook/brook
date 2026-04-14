@@ -23,6 +23,7 @@ import (
 	"github.com/g-brook/brook/common/configs"
 	"github.com/g-brook/brook/common/modules"
 	trp "github.com/g-brook/brook/common/transport"
+	"github.com/g-brook/brook/scmd/web/service"
 	"github.com/g-brook/brook/server/srv"
 )
 
@@ -34,23 +35,33 @@ func init() {
 
 type SecurityPlugin struct {
 	srv.BaseServerHandler
+	ips      []string
+	strategy string
 }
 
 func (b *SecurityPlugin) Bind(cfg *configs.ServerTunnelConfig) {
-
+	security, err := service.SelectIpSecurity(cfg.IpStrategy)
+	if err == nil && security != nil {
+		b.ips = security.Ips
+		b.strategy = security.Strategy
+	}
 }
 
 func (b *SecurityPlugin) Open(ch trp.Channel, traverse srv.TraverseBy) error {
 	addr := ch.RemoteAddr()
-	whiteList := []string{
-		"203.0.113.0/24",
-		"113.111.1.0/24",
-		"127.0.0.0/24",
-	}
 	ipAddr := addr.(*net.TCPAddr)
-	ipcidr, err := matchIPCIDR(ipAddr.IP.String(), whiteList)
-	if !ipcidr || err != nil {
-		return err
+	match, err := matchIPCIDR(ipAddr.IP.String(), b.ips)
+	switch b.strategy {
+	case "WL":
+		if !match || err != nil {
+			return errors.New("invalid ip address")
+		}
+		break
+	case "BL":
+		if match || err != nil {
+			return errors.New("invalid ip address")
+		}
+		break
 	}
 	traverse()
 	return nil
@@ -61,8 +72,11 @@ func matchIPCIDR(ipStr string, cidrList []string) (bool, error) {
 	if ip == nil {
 		return false, errors.New("invalid ip")
 	}
-
 	for _, cidr := range cidrList {
+		switch cidr {
+		case "0.0.0.0/0", "::/0", "0.0.0.0/24":
+			return true, nil
+		}
 		_, ipNet, err := net.ParseCIDR(cidr)
 		if err != nil {
 			continue

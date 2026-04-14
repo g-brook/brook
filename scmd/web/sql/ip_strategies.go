@@ -17,6 +17,8 @@
 package sql
 
 import (
+	"database/sql"
+	"fmt"
 	"time"
 )
 
@@ -31,3 +33,37 @@ type IpStrategy struct {
 }
 
 var sqltext = "id,name,type,bind_handler,status,created_at,updated_at"
+
+func SelectByBindHandler(handler string) (*IpStrategy, error) {
+	selectSQL := fmt.Sprintf("select %s from ip_strategies where bind_handler = ? and status = 1", sqltext)
+	res, err := Query(selectSQL, handler)
+	if err != nil {
+		return nil, err
+	}
+	defer res.Close()
+	for res.rows.Next() {
+		if p, err := scanIpStrategies(res.rows); err != nil {
+			return nil, err
+		} else {
+			return p, nil
+		}
+	}
+	return nil, nil
+}
+
+func scanIpStrategies(rows *sql.Rows) (*IpStrategy, error) {
+	var p IpStrategy
+	err := rows.Scan(
+		&p.Id,
+		&p.Name,
+		&p.Type,
+		&p.BindHandler,
+		&p.Status,
+		&p.CreatedAt,
+		&p.UpdatedAt,
+	)
+	if err != nil {
+		return nil, err
+	}
+	return &p, nil
+}
