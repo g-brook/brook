@@ -29,17 +29,22 @@ const { t } = useI18n();
 const form = ref({
   id: 0,
   name: '',
-  type: 1,
-  bindHandler: '',
-  allowPrivate: 1,
+  type: 'WL',
+  bind_handler: '',
   status: 1
 });
 
 onMounted(() => {
   if (props.initialData) {
-    form.value = { ...props.initialData };
+    form.value = {
+      id: props.initialData.id || 0,
+      name: props.initialData.name || '',
+      type: props.initialData.type || 'WL',
+      bind_handler: props.initialData.bind_handler || '',
+      status: props.initialData.status || 1
+    };
   }
-  
+
   if (props.onRegister) {
     props.onRegister({
       handleSubmit: async () => {
@@ -64,9 +69,9 @@ onMounted(() => {
         <span class="label-text font-bold">{{ t('menu.security.strategy.type') }}</span>
       </label>
       <select v-model="form.type" class="select select-bordered w-full">
-        <option :value="1">{{ t('menu.security.strategy.whitelist') }}</option>
-        <option :value="2">{{ t('menu.security.strategy.blacklist') }}</option>
-        <option :value="3">{{ t('menu.security.strategy.privateOnly') }}</option>
+        <option value="WL">{{ t('menu.security.strategy.whitelist') }}</option>
+        <option value="BL">{{ t('menu.security.strategy.blacklist') }}</option>
+        <option value="IL">{{ t('menu.security.strategy.privateOnly') }}</option>
       </select>
     </div>
 
@@ -74,16 +79,9 @@ onMounted(() => {
       <label class="label">
         <span class="label-text font-bold">{{ t('menu.security.strategy.bindHandler') }}</span>
       </label>
-      <input type="text" v-model="form.bindHandler" class="input input-bordered w-full" :placeholder="t('menu.security.strategy.bindHandlerPlaceholder')" />
+      <input type="text" v-model="form.bind_handler" class="input input-bordered w-full" :placeholder="t('menu.security.strategy.bindHandlerPlaceholder')" />
       <label class="label">
         <span class="label-text-alt text-base-content/40">{{ t('menu.security.strategy.bindHandlerDesc') }}</span>
-      </label>
-    </div>
-
-    <div class="form-control">
-      <label class="label cursor-pointer justify-start gap-4">
-        <input type="checkbox" class="checkbox checkbox-primary" v-model="form.allowPrivate" :true-value="1" :false-value="0" />
-        <span class="label-text">{{ t('menu.security.strategy.allowPrivate') }}</span>
       </label>
     </div>
   </div>

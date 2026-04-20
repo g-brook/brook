@@ -32,6 +32,24 @@ type IpRules struct {
 
 var ipRulesSql = "id,strategy_id,ip,remark,created_at"
 
+func AddIpRule(strategyId int16, ip string, remark string) (int64, error) {
+	return ExecWithId(
+		`INSERT INTO ip_rules(strategy_id, ip, remark, created_at)
+         VALUES (?, ?, ?, CURRENT_TIMESTAMP)`,
+		strategyId,
+		ip,
+		remark,
+	)
+}
+
+func DelIpRule(id int16) error {
+	return Exec("DELETE FROM ip_rules WHERE id = ?", id)
+}
+
+func DelIpRulesByStrategyId(strategyId int16) error {
+	return Exec("DELETE FROM ip_rules WHERE strategy_id = ?", strategyId)
+}
+
 func SelectByStrategyId(strategyId int16) ([]*IpRules, error) {
 	selectSQL := fmt.Sprintf("select %s from ip_rules where strategy_id = ?", ipRulesSql)
 	res, err := Query(selectSQL, strategyId)

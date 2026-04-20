@@ -194,6 +194,8 @@ export default {
             bindHandler: "Bind Handler",
             bindHandlerPlaceholder: "e.g. proxy-server-1",
             bindHandlerDesc: "Unique identifier for the tunnel",
+            createdAt: "Created At",
+            updatedAt: "Updated At",
             allowPrivate: "Allow Private",
             status: "Status",
             actions: "Actions",

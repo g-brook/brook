@@ -58,33 +58,33 @@ const getRandomPort = <Q>(parmas: any): Promise<Response<Q>> => {
 };
 
 // IP 策略相关接口
-const getIpStrategies = <Q>(): Promise<Response<Q>> => {
-  return Http.post("/api/getIpStrategies");
+const getAllStrategies = <Q>(): Promise<Response<Q>> => {
+  return Http.post("/api/strategies/getAll");
 };
 
 const addIpStrategy = <Q>(params: any): Promise<Response<Q>> => {
-  return Http.post("/api/addIpStrategy", params);
+  return Http.post("/api/strategies/add", params);
 };
 
 const delIpStrategy = <Q>(id: number): Promise<Response<Q>> => {
-  return Http.post("/api/delIpStrategy", { id });
+  return Http.post("/api/strategies/del", { id });
 };
 
 const updateIpStrategy = <Q>(params: any): Promise<Response<Q>> => {
-  return Http.post("/api/updateIpStrategy", params);
+  return Http.post("/api/strategies/update", params);
 };
 
 // IP 规则相关接口
 const getIpRules = <Q>(strategyId: number): Promise<Response<Q>> => {
-  return Http.post("/api/getIpRules", { strategyId });
+  return Http.post("/api/rules/getByStrategyId", { strategyId });
 };
 
 const addIpRule = <Q>(params: any): Promise<Response<Q>> => {
-  return Http.post("/api/addIpRule", params);
+  return Http.post("/api/rules/add", params);
 };
 
 const delIpRule = <Q>(id: number): Promise<Response<Q>> => {
-  return Http.post("/api/delIpRule", { id });
+  return Http.post("/api/rules/del", { id });
 };
 
 const functions = {
@@ -97,7 +97,7 @@ const functions = {
   addWebConfigs,
   getWebConfigs,
   getRandomPort,
-  getIpStrategies,
+  getAllStrategies,
   addIpStrategy,
   delIpStrategy,
   updateIpStrategy,

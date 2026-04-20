@@ -199,6 +199,8 @@ export default {
             bindHandler: "绑定处理程序",
             bindHandlerPlaceholder: "例如：proxy-server-1",
             bindHandlerDesc: "隧道的唯一标识符",
+            createdAt: "创建时间",
+            updatedAt: "更新时间",
             allowPrivate: "允许私有",
             status: "状态",
             actions: "操作",

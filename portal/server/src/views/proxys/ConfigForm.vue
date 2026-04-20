@@ -88,20 +88,17 @@ const isEdit = computed(() => props.isEdit || false);
 
 const {t} = useI18n();
 
-// IP 策略 Mock 数据 (实际应调用接口获取)
-const strategies = ref<any[]>([
-  { id: 1, name: 'Default Whitelist' },
-  { id: 2, name: 'Block Malicious IPs' },
-  { id: 3, name: 'Internal Only' }
-]);
+// IP 策略数据
+const strategies = ref<any[]>([]);
 
 // 获取所有策略
 const getIpStrategies = async () => {
-  // Mock 数据已在上面定义，真实环境应调用接口
-  // try {
-  //   const res = await config.getIpStrategies();
-  //   strategies.value = res.data || [];
-  // } catch (e) {}
+  try {
+    const res = await config.getAllStrategies();
+    strategies.value = res.data || [];
+  } catch (e) {
+    console.error('Failed to fetch strategies:', e);
+  }
 };
 
 // 表单验证

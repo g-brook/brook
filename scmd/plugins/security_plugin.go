@@ -48,6 +48,10 @@ func (b *SecurityPlugin) Bind(cfg *configs.ServerTunnelConfig) {
 }
 
 func (b *SecurityPlugin) Open(ch trp.Channel, traverse srv.TraverseBy) error {
+	if b.ips == nil {
+		traverse()
+		return nil
+	}
 	addr := ch.RemoteAddr()
 	ipAddr := addr.(*net.TCPAddr)
 	match, err := matchIPCIDR(ipAddr.IP.String(), b.ips)

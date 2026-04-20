@@ -66,12 +66,17 @@ const getConfigs = async () => {
   }
 };
 
-// IP 策略 Mock 数据 (实际应调用接口获取)
-const strategies = ref<any[]>([
-  { id: 1, name: 'Default Whitelist' },
-  { id: 2, name: 'Block Malicious IPs' },
-  { id: 3, name: 'Internal Only' }
-]);
+// IP 策略数据
+const strategies = ref<any[]>([]);
+
+const getStrategies = async () => {
+  try {
+    const res = await config.getAllStrategies();
+    strategies.value = res.data || [];
+  } catch (error) {
+    console.error('Failed to fetch strategies:', error);
+  }
+};
 
 const getStrategyName = (id: number | null) => {
   if (!id) return null;
@@ -89,6 +94,7 @@ const protocolIcons: Record<string, { icon: string, class: string }> = {
 // 组件挂载时获取数据
 onMounted(() => {
   getConfigs();
+  getStrategies();
 });
 
 const openWebConfig = (item: ConfigItem) => {

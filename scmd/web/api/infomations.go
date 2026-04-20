@@ -19,6 +19,7 @@ package api
 import (
 	sql2 "database/sql"
 	"encoding/json"
+	"strconv"
 	"time"
 
 	"github.com/g-brook/brook/common/transform"
@@ -98,6 +99,7 @@ type ProxyConfig struct {
 	Protocol    string `json:"protocol"`
 	State       int    `json:"state"`
 	Destination string `json:"destination"`
+	StrategyId  *int   `json:"strategyId"`
 	IsRunning   bool   `json:"isRunning"`
 	Runtime     string `json:"runtime"`
 	IsExistWeb  bool   `json:"isExistWeb"`
@@ -111,6 +113,16 @@ type Certificate struct {
 	PrivateKey string  `json:"privateKey" maps:"private_key"`
 	Desc       string  `json:"desc" maps:"desc"`
 	ExpireTime *string `json:"expireTime" maps:"-"`
+}
+
+type IpStrategy struct {
+	Id          int16     `json:"id" maps:"id"`
+	Name        string    `json:"name" maps:"name"`
+	Type        string    `json:"type" maps:"type"`
+	BindHandler string    `json:"bind_handler" maps:"bind_handler"`
+	Status      int16     `json:"status" maps:"status"`
+	CreatedAt   time.Time `json:"created_at" maps:"created_at"`
+	UpdatedAt   time.Time `json:"updated_at" maps:"updated_at"`
 }
 
 func (r *ProxyConfig) IsHttpOrHttps() bool {
@@ -128,18 +140,36 @@ func (r *Certificate) toDb() *sql.Certificate {
 }
 
 func (r *ProxyConfig) toDb() *sql.ProxyConfig {
+	var strategy sql2.NullString
+	if r.StrategyId != nil {
+		strategy = sql2.NullString{
+			Valid:  true,
+			String: strconv.Itoa(*r.StrategyId),
+		}
+	} else {
+		strategy = sql2.NullString{
+			Valid: false,
+		}
+	}
 	return &sql.ProxyConfig{
-		Idx:         r.Idx,
-		Name:        r.Name,
-		Tag:         r.Tag,
-		RemotePort:  r.RemotePort,
-		ProxyID:     r.ProxyID,
-		Protocol:    r.Protocol,
-		State:       r.State,
-		Destination: sql2.NullString{String: r.Destination, Valid: true},
+		Idx:          r.Idx,
+		Name:         r.Name,
+		Tag:          r.Tag,
+		RemotePort:   r.RemotePort,
+		ProxyID:      r.ProxyID,
+		Protocol:     r.Protocol,
+		State:        r.State,
+		Destination:  sql2.NullString{String: r.Destination, Valid: true},
+		IpStrategies: strategy,
 	}
 }
 func newProxyConfig(config *sql.ProxyConfig) *ProxyConfig {
+	var strategyId *int
+	if config.IpStrategies.Valid && config.IpStrategies.String != "" {
+		if v, err := strconv.Atoi(config.IpStrategies.String); err == nil {
+			strategyId = &v
+		}
+	}
 	return &ProxyConfig{
 		Idx:         config.Idx,
 		Name:        config.Name,
@@ -149,6 +179,7 @@ func newProxyConfig(config *sql.ProxyConfig) *ProxyConfig {
 		Protocol:    config.Protocol,
 		State:       config.State,
 		Destination: config.Destination.String,
+		StrategyId:  strategyId,
 	}
 }
 

@@ -34,6 +34,34 @@ type IpStrategy struct {
 
 var sqltext = "id,name,type,bind_handler,status,created_at,updated_at"
 
+func AddIpStrategy(s *IpStrategy) error {
+	return Exec(
+		`INSERT INTO ip_strategies(name, type, bind_handler, status, created_at, updated_at)
+         VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
+		s.Name,
+		s.Type,
+		s.BindHandler,
+		s.Status,
+	)
+}
+
+func UpdateIpStrategy(s *IpStrategy) error {
+	return Exec(
+		`UPDATE ip_strategies
+         SET name = ?, type = ?, bind_handler = ?, status = ?, updated_at = CURRENT_TIMESTAMP
+         WHERE id = ?`,
+		s.Name,
+		s.Type,
+		s.BindHandler,
+		s.Status,
+		s.Id,
+	)
+}
+
+func DelIpStrategy(id int16) error {
+	return Exec("DELETE FROM ip_strategies WHERE id = ?", id)
+}
+
 func SelectByBindHandler(handler string) (*IpStrategy, error) {
 	selectSQL := fmt.Sprintf("select %s from ip_strategies where bind_handler = ? and status = 1", sqltext)
 	res, err := Query(selectSQL, handler)
@@ -49,6 +77,24 @@ func SelectByBindHandler(handler string) (*IpStrategy, error) {
 		}
 	}
 	return nil, nil
+}
+
+func SelectIpStrategyAll() ([]*IpStrategy, error) {
+	selectSQL := fmt.Sprintf("select %s from ip_strategies", sqltext)
+	res, err := Query(selectSQL)
+	if err != nil {
+		return nil, err
+	}
+	defer res.Close()
+	var list []*IpStrategy
+	for res.rows.Next() {
+		if p, err := scanIpStrategies(res.rows); err != nil {
+			return nil, err
+		} else {
+			list = append(list, p)
+		}
+	}
+	return list, nil
 }
 
 func scanIpStrategies(rows *sql.Rows) (*IpStrategy, error) {
