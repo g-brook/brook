@@ -15,13 +15,12 @@
  */
 
 alter table proxy_config
-    add ip_strategies integer;
+    add ip_strategies INTEGER;
 
 CREATE TABLE IF NOT EXISTS ip_strategies (
                                              id INTEGER PRIMARY KEY AUTOINCREMENT,
                                              name TEXT NOT NULL,                    -- 策略名称
                                              type TEXT NOT NULL DEFAULT 1,        -- WL=白名单 BL=黑名单 IL=仅内网
-                                             bind_handler TEXT NOT NULL UNIQUE,      -- 绑定你的插件/Handler 名
                                              allow_private INTEGER NOT NULL DEFAULT 1, -- 允许内网IP 1=允许 0=禁止
                                              status INTEGER NOT NULL DEFAULT 1,      -- 1=启用 0=禁用
                                              created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,

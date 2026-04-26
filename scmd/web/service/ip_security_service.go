@@ -17,20 +17,27 @@
 package service
 
 import (
+	"strconv"
+
 	"github.com/g-brook/brook/scmd/web/sql"
 )
 
 type IpSecurity struct {
 	Ips      []string `json:"ips"`
 	Strategy string   `json:"strategy"`
+	Name     string   `json:"name"`
 }
 
 func SelectIpSecurity(ipStrategies string) (*IpSecurity, error) {
-	handler, err := sql.SelectByBindHandler(ipStrategies)
-	if err != nil || handler == nil {
+	id, err := strconv.Atoi(ipStrategies)
+	if err != nil {
+		return nil, nil
+	}
+	strategy, err := sql.SelectIpStrategyById(int16(id))
+	if err != nil || strategy == nil {
 		return nil, err
 	}
-	ipRule, err := sql.SelectByStrategyId(handler.Id)
+	ipRule, err := sql.SelectByStrategyId(strategy.Id)
 	if err != nil || ipRule == nil {
 		return nil, err
 	}
@@ -41,7 +48,8 @@ func SelectIpSecurity(ipStrategies string) (*IpSecurity, error) {
 	}
 	ip := &IpSecurity{
 		Ips:      ips,
-		Strategy: handler.Type,
+		Strategy: strategy.Type,
+		Name:     strategy.Name,
 	}
 	return ip, nil
 }

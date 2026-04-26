@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"reflect"
 	"strings"
+	"time"
 
 	"github.com/mitchellh/mapstructure"
 )
@@ -84,6 +85,7 @@ func (c *Converter) MapToStruct(input map[string]interface{}, output interface{}
 // StructToMap 将结构体转换为 map（支持嵌套结构体）
 func (c *Converter) StructToMap(input interface{}) (map[string]interface{}, error) {
 	result := make(map[string]interface{})
+	timeType := reflect.TypeOf(time.Time{})
 
 	val := reflect.ValueOf(input)
 	if val.Kind() == reflect.Ptr {
@@ -120,6 +122,14 @@ func (c *Converter) StructToMap(input interface{}) (map[string]interface{}, erro
 				result[k] = v
 			}
 		} else if tagName != "-" { // 跳过标记为忽略的字段
+			if fieldValue.Type() == timeType {
+				result[tagName] = fieldValue.Interface()
+				continue
+			}
+			if fieldValue.Kind() == reflect.Ptr && !fieldValue.IsNil() && fieldValue.Elem().Type() == timeType {
+				result[tagName] = fieldValue.Interface()
+				continue
+			}
 			// 递归处理嵌套结构体
 			if fieldValue.Kind() == reflect.Struct ||
 				(fieldValue.Kind() == reflect.Ptr && !fieldValue.IsNil() &&
@@ -198,7 +208,6 @@ func (c *Converter) ConvertSlice(inputSlice interface{}, outputSlice interface{}
 
 		resultSlice.Index(i).Set(reflect.ValueOf(outputElem).Elem())
 	}
-
 	outputVal.Elem().Set(resultSlice)
 	return nil
 }

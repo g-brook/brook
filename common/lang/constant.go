@@ -29,3 +29,9 @@ type KeyType string
 type (
 	PlaceholderType = struct{}
 )
+
+const (
+	StrategyIntranet = "IL" // 内网限制
+	StrategyWhite    = "WL" // 白名单
+	StrategyBlack    = "BL" // 黑名单
+)

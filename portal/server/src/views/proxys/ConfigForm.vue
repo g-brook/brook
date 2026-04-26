@@ -23,7 +23,7 @@ import {useI18n} from '@/components/lang/useI18n';
 
 // 表单数据类型
 interface ConfigForm {
-  id: number | null;
+  id: number;
   name: string;
   tag: string;
   remotePort: number | null;
@@ -69,7 +69,7 @@ const protocolTypes = [
 // 响应式数据
 const loading = ref(false);
 const form = reactive<ConfigForm>({
-  id: props.initialData?.id || null,
+  id: (props.initialData?.id ?? 0) as number,
   name: props.initialData?.name || '',
   tag: props.initialData?.tag || '',
   remotePort: props.initialData?.remotePort || 10000,
@@ -195,7 +195,9 @@ const resetForm = () => {
   form.proxyId = '';
   form.protocol = '';
   form.destinationAddr = '';
-  form.destinationPort = null;
+  form.destinationPort = 0;
+  form.id = 0;
+  form.strategyId = null;
   Object.keys(errors).forEach(key => {
     delete errors[key as keyof FormErrors];
   });

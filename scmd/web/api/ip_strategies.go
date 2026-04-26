@@ -22,6 +22,50 @@ import (
 	"github.com/g-brook/brook/scmd/web/sql"
 )
 
+type StrategyBindInfo struct {
+	Id         int    `json:"id"`
+	Name       string `json:"name"`
+	RemotePort int    `json:"remotePort"`
+	ProxyId    string `json:"proxyId"`
+	Protocol   string `json:"protocol"`
+}
+
+func validateStrategy(body *IpStrategy, requireId bool) *Response {
+	if requireId && body.Id <= 0 {
+		return NewResponseFail(errs.CodeSysErr, "id is empty")
+	}
+	if body.Name == "" {
+		return NewResponseFail(errs.CodeSysErr, "name is empty")
+	}
+	if body.Type != "WL" && body.Type != "BL" && body.Type != "IL" {
+		return NewResponseFail(errs.CodeSysErr, "type is invalid")
+	}
+	if body.Status != 0 && body.Status != 1 {
+		return NewResponseFail(errs.CodeSysErr, "status is invalid")
+	}
+	return nil
+}
+
+func toIpStrategyDb(body *IpStrategy) *sql.IpStrategy {
+	var out sql.IpStrategy
+	converter := transform.NewConverter()
+	err := converter.Convert(body, &out)
+	if err != nil {
+		return nil
+	}
+	return &out
+}
+
+func fromIpStrategyDb(dbs []*sql.IpStrategy) []*IpStrategy {
+	converter := transform.NewConverter()
+	var out []*IpStrategy
+	err := converter.ConvertSlice(dbs, &out)
+	if err != nil {
+		return nil
+	}
+	return out
+}
+
 func init() {
 	RegisterRoute(NewRoute("/strategies/getAll", "POST"), getStrategiesAll)
 	RegisterRoute(NewRoute("/strategies/add", "POST"), addStrategy)
@@ -39,24 +83,10 @@ func getStrategiesAll(*Request[any]) *Response {
 
 func addStrategy(request *Request[IpStrategy]) *Response {
 	body := request.Body
-	if body.Name == "" {
-		return NewResponseFail(errs.CodeSysErr, "name is empty")
+	if resp := validateStrategy(&body, false); resp != nil {
+		return resp
 	}
-	if body.Type != "WL" && body.Type != "BL" && body.Type != "IL" {
-		return NewResponseFail(errs.CodeSysErr, "type is invalid")
-	}
-	if body.BindHandler == "" {
-		return NewResponseFail(errs.CodeSysErr, "bind_handler is empty")
-	}
-	if body.Status != 0 && body.Status != 1 {
-		return NewResponseFail(errs.CodeSysErr, "status is invalid")
-	}
-	err := sql.AddIpStrategy(&sql.IpStrategy{
-		Name:        body.Name,
-		Type:        body.Type,
-		BindHandler: body.BindHandler,
-		Status:      body.Status,
-	})
+	err := sql.AddIpStrategy(toIpStrategyDb(&body))
 	if err != nil {
 		return NewResponseFail(errs.CodeSysErr, "add strategy failed")
 	}
@@ -65,28 +95,10 @@ func addStrategy(request *Request[IpStrategy]) *Response {
 
 func updateStrategy(request *Request[IpStrategy]) *Response {
 	body := request.Body
-	if body.Id <= 0 {
-		return NewResponseFail(errs.CodeSysErr, "id is empty")
+	if resp := validateStrategy(&body, true); resp != nil {
+		return resp
 	}
-	if body.Name == "" {
-		return NewResponseFail(errs.CodeSysErr, "name is empty")
-	}
-	if body.Type != "WL" && body.Type != "BL" && body.Type != "IL" {
-		return NewResponseFail(errs.CodeSysErr, "type is invalid")
-	}
-	if body.BindHandler == "" {
-		return NewResponseFail(errs.CodeSysErr, "bind_handler is empty")
-	}
-	if body.Status != 0 && body.Status != 1 {
-		return NewResponseFail(errs.CodeSysErr, "status is invalid")
-	}
-	err := sql.UpdateIpStrategy(&sql.IpStrategy{
-		Id:          body.Id,
-		Name:        body.Name,
-		Type:        body.Type,
-		BindHandler: body.BindHandler,
-		Status:      body.Status,
-	})
+	err := sql.UpdateIpStrategy(toIpStrategyDb(&body))
 	if err != nil {
 		return NewResponseFail(errs.CodeSysErr, "update strategy failed")
 	}
@@ -98,20 +110,31 @@ func delStrategy(request *Request[IpStrategy]) *Response {
 	if body.Id <= 0 {
 		return NewResponseFail(errs.CodeSysErr, "id is empty")
 	}
+	binds, err := sql.QueryProxyConfigByStrategyId(int(body.Id))
+	if err != nil {
+		return NewResponseFail(errs.CodeSysErr, "query bind proxy config failed")
+	}
+	if len(binds) > 0 {
+		var out []*StrategyBindInfo
+		for _, b := range binds {
+			out = append(out, &StrategyBindInfo{
+				Id:         b.Idx,
+				Name:       b.Name,
+				RemotePort: b.RemotePort,
+				ProxyId:    b.ProxyID,
+				Protocol:   b.Protocol,
+			})
+		}
+		return &Response{
+			Code:    errs.CodeSysErr,
+			Message: "策略已绑定隧道配置，禁止删除",
+			Data:    out,
+		}
+	}
 	_ = sql.DelIpRulesByStrategyId(body.Id)
-	err := sql.DelIpStrategy(body.Id)
+	err = sql.DelIpStrategy(body.Id)
 	if err != nil {
 		return NewResponseFail(errs.CodeSysErr, "delete strategy failed")
 	}
 	return NewResponseSuccess(nil)
-}
-
-func fromIpStrategyDb(dbs []*sql.IpStrategy) []*IpStrategy {
-	converter := transform.NewConverter()
-	var out []*IpStrategy
-	err := converter.ConvertSlice(dbs, &out)
-	if err != nil {
-		return nil
-	}
-	return out
 }

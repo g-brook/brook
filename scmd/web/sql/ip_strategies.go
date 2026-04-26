@@ -23,24 +23,22 @@ import (
 )
 
 type IpStrategy struct {
-	Id          int16     `db:"id"`
-	Name        string    `db:"name"`
-	Type        string    `db:"type"`
-	BindHandler string    `db:"bind_handler"`
-	Status      int16     `db:"status"`
-	CreatedAt   time.Time `db:"created_at"`
-	UpdatedAt   time.Time `db:"updated_at"`
+	Id        int16     `db:"id" maps:"id"`
+	Name      string    `db:"name" maps:"name"`
+	Type      string    `db:"type" maps:"type"`
+	Status    int16     `db:"status" maps:"status"`
+	CreatedAt time.Time `db:"created_at" maps:"created_at"`
+	UpdatedAt time.Time `db:"updated_at" maps:"updated_at"`
 }
 
-var sqltext = "id,name,type,bind_handler,status,created_at,updated_at"
+var sqltext = "id,name,type,status,created_at,updated_at"
 
 func AddIpStrategy(s *IpStrategy) error {
 	return Exec(
-		`INSERT INTO ip_strategies(name, type, bind_handler, status, created_at, updated_at)
-         VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
+		`INSERT INTO ip_strategies(name, type, status, created_at, updated_at)
+         VALUES (?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
 		s.Name,
 		s.Type,
-		s.BindHandler,
 		s.Status,
 	)
 }
@@ -48,11 +46,10 @@ func AddIpStrategy(s *IpStrategy) error {
 func UpdateIpStrategy(s *IpStrategy) error {
 	return Exec(
 		`UPDATE ip_strategies
-         SET name = ?, type = ?, bind_handler = ?, status = ?, updated_at = CURRENT_TIMESTAMP
+         SET name = ?, type = ?,  status = ?, updated_at = CURRENT_TIMESTAMP
          WHERE id = ?`,
 		s.Name,
 		s.Type,
-		s.BindHandler,
 		s.Status,
 		s.Id,
 	)
@@ -62,9 +59,9 @@ func DelIpStrategy(id int16) error {
 	return Exec("DELETE FROM ip_strategies WHERE id = ?", id)
 }
 
-func SelectByBindHandler(handler string) (*IpStrategy, error) {
-	selectSQL := fmt.Sprintf("select %s from ip_strategies where bind_handler = ? and status = 1", sqltext)
-	res, err := Query(selectSQL, handler)
+func SelectIpStrategyById(id int16) (*IpStrategy, error) {
+	selectSQL := fmt.Sprintf("select %s from ip_strategies where id = ?", sqltext)
+	res, err := Query(selectSQL, id)
 	if err != nil {
 		return nil, err
 	}
@@ -103,7 +100,6 @@ func scanIpStrategies(rows *sql.Rows) (*IpStrategy, error) {
 		&p.Id,
 		&p.Name,
 		&p.Type,
-		&p.BindHandler,
 		&p.Status,
 		&p.CreatedAt,
 		&p.UpdatedAt,

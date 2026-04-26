@@ -116,13 +116,12 @@ type Certificate struct {
 }
 
 type IpStrategy struct {
-	Id          int16     `json:"id" maps:"id"`
-	Name        string    `json:"name" maps:"name"`
-	Type        string    `json:"type" maps:"type"`
-	BindHandler string    `json:"bind_handler" maps:"bind_handler"`
-	Status      int16     `json:"status" maps:"status"`
-	CreatedAt   time.Time `json:"created_at" maps:"created_at"`
-	UpdatedAt   time.Time `json:"updated_at" maps:"updated_at"`
+	Id        int16     `json:"id" maps:"id"`
+	Name      string    `json:"name" maps:"name"`
+	Type      string    `json:"type" maps:"type"`
+	Status    int16     `json:"status" maps:"status"`
+	CreatedAt time.Time `json:"created_at" maps:"created_at"`
+	UpdatedAt time.Time `json:"updated_at" maps:"updated_at"`
 }
 
 func (r *ProxyConfig) IsHttpOrHttps() bool {

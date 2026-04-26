@@ -151,6 +151,24 @@ func QueryProxyConfig() []*ProxyConfig {
 	return list
 }
 
+func QueryProxyConfigByStrategyId(strategyId int) ([]*ProxyConfig, error) {
+	selectSQL := fmt.Sprintf("select %s from proxy_config where ip_strategies = ?", ProxyQuerySQL)
+	res, err := Query(selectSQL, strategyId)
+	if err != nil {
+		return nil, err
+	}
+	defer res.Close()
+	var list []*ProxyConfig
+	for res.rows.Next() {
+		if p, err := scanProxyConfig(res.rows); err != nil {
+			return nil, err
+		} else {
+			list = append(list, p)
+		}
+	}
+	return list, nil
+}
+
 func scanProxyConfig(rows *sql.Rows) (*ProxyConfig, error) {
 	var p ProxyConfig
 	err := rows.Scan(

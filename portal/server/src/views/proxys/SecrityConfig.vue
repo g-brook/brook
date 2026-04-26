@@ -24,27 +24,11 @@ import configService from '@/service/config';
 import { useI18n } from '@/components/lang/useI18n';
 import Message from '@/components/message';
 import IpStrategyFormComponent from './IpStrategyForm.vue';
+import type { IpRule, IpStrategy } from '@/types/ip';
+import StrategyBindingsModalComponent from './StrategyBindingsModal.vue';
 
 const IpStrategyForm = markRaw(IpStrategyFormComponent);
-
-// 定义 IP 策略和规则的类型
-interface IpStrategy {
-  id: number;
-  name: string;
-  type: string;
-  bind_handler: string;
-  status: number;
-  created_at: string;
-  updated_at: string;
-  tunnels?: any[];
-}
-
-interface IpRule {
-  id: number;
-  strategyId: number;
-  ip: string;
-  remark: string;
-}
+const StrategyBindingsModal = markRaw(StrategyBindingsModalComponent);
 
 const { t } = useI18n();
 
@@ -63,52 +47,85 @@ const newRuleRemark = ref('');
 const totalStrategies = computed(() => strategies.value.length);
 const activeStrategies = computed(() => strategies.value.filter(s => s.status === 1).length);
 
-const getStrategies = async () => {
+const fail = (message?: string) => {
+  Message.error(message || t('common.operationFailed'));
+};
+
+const request = async <T,>(
+  runner: () => Promise<any>,
+  options: {
+    onSuccess?: (data: T) => void | Promise<void>;
+    successMessage?: string;
+    errorMessage?: string;
+    logLabel: string;
+  }
+) => {
   try {
-    const res = await configService.getAllStrategies();
-    if (res.success()) {
-      strategies.value = res.data || [];
-    } else {
-      Message.error(res.message || t('common.operationFailed'));
-      strategies.value = [];
+    const res = await runner();
+    if (res?.success?.()) {
+      if (options.onSuccess) {
+        await options.onSuccess(res.data as T);
+      }
+      if (options.successMessage) {
+        Message.success(options.successMessage);
+      }
+      return true;
     }
-    await Promise.all((strategies.value || []).map(s => fetchRulesForStrategy(s.id)));
+    fail(res?.message || options.errorMessage);
+    return false;
   } catch (error) {
-    console.error('Failed to fetch strategies:', error);
-    Message.error(t('common.operationFailed'));
+    console.error(options.logLabel, error);
+    fail(options.errorMessage);
+    return false;
+  }
+};
+
+const getStrategies = async () => {
+  const ok = await request<IpStrategy[]>(
+    () => configService.getAllStrategies(),
+    {
+      logLabel: 'getAllStrategies',
+      onSuccess: async (data) => {
+        strategies.value = data || [];
+        await Promise.all((strategies.value || []).map(s => fetchRulesForStrategy(s.id)));
+      },
+    }
+  );
+  if (!ok) {
+    strategies.value = [];
   }
 };
 
 const getRules = async (strategyId: number) => {
-  try {
-    const res = await configService.getIpRules(strategyId);
-    if (res.success()) {
-      rules.value = res.data || [];
-    } else {
-      Message.error(res.message || t('common.operationFailed'));
-      rules.value = [];
+  const ok = await request<IpRule[]>(
+    () => configService.getIpRules(strategyId),
+    {
+      logLabel: 'getIpRules',
+      onSuccess: (data) => {
+        rules.value = data || [];
+      },
     }
-  } catch (error) {
-    console.error('Failed to fetch rules:', error);
-    Message.error(t('common.operationFailed'));
+  );
+  if (!ok) {
+    rules.value = [];
   }
 };
 
 const fetchRulesForStrategy = async (strategyId: number) => {
-  try {
-    rulesLoadingMap.value[strategyId] = true;
-    const res = await configService.getIpRules(strategyId);
-    if (res.success()) {
-      rulesMap.value[strategyId] = res.data || [];
-    } else {
-      rulesMap.value[strategyId] = [];
+  rulesLoadingMap.value[strategyId] = true;
+  const ok = await request<IpRule[]>(
+    () => configService.getIpRules(strategyId),
+    {
+      logLabel: 'getIpRules(map)',
+      onSuccess: (data) => {
+        rulesMap.value[strategyId] = data || [];
+      },
     }
-  } catch (error) {
+  );
+  if (!ok) {
     rulesMap.value[strategyId] = [];
-    console.error('Failed to fetch rules:', error);
-  } finally {
-    rulesLoadingMap.value[strategyId] = false;
   }
+  rulesLoadingMap.value[strategyId] = false;
 };
 
 onMounted(() => {
@@ -130,21 +147,19 @@ const handleAddStrategy = () => {
     },
     onConfirm: async () => {
       if (formApi) {
-        try {
-          const formData = await formApi.handleSubmit();
-          if (formData) {
-            const res = await configService.addIpStrategy(formData);
-            if (res.success()) {
-              Message.success(t('success.operationCompleted'));
+        const formData = await formApi.handleSubmit();
+        if (!formData) return false;
+        const ok = await request<any>(
+          () => configService.addIpStrategy(formData),
+          {
+            logLabel: 'addIpStrategy',
+            successMessage: t('success.operationCompleted'),
+            onSuccess: async () => {
               await getStrategies();
-              return true;
             }
-            Message.error(res.message || t('common.operationFailed'));
           }
-        } catch (error) {
-          console.error('Failed to add strategy:', error);
-          Message.error(t('common.operationFailed'));
-        }
+        );
+        return ok;
       }
       return false;
     },
@@ -168,21 +183,19 @@ const handleUpdateStrategy = (strategy: IpStrategy) => {
     },
     onConfirm: async () => {
       if (formApi) {
-        try {
-          const formData = await formApi.handleSubmit();
-          if (formData) {
-            const res = await configService.updateIpStrategy(formData);
-            if (res.success()) {
-              Message.success(t('success.operationCompleted'));
+        const formData = await formApi.handleSubmit();
+        if (!formData) return false;
+        const ok = await request<any>(
+          () => configService.updateIpStrategy(formData),
+          {
+            logLabel: 'updateIpStrategy',
+            successMessage: t('success.operationCompleted'),
+            onSuccess: async () => {
               await getStrategies();
-              return true;
             }
-            Message.error(res.message || t('common.operationFailed'));
           }
-        } catch (error) {
-          console.error('Failed to update strategy:', error);
-          Message.error(t('common.operationFailed'));
-        }
+        );
+        return ok;
       }
       return false;
     },
@@ -200,9 +213,20 @@ const handleDeleteStrategy = (id: number) => {
           await getStrategies();
           return true as any;
         }
+        const bindings = Array.isArray(res.data) ? res.data : [];
+        if (bindings.length > 0) {
+          Modal.info(StrategyBindingsModal, {
+            title: t('menu.security.strategy.deleteBlockedTitle'),
+            props: { bindings },
+            size: 'xl',
+            closable: true,
+            maskClosable: true,
+          });
+          return true as any;
+        }
         Message.error(res.message || t('common.operationFailed'));
       } catch (error) {
-        console.error('Failed to delete strategy:', error);
+        console.error('delIpStrategy', error);
         Message.error(t('common.operationFailed'));
       }
       return false as any;
@@ -212,19 +236,18 @@ const handleDeleteStrategy = (id: number) => {
 
 const handleToggleStatus = async (strategy: IpStrategy) => {
   const prev = strategy.status;
-  try {
-    const newStatus = strategy.status === 1 ? 0 : 1;
-    const res = await configService.updateIpStrategy({ ...strategy, status: newStatus });
-    if (res.success()) {
-      Message.success(t('success.configurationUpdated'));
-      await getStrategies();
-      return;
+  const newStatus = strategy.status === 1 ? 0 : 1;
+  const ok = await request<any>(
+    () => configService.updateIpStrategy({ ...strategy, status: newStatus }),
+    {
+      logLabel: 'updateIpStrategy(status)',
+      successMessage: t('success.configurationUpdated'),
+      onSuccess: async () => {
+        await getStrategies();
+      }
     }
-    Message.error(res.message || t('common.operationFailed'));
-    strategy.status = prev;
-  } catch (error) {
-    console.error('Failed to toggle status:', error);
-    Message.error(t('common.operationFailed'));
+  );
+  if (!ok) {
     strategy.status = prev;
   }
 };
@@ -242,42 +265,39 @@ const handleAddRule = async () => {
   }
   if (!currentStrategy.value) return;
 
-  try {
-    const res = await configService.addIpRule({
-      strategyId: currentStrategy.value.id,
+  const ok = await request<any>(
+    () => configService.addIpRule({
+      strategyId: currentStrategy.value!.id,
       ip: newRuleIp.value,
       remark: newRuleRemark.value
-    });
-    if (res.success()) {
-      Message.success(t('success.operationCompleted'));
-      newRuleIp.value = '';
-      newRuleRemark.value = '';
-      getRules(currentStrategy.value.id);
-      fetchRulesForStrategy(currentStrategy.value.id);
-      return;
+    }),
+    {
+      logLabel: 'addIpRule',
+      successMessage: t('success.operationCompleted'),
+      onSuccess: async () => {
+        newRuleIp.value = '';
+        newRuleRemark.value = '';
+        getRules(currentStrategy.value!.id);
+        fetchRulesForStrategy(currentStrategy.value!.id);
+      }
     }
-    Message.error(res.message || t('common.operationFailed'));
-  } catch (error) {
-    console.error('Failed to add rule:', error);
-    Message.error(t('common.operationFailed'));
-  }
+  );
+  if (!ok) return;
 };
 
 const handleDeleteRule = async (id: number) => {
   if (!currentStrategy.value) return;
-  try {
-    const res = await configService.delIpRule(id);
-    if (res.success()) {
-      Message.success(t('success.operationCompleted'));
-      getRules(currentStrategy.value.id);
-      fetchRulesForStrategy(currentStrategy.value.id);
-      return;
+  await request<any>(
+    () => configService.delIpRule(id),
+    {
+      logLabel: 'delIpRule',
+      successMessage: t('success.operationCompleted'),
+      onSuccess: async () => {
+        getRules(currentStrategy.value!.id);
+        fetchRulesForStrategy(currentStrategy.value!.id);
+      }
     }
-    Message.error(res.message || t('common.operationFailed'));
-  } catch (error) {
-    console.error('Failed to delete rule:', error);
-    Message.error(t('common.operationFailed'));
-  }
+  );
 };
 
 const getStrategyTypeBadge = (type: string) => {
@@ -414,7 +434,6 @@ const formatTime = (value: string) => {
           <th class="font-black text-[13px] uppercase opacity-60 tracking-[0.1em] text-center" style="width: 40px">#</th>
           <th class="font-black text-[13px] uppercase opacity-60 tracking-[0.1em]">{{ t('menu.security.strategy.name') }}</th>
           <th class="font-black text-[13px] uppercase opacity-60 tracking-[0.1em]" style="width: 160px">{{ t('menu.security.strategy.type') }}</th>
-          <th class="font-black text-[13px] uppercase opacity-60 tracking-[0.1em]" style="width: 200px">{{ t('menu.security.strategy.bindHandler') }}</th>
           <th class="font-black text-[13px] uppercase opacity-60 tracking-[0.1em]" style="width: 320px">{{ t('menu.security.rules.title') }}</th>
           <th class="font-black text-[13px] uppercase opacity-60 tracking-[0.1em]" style="width: 180px">{{ t('menu.security.strategy.createdAt') }}</th>
           <th class="font-black text-[13px] uppercase opacity-60 tracking-[0.1em]" style="width: 180px">{{ t('menu.security.strategy.updatedAt') }}</th>
@@ -444,12 +463,6 @@ const formatTime = (value: string) => {
           <td>
             <div :class="['badge badge-soft flex items-center gap-1.5 w-fit px-3 py-2.5 border border-current/5', getStrategyTypeBadge(strategy.type)]">
               <span class="font-black text-[12px] tracking-widest uppercase">{{ getStrategyTypeText(strategy.type) }}</span>
-            </div>
-          </td>
-          <td>
-            <div class="flex items-center gap-2">
-              <span class="text-[12px] font-black opacity-20 uppercase tracking-tighter">Handler:</span>
-              <code class="text-xs font-black tracking-tight opacity-70">{{ strategy.bind_handler }}</code>
             </div>
           </td>
           <td>
@@ -502,7 +515,7 @@ const formatTime = (value: string) => {
 
         <!-- 空状态提示 -->
         <tr v-if="strategies.length === 0">
-          <td colspan="9" class="text-center py-20 bg-base-100">
+          <td colspan="8" class="text-center py-20 bg-base-100">
             <div class="flex flex-col items-center justify-center max-w-xs mx-auto">
               <div class="w-20 h-20 bg-base-200 rounded-3xl flex items-center justify-center mb-6 rotate-12 group-hover:rotate-0 transition-transform duration-500">
                 <Icon icon="brook-security" class="text-primary/20" style="font-size: 40px;"/>

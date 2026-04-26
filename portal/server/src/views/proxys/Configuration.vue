@@ -16,6 +16,7 @@
 
 <script lang="ts" setup>
 import {computed, markRaw, onMounted, ref} from 'vue';
+import * as dayjs from 'dayjs';
 import Icon from '@/components/icon/Index.vue';
 import Drawer from '@/components/drawer/Index.vue';
 import Modal from '@/components/modal';
@@ -26,6 +27,7 @@ import WebConfiguration from "./WebConfiguration.vue";
 import Message from '@/components/message';
 import DownloadConfig from "./DownloadConfig.vue";
 import message from "@/components/message";
+import type { IpRule, IpStrategy } from '@/types/ip';
 
 // 定义配置项的类型
 interface ConfigItem {
@@ -56,6 +58,10 @@ const enabledConfigs = computed(() => configs.value.filter(item => item.state).l
 const runningConfigs = computed(() => configs.value.filter(item => item.isRunning).length);
 const drawerRef = ref<{ open: () => void } | null>(null);
 const downloadDrawerRef = ref<{ open: () => void } | null>(null);
+const strategyDrawerRef = ref<{ open: () => void } | null>(null);
+const selectedStrategy = ref<IpStrategy | null>(null);
+const selectedStrategyRules = ref<IpRule[]>([]);
+const strategyRulesLoading = ref(false);
 
 const getConfigs = async () => {
   try {
@@ -67,7 +73,7 @@ const getConfigs = async () => {
 };
 
 // IP 策略数据
-const strategies = ref<any[]>([]);
+const strategies = ref<IpStrategy[]>([]);
 
 const getStrategies = async () => {
   try {
@@ -81,6 +87,53 @@ const getStrategies = async () => {
 const getStrategyName = (id: number | null) => {
   if (!id) return null;
   return strategies.value.find(s => s.id === id)?.name;
+};
+
+const getStrategy = (id: number) => {
+  return strategies.value.find(s => s.id === id) || null;
+};
+
+const getStrategyTypeText = (type: string) => {
+  switch (type) {
+    case 'WL': return t('menu.security.strategy.whitelist');
+    case 'BL': return t('menu.security.strategy.blacklist');
+    case 'IL': return t('menu.security.strategy.privateOnly');
+    default: return type || '-';
+  }
+};
+
+const formatTime = (value: string) => {
+  if (!value) return '-';
+  if (typeof value === 'string' && value.startsWith('0001-01-01')) return '-';
+  const fn = (dayjs as any).default || (dayjs as any);
+  const d = fn(value);
+  if (!d.isValid()) return value;
+  return d.format('YYYY-MM-DD HH:mm:ss');
+};
+
+const openStrategyDetail = async (strategyId: number) => {
+  if (!strategyId) return;
+  if (!strategies.value.length) {
+    await getStrategies();
+  }
+  selectedStrategy.value = getStrategy(strategyId);
+  selectedStrategyRules.value = [];
+  strategyDrawerRef.value?.open();
+  if (!selectedStrategy.value) return;
+
+  strategyRulesLoading.value = true;
+  try {
+    const res = await config.getIpRules(strategyId);
+    if (res.success()) {
+      selectedStrategyRules.value = res.data || [];
+    } else {
+      selectedStrategyRules.value = [];
+    }
+  } catch (e) {
+    selectedStrategyRules.value = [];
+  } finally {
+    strategyRulesLoading.value = false;
+  }
 };
 
 // 协议图标映射
@@ -140,12 +193,17 @@ const handleAdd = () => {
 const handleDelete = (id: number) => {
   Modal.confirm({
     onConfirm: async () => {
-      config.delProxyConfig(id).then(e => {
+      try {
+        const e = await config.delProxyConfig(id);
         if (e.success()) {
-          getConfigs()
+          await getConfigs();
           message.info(t("common.success"));
+          return true as any;
         }
-      })
+      } catch (error) {
+        console.error(error);
+      }
+      return false as any;
     }
   });
 };
@@ -203,6 +261,77 @@ const handleClickDownload = () => {
 
 <template>
   <div class="overflow-hidden">
+    <Drawer ref="strategyDrawerRef"
+            :title="selectedStrategy ? `${t('menu.security.strategy.title')} - ${selectedStrategy.name}` : t('menu.security.strategy.title')"
+            icon="brook-security"
+            width="50%">
+      <div class="p-6 flex flex-col gap-6">
+        <div v-if="selectedStrategy" class="bg-base-200/40 rounded-3xl p-5 border border-base-content/5">
+          <div class="grid grid-cols-2 gap-4">
+            <div class="flex flex-col gap-1">
+              <span class="text-[11px] font-black opacity-40 uppercase tracking-[0.15em]">{{ t('menu.security.strategy.name') }}</span>
+              <span class="text-sm font-black tracking-tight">{{ selectedStrategy.name }}</span>
+            </div>
+            <div class="flex flex-col gap-1">
+              <span class="text-[11px] font-black opacity-40 uppercase tracking-[0.15em]">{{ t('menu.security.strategy.type') }}</span>
+              <span class="text-sm font-black tracking-tight">{{ getStrategyTypeText(selectedStrategy.type) }}</span>
+            </div>
+            <div class="flex flex-col gap-1">
+              <span class="text-[11px] font-black opacity-40 uppercase tracking-[0.15em]">{{ t('menu.security.strategy.status') }}</span>
+              <span class="text-sm font-black tracking-tight">{{ selectedStrategy.status === 1 ? t('configuration.enabled') : t('configuration.disabled') }}</span>
+            </div>
+            <div class="flex flex-col gap-1">
+              <span class="text-[11px] font-black opacity-40 uppercase tracking-[0.15em]">{{ t('menu.security.strategy.createdAt') }}</span>
+              <span class="text-xs font-mono font-black opacity-60">{{ formatTime(selectedStrategy.created_at) }}</span>
+            </div>
+            <div class="flex flex-col gap-1">
+              <span class="text-[11px] font-black opacity-40 uppercase tracking-[0.15em]">{{ t('menu.security.strategy.updatedAt') }}</span>
+              <span class="text-xs font-mono font-black opacity-60">{{ formatTime(selectedStrategy.updated_at) }}</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="flex-1 overflow-hidden flex flex-col rounded-3xl border border-base-content/5 bg-base-100 shadow-sm">
+          <div class="px-5 py-3 border-b border-base-content/5 flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <Icon icon="brook-web" style="font-size: 16px;" class="opacity-40" />
+              <span class="text-xs font-black uppercase tracking-widest opacity-60">{{ t('menu.security.rules.title') }}</span>
+            </div>
+            <button class="btn btn-ghost btn-xs btn-circle" :class="{ loading: strategyRulesLoading }"
+                    @click="selectedStrategy && openStrategyDetail(selectedStrategy.id)">
+              <Icon icon="brook-refresh" style="font-size: 14px;" />
+            </button>
+          </div>
+          <div class="overflow-y-auto flex-1">
+            <table class="table table-md table-pin-rows">
+              <thead class="bg-base-200/50">
+              <tr>
+                <th class="font-black text-[13px] uppercase opacity-60 tracking-[0.1em]">{{ t('menu.security.rules.ip') }}</th>
+                <th class="font-black text-[13px] uppercase opacity-60 tracking-[0.1em]">{{ t('menu.security.rules.remark') }}</th>
+              </tr>
+              </thead>
+              <tbody>
+              <tr v-if="strategyRulesLoading">
+                <td colspan="2" class="text-center py-10 opacity-30">
+                  {{ t('common.loading') || 'Loading' }}
+                </td>
+              </tr>
+              <tr v-else v-for="rule in selectedStrategyRules" :key="rule.id" class="hover:bg-base-200/40 transition-colors">
+                <td class="font-mono font-black text-sm text-primary tracking-tight">{{ rule.ip }}</td>
+                <td class="text-xs font-black opacity-40 tracking-tight">{{ rule.remark }}</td>
+              </tr>
+              <tr v-if="!strategyRulesLoading && selectedStrategyRules.length === 0">
+                <td colspan="2" class="text-center py-10 opacity-30">
+                  {{ t('pagination.noData') }}
+                </td>
+              </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </Drawer>
+
     <Drawer ref="drawerRef" :title="t('configuration.webInfoConfig')" icon="brook-web" width="50%" @close="getConfigs">
       <WebConfiguration :refProxyId="webItem?.id" :protocol="webItem?.protocol"/>
     </Drawer>
@@ -261,6 +390,7 @@ const handleClickDownload = () => {
           <th class="font-black text-[13px] uppercase opacity-60 tracking-[0.1em]" style="width: 100px">{{ t('configuration.remotePort') }}</th>
           <th class="font-black text-[13px] uppercase opacity-60 tracking-[0.1em]" style="width: 180px">{{ t('configuration.destination') }}</th>
           <th class="font-black text-[13px] uppercase opacity-60 tracking-[0.1em]" style="width: 100px">{{ t('configuration.protocol') }}</th>
+          <th class="font-black text-[13px] uppercase opacity-60 tracking-[0.1em]" style="width: 200px">{{ t('menu.security.strategy.title') }}</th>
           <th class="font-black text-[13px] uppercase opacity-60 tracking-[0.1em]" style="width: 190px">{{ t('configuration.status') }}</th>
           <th class="font-black text-[13px] uppercase opacity-60 tracking-[0.1em]" style="width: 150px">{{ t('server.runtime') }}</th>
           <th class="font-black text-[13px] uppercase opacity-60 tracking-[0.1em] text-center">{{ t('configuration.actions') }}</th>
@@ -307,6 +437,17 @@ const handleClickDownload = () => {
             </div>
           </td>
           <td>
+            <button v-if="config.strategyId"
+                    class="btn btn-ghost btn-xs h-8 gap-2 px-2 cursor-pointer"
+                    @click="openStrategyDetail(config.strategyId)">
+              <Icon icon="brook-security" style="font-size: 14px;" class="opacity-40" />
+              <span class="text-xs font-black tracking-tight underline underline-offset-4">
+                {{ getStrategyName(config.strategyId) }}
+              </span>
+            </button>
+            <span v-else class="text-xs opacity-20 font-black">-</span>
+          </td>
+          <td>
             <div class="flex flex-col gap-1.5">
               <div class="flex items-center gap-2">
                 <input type="checkbox" class="toggle toggle-primary toggle-sm"
@@ -348,7 +489,7 @@ const handleClickDownload = () => {
 
         <!-- 空状态提示 -->
         <tr v-if="configs.length === 0">
-          <td colspan="10" class="text-center py-20 bg-base-100">
+          <td colspan="11" class="text-center py-20 bg-base-100">
             <div class="flex flex-col items-center justify-center max-w-xs mx-auto">
               <div class="w-20 h-20 bg-base-200 rounded-3xl flex items-center justify-center mb-6 rotate-12 group-hover:rotate-0 transition-transform duration-500">
                 <Icon icon="brook-technology_usb-cable" class="text-primary/20" style="font-size: 40px;"/>

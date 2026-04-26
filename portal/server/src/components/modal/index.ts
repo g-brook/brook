@@ -51,7 +51,7 @@ class ModalService {
         message: t('confirmations.confirmText'),
       },
       showFooter: true,
-      size: "sm",
+      size: "lg",
       title:t("confirmations.confirmTips"),
       ...options,
     });

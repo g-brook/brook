@@ -8,6 +8,33 @@ import (
 	"github.com/g-brook/brook/scmd/web/sql"
 )
 
+func validateRuleQuery(strategyId int16) *Response {
+	if strategyId <= 0 {
+		return NewResponseFail(errs.CodeSysErr, "strategyId is empty")
+	}
+	return nil
+}
+
+func validateRuleBody(body *IpRule) *Response {
+	if resp := validateRuleQuery(body.StrategyId); resp != nil {
+		return resp
+	}
+	if body.Ip == "" {
+		return NewResponseFail(errs.CodeSysErr, "ip is empty")
+	}
+	return nil
+}
+
+func convertRules(list []*sql.IpRules) *Response {
+	converter := transform.NewConverter()
+	var out []*IpRule
+	err := converter.ConvertSlice(list, &out)
+	if err != nil {
+		return NewResponseFail(errs.CodeSysErr, "convert rules failed")
+	}
+	return NewResponseSuccess(out)
+}
+
 type IpRule struct {
 	Id         int16     `json:"id" maps:"id"`
 	StrategyId int16     `json:"strategyId" maps:"strategy_id"`
@@ -31,29 +58,20 @@ func init() {
 }
 
 func getRulesByStrategyId(req *Request[QueryIpRule]) *Response {
-	if req.Body.StrategyId <= 0 {
-		return NewResponseFail(errs.CodeSysErr, "strategyId is empty")
+	if resp := validateRuleQuery(req.Body.StrategyId); resp != nil {
+		return resp
 	}
 	list, err := sql.SelectByStrategyId(req.Body.StrategyId)
 	if err != nil {
 		return NewResponseFail(errs.CodeSysErr, "get rules failed")
 	}
-	converter := transform.NewConverter()
-	var out []*IpRule
-	err = converter.ConvertSlice(list, &out)
-	if err != nil {
-		return NewResponseFail(errs.CodeSysErr, "convert rules failed")
-	}
-	return NewResponseSuccess(out)
+	return convertRules(list)
 }
 
 func addRule(req *Request[IpRule]) *Response {
 	body := req.Body
-	if body.StrategyId <= 0 {
-		return NewResponseFail(errs.CodeSysErr, "strategyId is empty")
-	}
-	if body.Ip == "" {
-		return NewResponseFail(errs.CodeSysErr, "ip is empty")
+	if resp := validateRuleBody(&body); resp != nil {
+		return resp
 	}
 	_, err := sql.AddIpRule(body.StrategyId, body.Ip, body.Remark)
 	if err != nil {

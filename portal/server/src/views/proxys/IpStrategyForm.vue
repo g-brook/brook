@@ -30,7 +30,6 @@ const form = ref({
   id: 0,
   name: '',
   type: 'WL',
-  bind_handler: '',
   status: 1
 });
 
@@ -40,7 +39,6 @@ onMounted(() => {
       id: props.initialData.id || 0,
       name: props.initialData.name || '',
       type: props.initialData.type || 'WL',
-      bind_handler: props.initialData.bind_handler || '',
       status: props.initialData.status || 1
     };
   }
@@ -73,16 +71,10 @@ onMounted(() => {
         <option value="BL">{{ t('menu.security.strategy.blacklist') }}</option>
         <option value="IL">{{ t('menu.security.strategy.privateOnly') }}</option>
       </select>
+      <div v-if="form.type === 'IL'" class="mt-2 rounded-xl border border-base-content/10 bg-base-200/40 px-3 py-2 text-xs font-black opacity-60">
+        {{ t('menu.security.strategy.ilUsesWhitelistTip') }}
+      </div>
     </div>
 
-    <div class="form-control">
-      <label class="label">
-        <span class="label-text font-bold">{{ t('menu.security.strategy.bindHandler') }}</span>
-      </label>
-      <input type="text" v-model="form.bind_handler" class="input input-bordered w-full" :placeholder="t('menu.security.strategy.bindHandlerPlaceholder')" />
-      <label class="label">
-        <span class="label-text-alt text-base-content/40">{{ t('menu.security.strategy.bindHandlerDesc') }}</span>
-      </label>
-    </div>
   </div>
 </template>
