@@ -216,6 +216,11 @@ func (b *BaseTunnelServer) UpdateConfig(config *configs.ServerTunnelConfig) {
 	if b.UpdateConfigFun != nil {
 		b.UpdateConfigFun(config)
 	}
+	//update cfg.
+	if config != nil {
+		b.Cfg.IpStrategy = config.IpStrategy
+		b.Cfg.Id = config.Id
+	}
 }
 
 func (b *BaseTunnelServer) OpenWorker(transport.Channel, *exchange.ClientWorkConnReq) error {

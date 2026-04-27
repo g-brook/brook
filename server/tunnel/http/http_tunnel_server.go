@@ -93,7 +93,6 @@ func formatCfg(cfg *configs.ServerTunnelConfig, this *TunnelHttpServer) {
 			this.proxyToConn.Store(httpJson.Id, hash.NewSyncMap[string, *Tracker]())
 		}
 	}
-
 	if cfg.Type == lang.Https {
 		if loadTls(cfg, this) != nil {
 			panic("loadTls error.")

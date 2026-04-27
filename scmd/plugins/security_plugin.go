@@ -19,6 +19,7 @@ package plugins
 import (
 	"errors"
 	"net"
+	"strings"
 	"sync/atomic"
 	"time"
 
@@ -59,32 +60,35 @@ func (b *SecurityPlugin) Bind(cfg *configs.ServerTunnelConfig) {
 
 func (b *SecurityPlugin) refreshIpSecurity(cfg *configs.ServerTunnelConfig) {
 	if cfg == nil || cfg.IpStrategy == "" {
-		b.security.Store(&ipSecuritySnapshot{})
+		b.security.Store(&ipSecuritySnapshot{isMatch: false})
 		return
 	}
 	security, err := service.SelectIpSecurity(cfg.IpStrategy)
 	if err != nil || security == nil {
-		b.security.Store(&ipSecuritySnapshot{})
+		b.security.Store(&ipSecuritySnapshot{isMatch: false})
 		return
 	}
-
-	ips := make([]string, 0, len(security.Ips))
-	for _, ip := range security.Ips {
-		if ip == "" {
-			continue
+	var ips []string
+	if security.Ips != nil && len(security.Ips) > 0 {
+		ips = make([]string, 0, len(security.Ips))
+		for _, ip := range security.Ips {
+			if ip == "" {
+				continue
+			}
+			ips = append(ips, ip)
 		}
-		ips = append(ips, ip)
 	}
 
 	b.security.Store(&ipSecuritySnapshot{
 		ips:          ips,
 		strategy:     security.Strategy,
 		strategyName: security.Name,
+		isMatch:      true,
 	})
 }
 func (b *SecurityPlugin) Open(ch trp.Channel, traverse srv.TraverseBy) error {
 	s := b.getSecuritySnapshot()
-	if s == nil || len(s.ips) == 0 || s.strategy == "" {
+	if s == nil || !s.isMatch {
 		traverse()
 		return nil
 	}
@@ -105,7 +109,7 @@ func (b *SecurityPlugin) Open(ch trp.Channel, traverse srv.TraverseBy) error {
 			return errors.New("invalid ip address")
 		}
 	}
-	match, _ := matchIPCIDR(ipStr, s.ips)
+	match, _ := matchIPCIDR(ipStr, s.ips, s.strategy)
 	switch s.strategy {
 	case lang.StrategyWhite, lang.StrategyIntranet:
 		if !match {
@@ -126,6 +130,7 @@ type ipSecuritySnapshot struct {
 	ips          []string
 	strategy     string
 	strategyName string
+	isMatch      bool
 }
 
 func (b *SecurityPlugin) getSecuritySnapshot() *ipSecuritySnapshot {
@@ -172,10 +177,17 @@ func isPrivateOrLoopbackIP(ip net.IP) bool {
 	return ip.IsPrivate() || ip.IsLoopback()
 }
 
-func matchIPCIDR(ipStr string, cidrList []string) (bool, error) {
+func matchIPCIDR(ipStr string, cidrList []string, strategy string) (bool, error) {
 	ip := net.ParseIP(ipStr)
 	if ip == nil {
 		return false, errors.New("invalid ip")
+	}
+	switch strategy {
+	case lang.StrategyIntranet, lang.StrategyWhite:
+		if cidrList == nil || len(cidrList) == 0 {
+			return false, errors.New("not setting white list")
+		}
+		break
 	}
 	validRules := 0
 	for _, cidr := range cidrList {
@@ -183,14 +195,27 @@ func matchIPCIDR(ipStr string, cidrList []string) (bool, error) {
 		case "0.0.0.0/0", "::/0":
 			return true, nil
 		}
-		_, ipNet, err := net.ParseCIDR(cidr)
-		if err != nil {
-			continue
+		isOk := false
+		if strings.Contains(cidr, "/") {
+			_, ipNet, err := net.ParseCIDR(cidr)
+			if err != nil {
+				continue
+			}
+			if ipNet.Contains(ip) {
+				isOk = true
+			}
+		} else {
+			newIP := net.ParseIP(cidr)
+			if newIP == nil || !newIP.Equal(ip) {
+				continue
+			}
+			isOk = true
 		}
 		validRules++
-		if ipNet.Contains(ip) {
+		if isOk {
 			return true, nil
 		}
+
 	}
 	if validRules == 0 && len(cidrList) > 0 {
 		return false, errors.New("invalid cidr rules")

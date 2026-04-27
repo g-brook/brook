@@ -39,7 +39,10 @@ func SelectIpSecurity(ipStrategies string) (*IpSecurity, error) {
 	}
 	ipRule, err := sql.SelectByStrategyId(strategy.Id)
 	if err != nil || ipRule == nil {
-		return nil, err
+		return &IpSecurity{
+			Strategy: strategy.Type,
+			Name:     strategy.Name,
+		}, nil
 	}
 	var ips []string
 	for _, rules := range ipRule {
