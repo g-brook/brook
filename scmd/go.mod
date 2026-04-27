@@ -9,7 +9,7 @@ require (
 	github.com/gorilla/mux v1.8.1
 	github.com/spf13/cobra v1.10.2
 	golang.org/x/crypto v0.48.0
-	modernc.org/sqlite v1.46.1
+	modernc.org/sqlite v1.44.3
 )
 
 require (
