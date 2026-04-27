@@ -125,6 +125,14 @@ func (c *GChannel) Next(pos int) ([]byte, error) {
 	return c.conn.Next(pos)
 }
 
+func (c *GChannel) Discard(pos int) (discarded int, err error) {
+	return c.conn.Discard(pos)
+}
+
+func (c *GChannel) Peek(n int) (buf []byte, err error) {
+	return c.conn.Peek(n)
+}
+
 func (c *GChannel) GetServer() *Server {
 	return c.Server
 }

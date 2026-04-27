@@ -52,7 +52,11 @@ func NewConnContext(isUdp bool, addr string) *ConnContext {
 type GContext interface {
 	GetContext() *ConnContext
 
+	Peek(pos int) ([]byte, error)
+
 	Next(pos int) ([]byte, error)
+
+	Discard(pos int) (discarded int, err error)
 }
 
 func (receiver *ConnContext) AddAttr(key lang.KeyType, value interface{}) {

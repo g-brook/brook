@@ -223,13 +223,14 @@ func (htl *TunnelHttpServer) getProxyConnection(httpId string) (workConn net.Con
 // Reader    is a method of HttpTunnelServer, which is used to process incoming requests. It
 func (htl *TunnelHttpServer) Reader(ch Channel, tb srv.TraverseBy) error {
 	channel := ch.(srv.GContext)
-	bt, err := channel.Next(-1)
+	bt, err := channel.Peek(-1)
 	if err != nil {
 		return err
 	}
 	conn, ok := ch.GetAttr(defin.HttpChannel)
 	if ok {
 		conn.(*Conn).OnData(bt)
+		_, _ = channel.Discard(len(bt))
 	}
 	tb()
 	return nil
