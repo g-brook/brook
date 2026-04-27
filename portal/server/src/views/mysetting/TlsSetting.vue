@@ -11,7 +11,7 @@ const {t, locale} = useI18n()
 
 const drawerRef = ref<{ open: () => void } | null>(null);
 
-const itmes = ref([])
+const itmes = ref<any[]>([])
 
 const selectCertItem = ref<any>(null);
 
@@ -41,11 +41,17 @@ const deleteCert = (item) => {
 
 const getAll = () => {
   try {
-    fun.getCertificates({}).then(e => {
-      itmes.value = e.data;
-    });
+    fun
+      .getCertificates<any[]>({})
+      .then((e) => {
+        itmes.value = Array.isArray(e?.data) ? e.data : [];
+      })
+      .catch(() => {
+        itmes.value = [];
+      });
   } catch (error) {
     console.error('加载证书信息失败:', error)
+    itmes.value = [];
   }
 };
 
