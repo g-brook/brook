@@ -7,12 +7,13 @@ LABEL stage="runtime" \
 
 WORKDIR /app
 
-ARG APP_PATH
+ARG APP_NAME=brook-sev
+ARG TARGETARCH
+ENV APP_NAME=$APP_NAME
+LABEL container_name=$APP_NAME
 
-COPY $APP_PATH ./
+COPY dist/${APP_NAME}_linux_${TARGETARCH}/ ./
 
 RUN chmod 755 /app && chmod -R 755 /app/*
 
-EXPOSE 8000
-
-CMD ["./brook-sev","--container=true"]
+CMD ["./${APP_NAME} --container=true"]
