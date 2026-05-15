@@ -20,6 +20,7 @@ import (
 	"context"
 	"io"
 	"net"
+	"time"
 
 	"github.com/g-brook/brook/client/clis"
 	"github.com/g-brook/brook/common/configs"
@@ -51,6 +52,7 @@ func (t *TcpTunnelClient) GetName() string {
 func (t *TcpTunnelClient) initOpen(ch *transport.SChannel) error {
 	localConnection, err := t.localConnection()
 	if err != nil {
+		log.Error("connection local err: %s", err.Error())
 		if localConnection != nil {
 			_ = localConnection.Close()
 		}
@@ -93,13 +95,11 @@ func (t *TcpTunnelClient) initOpen(ch *transport.SChannel) error {
 	return nil
 }
 func (t *TcpTunnelClient) localConnection() (net.Conn, error) {
-	connFunction := func() (net.Conn, error) {
-		dial, err := net.Dial(string(lang.NetworkTcp), t.GetCfg().Destination)
-		if err != nil {
-			return nil, err
-		}
-		log.Info("Connection localAddress, %v success", t.GetCfg().Destination)
-		return dial, err
+	log.Debug("Connect local address:%v", t.GetCfg().Destination)
+	dial, err := net.DialTimeout(string(lang.NetworkTcp), t.GetCfg().Destination, 5*time.Second)
+	if err != nil {
+		return nil, err
 	}
-	return connFunction()
+	log.Info("Connection localAddress, %v success", t.GetCfg().Destination)
+	return dial, err
 }

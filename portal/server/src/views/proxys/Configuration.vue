@@ -257,6 +257,15 @@ const handleToggleStatus = async (id: number, state: boolean) => {
 const handleClickDownload = () => {
   downloadDrawerRef.value?.open();
 }
+
+const handleCopyProxyId = async (proxyId: string) => {
+  try {
+    await navigator.clipboard.writeText(proxyId);
+    Message.success('Proxy ID copied');
+  } catch (_error) {
+    Message.error('Copy failed');
+  }
+}
 </script>
 
 <template>
@@ -419,7 +428,13 @@ const handleClickDownload = () => {
           </td>
           <td>
             <div class="flex items-center gap-2">
-              <span class="text-[10px] font-black opacity-20 uppercase tracking-tighter">ID:</span>
+              <button
+                  class="btn btn-ghost btn-xs btn-square"
+                  @click="handleCopyProxyId(config.proxyId)"
+                  title="Copy Proxy ID"
+              >
+                <Icon icon="brook-copy" style="font-size: 10px;" class="text-gray-400" />
+              </button>
               <code class="text-sm font-black text-primary tracking-tight">{{ config.proxyId }}</code>
             </div>
           </td>
@@ -427,7 +442,6 @@ const handleClickDownload = () => {
           <td>
             <div class="flex flex-col gap-0">
               <span class="text-sm font-black tracking-tight opacity-70">{{ config.destination }}</span>
-              <span class="text-[10px] opacity-30 uppercase font-black tracking-widest">Target</span>
             </div>
           </td>
           <td>

@@ -9,5 +9,10 @@
       "destination": "127.0.0.1:3306",
       "proxyId": "local_mysql"
     }
+  ],
+  "visitors": [
+    {
+      ""
+    }
   ]
 }

@@ -78,6 +78,12 @@ type ClientTunnelConfig struct {
 	RemotePort int `json:"-"`
 	MaxConn    int `json:"maxConn,omitempty"`
 }
+type ClientVisitorConfig struct {
+	Id          string `json:"id"`
+	Token       string `json:"token"`
+	Destination string `json:"destination"`
+	LocalPort   int    `json:"localPort"`
+}
 
 // GetServerConfig
 //
@@ -118,11 +124,12 @@ func IsExist(cfgPath string) bool {
 // ClientConfig
 // @Description: Description.
 type ClientConfig struct {
-	ServerPort  int                   `json:"serverPort"`
-	ServerHost  string                `json:"serverHost"`
-	ManagerPort int                   `json:"managerPort"`
-	Token       string                `json:"token"`
-	PingTime    time.Duration         `json:"pingTime"`
-	Tunnels     []*ClientTunnelConfig `json:"tunnels"`
-	Logger      *LoggerConfig         `json:"logger,omitempty"`
+	ServerPort  int                    `json:"serverPort"`
+	ServerHost  string                 `json:"serverHost"`
+	ManagerPort int                    `json:"managerPort"`
+	Token       string                 `json:"token"`
+	PingTime    time.Duration          `json:"pingTime"`
+	Tunnels     []*ClientTunnelConfig  `json:"tunnels"`
+	Visitors    []*ClientVisitorConfig `json:"visitors"`
+	Logger      *LoggerConfig          `json:"logger,omitempty"`
 }

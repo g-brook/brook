@@ -16,35 +16,8 @@
 
 package exchange
 
-import (
-	"github.com/g-brook/brook/common/configs"
-)
+type VisitorInfo struct {
+	Id string
 
-type LoginReq struct {
-	Token string `json:"token"`
-}
-
-// Cmd
-//
-//	@Description: getCmd
-//	@receiver r
-//	@return Cmd
-func (r *LoginReq) Cmd() Cmd {
-	return LoginTunnel
-}
-
-// LoginResp
-// @Description: Resp.
-type LoginResp struct {
-	TunnelHost string `json:"tunnel_host"`
-
-	TunnelPort int `json:"tunnel_port"`
-
-	UnId string `json:"un_id"`
-
-	Tunnels []*configs.ClientTunnelConfig `json:"tunnels"`
-}
-
-func (r *LoginReq) QueryTunnelResp() Cmd {
-	return LoginTunnel
+	Token string
 }

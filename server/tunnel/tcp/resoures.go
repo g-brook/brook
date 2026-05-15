@@ -21,6 +21,7 @@ import (
 
 	"github.com/g-brook/brook/common/configs"
 	"github.com/g-brook/brook/common/exchange"
+	"github.com/g-brook/brook/common/log"
 	trp "github.com/g-brook/brook/common/transport"
 	. "github.com/g-brook/brook/server/tunnel"
 )
@@ -47,6 +48,7 @@ func NewResources(size int,
 func (htl *Resources) createConnection() error {
 	manager := htl.getManager()
 	if manager != nil {
+		log.Debug("manager channel is : %s", manager.RemoteAddr().String())
 		req := &exchange.WorkConnReq{
 			ProxyId: htl.cfg.Id,
 		}
@@ -54,6 +56,7 @@ func (htl *Resources) createConnection() error {
 		_, _ = manager.Write(request.Bytes())
 		return nil
 	}
+	log.Debug("manager channel is nil")
 	return errors.New("manager is nil, can't create connection")
 }
 

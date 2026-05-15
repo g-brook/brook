@@ -34,6 +34,7 @@ func init() {
 	Register(exchange.OpenTunnel, openTunnelProcess, true)
 	Register(exchange.UdpRegister, dupRegisterProcess, true)
 	Register(exchange.ClientWorkerConnReq, clientWorkConnProcess, true)
+	Register(exchange.RegisterVisitor, registerVisitor, true)
 }
 
 type InProcess[T exchange.InBound] func(request T, ch transport.Channel) (any, error)
@@ -62,6 +63,10 @@ func dupRegisterProcess(request *exchange.UdpRegisterReqAndRsp, ch transport.Cha
 // Returns the processed request and any error that occurred during registration
 func registerProcess(request *exchange.RegisterReqAndRsp, ch transport.Channel) (any, error) {
 	return doRegister(request, ch)
+}
+
+func registerVisitor(request *exchange.RegisterReqAndRsp, ch transport.Channel) (any, error) {
+	return nil, nil
 }
 
 func doRegister(request exchange.TRegister, ch transport.Channel) (any, error) {
