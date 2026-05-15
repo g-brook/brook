@@ -757,6 +757,8 @@ export default {
         dataExported: "資料匯出成功",
         dataImported: "資料匯入成功",
         copied: "複製成功",
+        tokenGenerated:"產生Token成功",
+        tokenRevoked:"撤銷Token成功",
     },
 
     // 確認對話框
