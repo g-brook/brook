@@ -15,7 +15,7 @@
  */
 
 export default {
-    // Common text
+    // Common Text
     common: {
         loading: "Loading...",
         submit: "Submit",
@@ -76,20 +76,22 @@ export default {
         upload: "Upload",
         running: "Running",
         copy: "Copy",
-        Upgrade: "Database has upgrade, click to continue",
+        skip: "Skip",
+        done: "Done",
+        Upgrade: "Database has updates, please click to update",
     },
 
-    // Login page
+    // Login Page
     login: {
         title: "Login to Brook Server",
         username: "Username",
         password: "Password",
-        usernamePlaceholder: "Enter your username",
-        passwordPlaceholder: "Enter your password",
+        usernamePlaceholder: "Please enter username",
+        passwordPlaceholder: "Please enter password",
         loginButton: "Login",
         loginSuccess: "Login successful",
         loginFailed: "Login failed",
-        invalidCredentials: "Invalid username or password",
+        invalidCredentials: "Incorrect username or password",
         welcome: "Welcome back",
         forgotPassword: "Forgot password?",
         rememberMe: "Remember me",
@@ -97,37 +99,90 @@ export default {
         register: "Register now",
     },
 
-    // Initializer page
+    // Initialization Page
     initializer: {
         title: "System Initialization",
-        subtitle: "Why have you seen this screen?",
-        description:
-            "First-time setup requires creating an administrator account to initialize the system",
+        subtitle: "Why do you see this page?",
+        description: "First use requires creating an administrator account to initialize the system",
         submitButton: "Complete Initialization",
         initSuccess: "Initialization successful",
         initFailed: "Initialization failed",
         initInProgress: "Initializing...",
         welcomeMessage: "Welcome to Brook Server Management System",
-        setupInstructions:
-            "Please follow these steps to complete system initialization:",
+        setupInstructions: "Please complete system initialization by following these steps:",
         step1: "1. Configure basic system parameters",
         step2: "2. Set up administrator account",
         step3: "3. Initialize database connection",
         step4: "4. Start core services",
         confirmPassword: "Confirm Password",
-        confirmPasswordPlaceholder: "Please enter password again",
+        confirmPasswordPlaceholder: "Please re-enter password",
         passwordRequirements: "Password Requirements",
-        usernameRequirement: "Username at least 3 characters",
-        passwordMatch: "Passwords match",
+        usernameRequirement: "Username must be at least 3 characters",
+        passwordMatch: "Two password entries match",
         securityNote: "Security Note",
         securityDescription:
-            "Please keep your administrator account information safe, this will be your only credential to access the system",
+            "Please keep your administrator account information safe, as this will be your only credential to access the system",
+        stepProgress: "Step {current} / {total}",
+        steps: {
+            database: {
+                title: "Initialize Database",
+                description: "Create basic system tables and operational data",
+            },
+            admin: {
+                title: "Administrator Account",
+                description: "Set login username and password",
+            },
+            guide: {
+                title: "Completion",
+                description: "Log in after completion",
+            },
+        },
+        database: {
+            title: "1. Initialize Database",
+            description: "The system will automatically create database structures, default configurations, and necessary operational data when initialization is submitted.",
+            ready: "Ready",
+            initButton: "Initialize Database",
+            initInProgress: "Initializing database...",
+            initialized: "Database has been initialized",
+            initSuccess: "Database initialization successful",
+            initFailed: "Database initialization failed",
+            structureTitle: "Initialize Basic Structure",
+            structureDesc: "Create basic tables and indexes required by the system.",
+            configTitle: "Write Default Configuration",
+            configDesc: "Prepare default operating parameters for the management panel.",
+            adminTitle: "Waiting for Administrator Binding",
+            adminDesc: "The next step will set up the first administrator account.",
+        },
+        admin: {
+            title: "2. Set Administrator Account and Password",
+            description: "This account will be used to log in to the management panel later.",
+        },
+        guide: {
+            title: "3. Usage Guide",
+            description: "After initialization is complete, please complete the first-use configuration in the following order.",
+            pathLabel: "Operation Entry",
+            stepLabel: "Step {step}",
+            imagePlaceholder: "Screenshot position reserved here",
+            tokenTitle: "Generate Token",
+            tokenDesc: "Enter My Settings to generate a connection Token. Clients need to use this Token to complete authentication when connecting.",
+            tokenPath: "My Settings / Current Token / Generate",
+            tunnelTitle: "Create New Tunnel",
+            tunnelDesc: "Enter Tunnel Management to add proxy configurations, fill in protocol, port, target address and other information.",
+            tunnelPath: "Tunnel Management / Tunnel Configuration / Add",
+            templateTitle: "Download Template",
+            templateDesc: "Download the client template after creating the tunnel, and start the client connection according to the server information.",
+            templatePath: "Tunnel Management / Template / Download",
+        },
+        success: {
+            title: "Initialization Successful",
+            description: "System initialization is complete, refreshing and redirecting to the login process for you.",
+        },
     },
 
-    // Main interface
+    // Main Interface
     main: {
         title: "Brook Server Management",
-        welcome: "Welcome",
+        welcome: "Welcome to use",
         dashboard: "Dashboard",
         overview: "Overview",
         statistics: "Statistics",
@@ -140,31 +195,57 @@ export default {
         switchLanguage: "Switch Language",
         darkMode: "Dark Mode",
         lightMode: "Light Mode",
-        fullscreen: "Fullscreen",
+        fullscreen: "Full Screen",
         minimize: "Minimize",
     },
 
-    // Menu items
+    // Right Panel Empty State
+    right: {
+        selectModule: "Select Function Module",
+        selectModuleDesc:
+            "Select the function module you need from the left navigation bar to start managing your Brook server",
+    },
+
+    firstLoginGuide: {
+        kicker: "First Login Guide",
+        title: "First Login Guide",
+        stepLabel: "Step {step}",
+        imagePlaceholder: "Screenshot position reserved here",
+        tipTitle: "Operation Instructions",
+        tipDesc: "After completing the operations according to the steps on the right, you can close this guide.",
+        step1Title: "Generate Token",
+        step1Desc: "Enter My Settings to generate a connection Token, which is required for the client to complete authentication on first connection.",
+        step1Action: "My Settings -> Current Token -> Generate",
+        step2Title: "Create New Tunnel",
+        step2Desc: "Enter Tunnel Management to create a new proxy configuration, fill in protocol, port and target address.",
+        step2Action: "Tunnel Management -> Tunnel Configuration -> Add",
+        step3Title: "Download Template",
+        step3Desc: "Download the client template after creating the tunnel, then start the client according to the template.",
+        step3Action: "Tunnel Management -> Template -> Download",
+        showImage: "Click the image to view in full size"
+    },
+
+    // Menu Items
     menu: {
         dashboard: {
             title: "Dashboard",
             description:
-                "Display the current online tunnel servers and their information",
+                "Display current online tunnel servers and their information",
         },
         tunnelConfiguration: {
             title: "Tunnel Configuration",
             manager: "Tunnel Management",
             security: "Security Settings",
             securityDescription: "Configure security policies and protection rules",
-            description: "Manage and configure tunnel server settings management",
+            description: "Manage and configure tunnel server settings",
         },
         mySetting: {
             title: "My Settings",
             description:
-                "Manage your account settings and client connection configuration",
+                "Manage your account settings and client connection configurations",
         },
         onlineServer: {
-            title: "Online Server",
+            title: "Online Servers",
             description:
                 "Manage and monitor all online tunnel servers and their connections",
         },
@@ -181,44 +262,44 @@ export default {
             description: "View system operation logs",
         },
         networkMonitor: {
-            title: "Network Monitor",
+            title: "Network Monitoring",
             description: "Monitor network traffic and performance",
         },
         security: {
-        title: "Security Settings",
-        description: "Configure security policies and protection rules",
-        strategy: {
-            title: "IP Strategy",
-            name: "Strategy Name",
-            type: "Strategy Type",
-            createdAt: "Created At",
-            updatedAt: "Updated At",
-            allowPrivate: "Allow Private",
-            status: "Status",
-            actions: "Actions",
-            deleteBlockedTitle: "Cannot Delete Strategy",
-            deleteBlockedDesc: "This strategy is bound to the following tunnel configurations. Unbind it in Tunnel Configuration before deleting.",
-            whitelist: "Whitelist",
-            blacklist: "Blacklist",
-            privateOnly: "Private Only(Whitelist)",
-            ilUsesWhitelistTip: "Note: Private Only uses whitelist logic (only IP/CIDR rules in the list are allowed).",
-            add: "Add Strategy",
-            edit: "Edit Strategy",
-            delete: "Delete Strategy",
-            rules: "Manage Rules",
-            noStrategies: "No IP Strategies",
-            noStrategiesDesc: "Create an IP strategy to manage access control",
+            title: "Security Settings",
+            description: "Configure security policies and protection rules",
+            strategy: {
+                title: "IP Policy",
+                name: "Policy Name",
+                type: "Policy Type",
+                createdAt: "Creation Time",
+                updatedAt: "Update Time",
+                allowPrivate: "Allow Private",
+                status: "Status",
+                actions: "Actions",
+                deleteBlockedTitle: "Cannot Delete Policy",
+                deleteBlockedDesc: "This policy has been bound to the following tunnel configurations, please unbind it in the tunnel configuration first.",
+                whitelist: "Whitelist",
+                blacklist: "Blacklist",
+                privateOnly: "Private Only (Whitelist)",
+                ilUsesWhitelistTip: "Tip: Private Only uses whitelist logic (only allows access from IPs/CIDRs in the list).",
+                add: "Add Policy",
+                edit: "Edit Policy",
+                delete: "Delete Policy",
+                rules: "Manage Rules",
+                noStrategies: "No IP Policies",
+                noStrategiesDesc: "Create an IP policy to manage access control",
+            },
+            rules: {
+                title: "IP Rules",
+                ip: "IP / CIDR",
+                remark: "Remark",
+                remarkPlaceholder: "Enter remark",
+                add: "Add Rule",
+                delete: "Delete Rule",
+                placeholder: "Enter IP address or CIDR (e.g. 192.168.1.1 or 10.0.0.0/24)",
+            }
         },
-        rules: {
-            title: "IP Rules",
-            ip: "IP / CIDR",
-            remark: "Remark",
-            remarkPlaceholder: "Enter remark",
-            add: "Add Rule",
-            delete: "Delete Rule",
-            placeholder: "Enter IP address or CIDR (e.g., 192.168.1.1 or 10.0.0.0/24)",
-        }
-    },
     },
 
     // Dashboard
@@ -228,16 +309,16 @@ export default {
         totalConnections: "Total Connections",
         averageResponse: "Average Response",
         systemHealth: "System Health",
-        activeConnections: "Current active connections",
-        responseTime: "System response time",
-        healthStatus: "Running status is good",
+        activeConnections: "Current Active Connections",
+        responseTime: "System Response Time",
+        healthStatus: "Running Status is Good",
         serverCards: {
             unnamed: "Unnamed Server",
             port: "Port",
             online: "Online",
-            realTimeMonitor: "Real-time Monitor",
+            realTimeMonitor: "Real-time Monitoring",
             realTimeUpdate: "Real-time Update",
-            connections: "Connections",
+            connections: "Number of Connections",
             responseTime: "Response Time",
             bandwidth: "Bandwidth",
             users: "Clients",
@@ -256,11 +337,11 @@ export default {
         quickActions: {
             addServer: {
                 title: "Add Server",
-                description: "Configure new tunnel server",
+                description: "Configure a new tunnel server",
                 button: "Add Now",
             },
             systemMonitor: {
-                title: "System Monitor",
+                title: "System Monitoring",
                 description: "View detailed monitoring reports",
                 button: "View Report",
             },
@@ -272,32 +353,31 @@ export default {
         },
         emptyState: {
             title: "Welcome to Tunnel Management System",
-            description:
-                "Start configuring your first tunnel server and enjoy efficient network proxy services",
+            description: "Start configuring your first tunnel server and enjoy efficient network proxy services",
             button: "Create First Server",
         },
         charts: {
-            activeConnections: "Active Connections",
+            activeConnections: "Number of Active Connections",
             traffic: "Traffic (MB/s)",
-            connections: "Connections",
+            connections: "Number of Connections",
             serverTypes: "Server Type Distribution",
         },
     },
 
-    // Configuration management
+    // Configuration Management
     configuration: {
         title: "Configuration Management",
         addTunnelConfig: "Add Tunnel Configuration",
         editTunnelConfig: "Edit Tunnel Configuration",
-        totalConfigs: "Total {count} configurations",
-        enabledConfigs: "Enabled {count}",
-        runningConfigs: "Running {count}",
-        serialNumber: "Serial",
-        nameAndTag: "Name&Tag",
+        totalConfigs: "{count} configurations in total",
+        enabledConfigs: "{count} enabled",
+        runningConfigs: "{count} running",
+        serialNumber: "Serial Number",
+        nameAndTag: "Name and Tag",
         download: "Download",
-        remotePort: "ServerPort",
+        remotePort: "Server Port",
         destination: "Destination",
-        proxyId: "ProxyId",
+        proxyId: "Proxy ID",
         protocol: "Protocol",
         status: "Status",
         actions: "Actions",
@@ -308,7 +388,7 @@ export default {
         delete: "Delete",
         noConfigurations: "No Configurations",
         noConfigurationsDesc:
-            'Click "Add Configuration" button to create your first configuration',
+            'Click the "Add Configuration" button to create your first configuration',
         addConfiguration: "Add Configuration",
         template: "Configuration Template",
         webInfoConfig: "Web Configuration",
@@ -318,52 +398,52 @@ export default {
         inputKeyFilePath: "Enter KeyFile path",
         proxyList: "Proxy Configuration List",
         saveConfig: "Save Configuration",
-        domain: "Domain",
+        domain: "Domain Name",
         paths: "Paths",
         addRow: "Add Row",
         egProxyId: "e.g.: proxy1",
         egDomain: "e.g.: localhost",
         egPath: "e.g.: /*",
         addPath: "Add Path",
-        confirmDeleteProxy: "Are you sure to delete this proxy configuration?",
-        proxyFormIncomplete: "Please complete the proxy configuration information",
+        confirmDeleteProxy: "Are you sure you want to delete this proxy configuration?",
+        proxyFormIncomplete: "Please fill in the complete proxy configuration information",
         atLeastOneProxy: "Please add at least one proxy configuration",
-        noProxyTip: "No proxy configurations. Click \"Add Row\" to add",
-        proxyIdTip: "Used by clients to connect",
-        certInfoEmpty: "No certificates available for selection, please go to my settings to add",
+        noProxyTip: "No proxy configurations. Click 'Add Row' to add",
+        proxyIdTip: "Used for client connection",
+        certInfoEmpty: "No certificates available for selection, please add in My Settings",
         protocols: {
             http: {
                 title: "HTTP",
-                desc: "Standard web proxy for normal web access"
+                desc: "Standard Web proxy, suitable for ordinary web page access"
             },
             https: {
                 title: "HTTPS",
-                desc: "Secure web proxy with TLS encryption"
+                desc: "Secure Web proxy with TLS encryption"
             },
             tcp: {
                 title: "TCP",
-                desc: "Reliable general tunnel for SSH, DB, etc."
+                desc: "Reliable general-purpose tunnel, suitable for SSH, databases, etc."
             },
             udp: {
                 title: "UDP",
-                desc: "Low-latency tunnel for gaming, streaming, etc."
+                desc: "Low-latency tunnel, suitable for games, streaming media, etc."
             }
         },
         form: {
-            proxyIdPlaceholder: "Please enter ProxyId",
+            proxyIdPlaceholder: "Please enter Proxy ID",
             namePlaceholder: "Please enter configuration name",
             tagLabel: "Tag",
             tagPlaceholder: "Please enter tag (optional)",
             portPlaceholder: "Please enter port",
             destPortPlaceholder: "Please enter port (optional)",
-            destAddrPlaceholder: "Please enter addr (optional)",
+            destAddrPlaceholder: "Please enter address (optional)",
         }
     },
 
-    // Server management
+    // Server Management
     server: {
         title: "Server Management",
-        runtime: "Start time",
+        runtime: "Start Time",
         list: "Server List",
         add: "Add Server",
         edit: "Edit Server",
@@ -371,7 +451,7 @@ export default {
         details: "Server Details",
         configuration: "Server Configuration",
         status: "Server Status",
-        performance: "Performance Monitor",
+        performance: "Performance Monitoring",
         logs: "Server Logs",
         restart: "Restart Server",
         stop: "Not Connected",
@@ -387,7 +467,7 @@ export default {
             protocol: "Protocol Type",
             status: "Running Status",
             uptime: "Uptime",
-            connections: "Connections",
+            connections: "Number of Connections",
             traffic: "Traffic Statistics",
             cpu: "CPU Usage",
             memory: "Memory Usage",
@@ -415,12 +495,11 @@ export default {
             exportConfig: "Export Configuration",
             importConfig: "Import Configuration",
         },
-        agentDetails: "Agent Details",
+        agentDetails: "Proxy Details",
         connectionTime: "Connection Time",
-        listEmpty: "No servers yet. Create a server to view details",
+        listEmpty: "No servers available. Create a server to view details",
     },
-
-    // User management
+    // User Management
     user: {
         title: "User Management",
         list: "User List",
@@ -473,21 +552,21 @@ export default {
     // My Settings
     mysetting: {
         title: "Access Token",
-        subtitle: "Security token for client connections",
-        createdAt: "Created At",
+        subtitle: "Security token for client connection",
+        createdAt: "Creation Time",
         currentToken: "Current Token",
         copyToken: "Copy Token",
-        noTokenTitle: "No token generated",
-        noTokenDesc: "You need to generate an access token for clients to connect",
+        noTokenTitle: "No Token Generated",
+        noTokenDesc: "You need to generate an access token for client connection",
         generate: "Generate Token",
         regenerate: "Regenerate Token",
         revoke: "Revoke Token",
-        confirmRevoke: "Are you sure to revoke the current token? Clients using this token will not be able to connect.",
+        confirmRevoke: "Are you sure you want to revoke the current token? Clients using this token will not be able to connect.",
         hideToken: "Hide Token",
         showToken: "Show Token",
         tls: {
-            title: "Certificate",
-            subtitle: "Certificate information",
+            title: "Certificates",
+            subtitle: "Certificate Information",
             table: {
                 certName: "Certificate Name",
                 desc: "Description",
@@ -506,17 +585,18 @@ export default {
                 contentPlaceholder: "-----BEGIN CERTIFICATE-----\n-----END CERTIFICATE-----",
                 privateKeyLabel: "Private Key Content",
                 privateKeyPlaceholder: "-----BEGIN PRIVATE KEY-----\n-----END PRIVATE KEY-----",
-                descLabel: "Description",
-                descPlaceholder: "Please enter description",
-                save: "Save Certificate",
+                descLabel: "Remark Information",
+                descPlaceholder: "Please enter remark information",
+                save: "Save Certificate Information",
                 messages: {
                     addSuccess: "Certificate added successfully"
                 }
-            },
+            }
+
         }
     },
 
-    // System settings
+    // System Settings
     settings: {
         title: "System Settings",
         general: "General Settings",
@@ -532,13 +612,13 @@ export default {
         fields: {
             siteName: "Site Name",
             siteDescription: "Site Description",
-            adminEmail: "Admin Email",
+            adminEmail: "Administrator Email",
             timezone: "Timezone",
             language: "Default Language",
             theme: "Theme",
             dateFormat: "Date Format",
             timeFormat: "Time Format",
-            maxConnections: "Max Connections",
+            maxConnections: "Maximum Number of Connections",
             connectionTimeout: "Connection Timeout",
             sessionTimeout: "Session Timeout",
             passwordPolicy: "Password Policy",
@@ -546,7 +626,7 @@ export default {
             sslEnabled: "SSL Enabled",
             backupInterval: "Backup Interval",
             logLevel: "Log Level",
-            logRetention: "Log Retention",
+            logRetention: "Log Retention Period",
         },
         actions: {
             save: "Save Settings",
@@ -559,23 +639,23 @@ export default {
         },
     },
 
-    // Monitoring and statistics
+    // Monitoring and Statistics
     monitoring: {
         title: "System Monitoring",
-        overview: "Monitor Overview",
-        performance: "Performance Monitor",
-        network: "Network Monitor",
-        security: "Security Monitor",
+        overview: "Monitoring Overview",
+        performance: "Performance Monitoring",
+        network: "Network Monitoring",
+        security: "Security Monitoring",
         alertsTitle: "Alert Management",
-        reports: "Monitor Reports",
-        realTime: "Real-time Monitor",
+        reports: "Monitoring Reports",
+        realTime: "Real-time Monitoring",
         historical: "Historical Data",
         metrics: {
             cpu: "CPU Usage",
             memory: "Memory Usage",
             disk: "Disk Usage",
             network: "Network Usage",
-            connections: "Connections",
+            connections: "Number of Connections",
             throughput: "Throughput",
             latency: "Latency",
             errorRate: "Error Rate",
@@ -584,7 +664,7 @@ export default {
         },
         timeRanges: {
             realTime: "Real-time",
-            lastHour: "Last Hour",
+            lastHour: "Last 1 Hour",
             last24Hours: "Last 24 Hours",
             lastWeek: "Last Week",
             lastMonth: "Last Month",
@@ -600,7 +680,7 @@ export default {
         },
     },
 
-    // Log management
+    // Log Management
     logs: {
         title: "Log Management",
         systemLogs: "System Logs",
@@ -631,13 +711,13 @@ export default {
         },
         actions: {
             view: "View Details",
-            download: "Download Log",
-            archive: "Archive Log",
-            delete: "Delete Log",
+            download: "Download Logs",
+            archive: "Archive Logs",
+            delete: "Delete Logs",
         },
     },
 
-    // Error messages
+    // Error Messages
     errors: {
         networkError: "Network connection error",
         serverError: "Internal server error",
@@ -649,26 +729,26 @@ export default {
         unknownError: "Unknown error",
         connectionFailed: "Connection failed",
         authenticationFailed: "Authentication failed",
-        permissionDenied: "Permission denied",
-        resourceNotFound: "Resource not found",
+        permissionDenied: "Insufficient permissions",
+        resourceNotFound: "Resource does not exist",
         operationFailed: "Operation failed",
         dataCorrupted: "Data corrupted",
         serviceUnavailable: "Service unavailable",
         copyFailed: "Copy failed",
     },
 
-    // Success messages
+    // Success Messages
     success: {
         operationCompleted: "Operation completed",
-        dataSaved: "Data saved",
-        configurationUpdated: "Configuration updated",
+        dataSaved: "Data saved successfully",
+        configurationUpdated: "Configuration updated successfully",
         userCreated: "User created successfully",
         userUpdated: "User updated successfully",
         userDeleted: "User deleted successfully",
         serverCreated: "Server created successfully",
         serverUpdated: "Server updated successfully",
         serverDeleted: "Server deleted successfully",
-        settingsSaved: "Settings saved",
+        settingsSaved: "Settings saved successfully",
         backupCreated: "Backup created successfully",
         backupRestored: "Backup restored successfully",
         passwordChanged: "Password changed successfully",
@@ -676,47 +756,49 @@ export default {
         fileUploaded: "File uploaded successfully",
         dataExported: "Data exported successfully",
         dataImported: "Data imported successfully",
-        copied: "Copied",
+        copied: "Copied successfully",
+        tokenGenerated:"Token successfully",
+        tokenRevoked:"Revoked Token successfully"
     },
 
-    // Confirmation dialogs
+    // Confirmation Dialog
     confirmations: {
-        confirmTips: "Confirm Tips",
-        confirmText: "Are you sure you want to perform this action?",
+        confirmTips: "Confirmation Tip",
+        confirmText: "Are you sure you want to perform the current operation?",
     },
 
-    // Form validation
+    // Form Validation
     validation: {
         required: "This field is required",
         email: "Please enter a valid email address",
         minLength: "Minimum {min} characters required",
         maxLength: "Maximum {max} characters allowed",
-        numeric: "Please enter a number",
-        alphanumeric: "Only letters and numbers allowed",
-        alphanumericDashUnderscore: "Only letters, numbers, underscore and hyphen allowed",
+        numeric: "Please enter numbers only",
+        alphanumeric: "Only letters and numbers are allowed",
+        alphanumericDashUnderscore: "Only letters, numbers, underscores and hyphens are allowed",
         passwordMismatch: "Passwords do not match",
         invalidFormat: "Invalid format",
         duplicateValue: "Value already exists",
-        invalidRange: "Value out of valid range",
+        invalidRange: "Value is out of valid range",
         invalidUrl: "Please enter a valid URL",
         invalidPort: "Please enter a valid port number (1-65535)",
     },
 
     // Pagination
     pagination: {
-        first: "First",
-        last: "Last",
-        previous: "Previous",
-        next: "Next",
+        first: "First Page",
+        last: "Last Page",
+        previous: "Previous Page",
+        next: "Next Page",
         page: "Page {current}",
-        of: "of {total}",
-        showing: "Showing {start} to {end} of {total} entries",
+        of: "of {total} pages",
+        showing: "Showing {start} to {end} of {total} records",
         itemsPerPage: "Items per page",
         noData: "No data available",
         loading: "Loading...",
     },
 
-    // Time related
+    // Time Related
     time: {
         now: "Just now",
         minutesAgo: "{count} minutes ago",
@@ -732,11 +814,5 @@ export default {
         weeks: "weeks",
         months: "months",
         years: "years",
-    },
-    // Right pane empty state
-    right: {
-        selectModule: "Select a Module",
-        selectModuleDesc:
-            "Choose a module from the left sidebar to start managing your Brook server",
     },
 };

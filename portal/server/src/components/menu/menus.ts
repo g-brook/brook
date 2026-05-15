@@ -92,7 +92,7 @@ const menus: Menu[] = [
         false,
         [],
         () => import('@/views/mysetting/MySetting.vue'),
-    ),
+    )
 ]
 
 export {Menu, menus};

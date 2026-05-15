@@ -47,6 +47,7 @@ const { locale, localeName, availableLocales, setLocale } = useI18n()
 const getLocaleName = (localeCode: Locale): string => {
   const localeNames: Record<Locale, string> = {
     'zh-CN': '简体中文',
+    'zh-TW': '繁体中文',
     'en-US': 'English'
   }
   return localeNames[localeCode]

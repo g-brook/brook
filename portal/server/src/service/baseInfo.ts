@@ -26,6 +26,10 @@ const initServer = <Q>(data: InitInfo): Promise<Response<Q>> => {
     return Http.post("/api/initBrookServer", data);
 };
 
+const initDatabase = <Q>(): Promise<Response<Q>> => {
+    return Http.post(`/api/initDatabase`);
+};
+
 const login = <Q>(data: any): Promise<Response<Q>> => {
     return Http.post("/api/login", data);
 };
@@ -48,6 +52,6 @@ const upgradeDb = <Q>(data: any): Promise<Response<Q>> => {
 };
 
 
-const functions = {getBaseInfo, initServer, login, getServerInfo, getServerInfoByProxyId, getWebLogs, upgradeDb};
+const functions = {getBaseInfo, initServer, initDatabase, login, getServerInfo, getServerInfoByProxyId, getWebLogs, upgradeDb};
 
 export default functions;

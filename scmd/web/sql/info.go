@@ -185,6 +185,67 @@ func UpdateTableStruct() error {
 	return nil
 }
 
+func clearAllTables() error {
+	rows, err := Query("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'")
+	if err != nil {
+		return err
+	}
+	defer rows.Close()
+	r := rows.rows
+	var tables []string
+	for r.Next() {
+		var table string
+		_ = r.Scan(&table)
+		tables = append(tables, table)
+	}
+	if len(tables) != 0 {
+		rows.Close()
+		for _, table := range tables {
+			dropSQL := "DROP TABLE IF EXISTS " + table
+			if err := Exec(dropSQL); err != nil {
+				return err
+			}
+		}
+	}
+	return Exec("VACUUM")
+}
+func InitDBStruct() error {
+	err := clearAllTables()
+	if err != nil {
+		log.Warn("clear All table:init db err: %v", err)
+		return err
+	}
+	readFile := func(sqlFile string) error {
+		sqlContent, err := fs.ReadFile(staticFs, sqlFile)
+		if err != nil {
+			log.Warn("error reading sql file %v:%v", sqlFile, err)
+			return err
+		}
+		sqlText := string(sqlContent)
+		newCsql := removeSQLComments(sqlText)
+		sqlList := strings.Split(newCsql, ";")
+		for _, sql := range sqlList {
+			sql = strings.TrimSpace(sql)
+			log.Debug("current execute sql: %v", sql)
+			err = Exec(sql)
+			if err != nil {
+				log.Warn("initDB:sql execute error: %s, err: %v", sql, err)
+				return err
+			}
+		}
+		return nil
+
+	}
+	err = readFile("full.sql")
+	if err != nil {
+		return nil
+	}
+	return insertConfig()
+}
+
+func insertConfig() error {
+	return ensureVersionInfo()
+}
 func removeSQLComments(sql string) string {
 	// 匹配 /* 开头 */ 结尾的所有注释
 	re := regexp.MustCompile(`/\*[\s\S]*?\*/`)

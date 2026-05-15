@@ -28,8 +28,17 @@ import (
 func init() {
 	RegisterRoute(NewRouteNotAuth("/getBaseInfo", "POST"), getBaseInfo)
 	RegisterRoute(NewRouteNotAuth("/initBrookServer", "POST"), initBrookServer)
+	RegisterRoute(NewRouteNotAuth("/initDatabase", "POST"), initDataBase)
 	RegisterRoute(NewRouteNotAuth("/login", "POST"), login)
 	RegisterRoute(NewRoute("/upgradeDb", "POST"), upgradeDb)
+}
+
+func initDataBase(r *Request[InitInfo]) *Response {
+	err := sql.InitDBStruct()
+	if err != nil {
+		return NewResponseFail(errs.CodeSysErr, "init database error")
+	}
+	return NewResponseSuccess(nil)
 }
 
 const (

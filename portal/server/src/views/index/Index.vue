@@ -23,6 +23,7 @@ import baseInfo from "@/service/baseInfo";
 import {useI18n} from '@/components/lang/useI18n';
 import Message from "@/components/message";
 import Icon from "@/components/icon/Index.vue"
+import FirstLoginGuide from '@/views/index/FirstLoginGuide.vue';
 
 const {t} = useI18n();
 
@@ -33,6 +34,7 @@ const icon = ref<string>("")
 const isLoading = ref<boolean>(false)
 const version = ref('');
 const isUpgrade = ref<boolean>(false)
+const showFirstLoginGuide = ref<boolean>(false)
 // 点击菜单动态加载组件
 const handleSelect = async (item: Menu) => {
   try {
@@ -76,8 +78,15 @@ onMounted(async () => {
     menus[0].active = true
     await handleSelect(menus[0])
   }
-  loadBaseInfo()
+  await loadBaseInfo()
+  showFirstLoginGuide.value = localStorage.getItem('brook_first_login_guide_pending') === '1'
 })
+
+const closeFirstLoginGuide = () => {
+  showFirstLoginGuide.value = false
+  localStorage.removeItem('brook_first_login_guide_pending')
+  localStorage.setItem('brook_first_login_guide_seen', '1')
+}
 </script>
 
 <template>
@@ -104,6 +113,7 @@ onMounted(async () => {
           :is-loading="isLoading"
       />
     </div>
+    <FirstLoginGuide :visible="showFirstLoginGuide" @close="closeFirstLoginGuide" />
   </div>
 </template>
 

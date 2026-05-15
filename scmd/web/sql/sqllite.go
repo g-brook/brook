@@ -52,9 +52,9 @@ func InitSQLDB() error {
 		return err
 	}
 	// Set the maximum number of idle connections in the connection pool to 1
-	db.SetMaxIdleConns(1)
+	db.SetMaxIdleConns(10)
 	// Set the maximum number of open connections to 1
-	db.SetMaxOpenConns(1)
+	db.SetMaxOpenConns(10)
 	// Set the maximum lifetime of a connection to 0 (connections can be reused indefinitely)
 	db.SetConnMaxLifetime(0)
 	// Assign the database connection to the global SqlDB variable

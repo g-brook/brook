@@ -22,23 +22,42 @@ import Message from '@/components/message';
 
 const { t } = useI18n();
 
-// 表单数据
 const username = ref('');
 const password = ref('');
 const confirmPassword = ref('');
 const isLoading = ref(false);
+const databaseLoading = ref(false);
+const currentStep = ref(1);
+const databaseInitialized = ref(false);
+const initCompleted = ref(false);
 
-// 表单验证
+const steps = computed(() => [
+  {
+    value: 1,
+    title: t('initializer.steps.database.title'),
+    description: t('initializer.steps.database.description'),
+  },
+  {
+    value: 2,
+    title: t('initializer.steps.admin.title'),
+    description: t('initializer.steps.admin.description'),
+  },
+  {
+    value: 3,
+    title: t('initializer.steps.guide.title'),
+    description: t('initializer.steps.guide.description'),
+  },
+]);
+
 const isUsernameValid = computed(() => username.value.length >= 3);
 const isPasswordValid = computed(() => password.value.length >= 6);
-const isConfirmPasswordValid = computed(() => 
+const isConfirmPasswordValid = computed(() =>
   confirmPassword.value === password.value && password.value.length > 0
 );
-const isFormValid = computed(() => 
+const isFormValid = computed(() =>
   isUsernameValid.value && isPasswordValid.value && isConfirmPasswordValid.value
 );
 
-// 验证错误信息
 const usernameError = computed(() => {
   if (username.value.length === 0) return '';
   if (!isUsernameValid.value) return t('validation.minLength', { min: 3 });
@@ -57,7 +76,42 @@ const confirmPasswordError = computed(() => {
   return '';
 });
 
-// 处理初始化
+const goStep = (step: number) => {
+  if (step > currentStep.value && step === 3 && !initCompleted.value) return;
+  if (step > 2 && !initCompleted.value) return;
+  currentStep.value = step;
+};
+
+const nextStep = () => {
+  if (currentStep.value < 2 && databaseInitialized.value) {
+    currentStep.value += 1;
+  }
+};
+
+const handleInitDatabase = async () => {
+  try {
+    databaseLoading.value = true;
+    const res = await baseInfo.initDatabase();
+    if (res.success()) {
+      databaseInitialized.value = true;
+      currentStep.value = 2;
+      Message.success(t('initializer.database.initSuccess'));
+    } else {
+      Message.error(res.message || t('initializer.database.initFailed'));
+    }
+  } catch (error) {
+    Message.error(t('initializer.database.initFailed'));
+  } finally {
+    databaseLoading.value = false;
+  }
+};
+
+const previousStep = () => {
+  if (currentStep.value > 1 && !isLoading.value) {
+    currentStep.value -= 1;
+  }
+};
+
 const handleInit = async () => {
   if (!isFormValid.value) {
     Message.error(t('validation.required'));
@@ -66,19 +120,19 @@ const handleInit = async () => {
 
   try {
     isLoading.value = true;
-    
-    // 调用初始化API，传入用户名和密码
     const res = await baseInfo.initServer({
       username: username.value,
       password: password.value,
       confirmPassword: confirmPassword.value,
     });
-    
+
     if (res.success()) {
+      initCompleted.value = true;
+      currentStep.value = 3;
       Message.success(t('initializer.initSuccess'));
       setTimeout(() => {
         window.location.reload();
-      }, 1500);
+      }, 2500);
     }
   } catch (error) {
     Message.error(t('initializer.initFailed'));
@@ -89,220 +143,198 @@ const handleInit = async () => {
 </script>
 
 <template>
-  <div class="min-h-screen flex items-center justify-center bg-gradient-to-br from-sky-50 to-indigo-100">
-    <div class="transform">
-      <div class="card-container w-[480px] p-[2px] rounded-2xl relative">
-        <!-- 主卡片 -->
-        <div class="card-content backdrop-blur-xl bg-white/60 border border-white/40 shadow-xl rounded-2xl p-8 relative z-10">
-          <!-- 标题区域 -->
-          <div class="flex flex-1 justify-between items-start mb-6">
-            <div>
-              <h2 class="text-2xl text-gray-800 tracking-wide font-semibold mb-2">
-                {{ t('initializer.title') }}
-              </h2>
-             
-            </div>
+  <div class="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary/10 to-base-100 px-4 py-10">
+    <div class="w-full max-w-5xl rounded-3xl bg-base-100/80 backdrop-blur-xl border border-base-content/5 shadow-xl overflow-hidden">
+      <div class="p-6 border-b border-base-content/5">
+        <div class="badge badge-primary badge-soft font-black tracking-widest mb-3">INIT</div>
+        <div class="flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
+          <div>
+            <h2 class="text-2xl font-black tracking-tight text-base-content">{{ t('initializer.title') }}</h2>
+            <p class="text-xs opacity-50 leading-relaxed mt-2">{{ t('initializer.description') }}</p>
           </div>
-
-          <!-- 提示信息 -->
-          <div class="bg-blue-50/60 border border-blue-200/50 rounded-lg p-3 mb-4">
-            <div class="flex items-center space-x-2">
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-blue-500 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-              <p class="text-xs text-blue-700 leading-tight">
-                {{ t('initializer.description') }}
-              </p>
-            </div>
-          </div>
-
-          <!-- 初始化表单 -->
-          <form @submit.prevent="handleInit" class="space-y-6">
-            <!-- 用户名输入 -->
-            <div class="form-control w-full relative">
-              <label class="label">
-                <span class="label-text text-gray-600 text-sm font-medium">
-                  {{ t('common.username') }}
-                  <span class="text-red-500">*</span>
-                </span>
-                <!-- 错误提示 - 与label对齐 -->
-                <div class="h-4 overflow-hidden flex items-center">
-                  <transition name="slide-down">
-                    <span v-if="usernameError" class="text-red-500 text-xs leading-none">{{ usernameError }}</span>
-                  </transition>
-                </div>
-              </label>
-              <input 
-                type="text" 
-                v-model="username"
-                :placeholder="t('login.usernamePlaceholder')"
-                :class="[
-                  'input input-bordered w-full rounded-xl bg-white/80 text-gray-800 placeholder-gray-400 border-gray-200 transition-all duration-300',
-                  usernameError ? 'border-red-300 focus:border-red-400 focus:ring-red-200' : 'focus:ring-2 focus:ring-sky-400'
-                ]"
-                :disabled="isLoading"
-                required
-              />
-            </div>
-
-            <!-- 密码组 -->
-            <div class="space-y-3">
-              <!-- 密码输入 -->
-              <div class="form-control w-full relative">
-                <label class="label">
-                  <span class="label-text text-gray-600 text-sm font-medium">
-                    {{ t('common.password') }}
-                    <span class="text-red-500">*</span>
-                  </span>
-                  <!-- 错误提示 - 与label对齐 -->
-                  <div class="h-4 overflow-hidden flex items-center">
-                    <transition name="slide-down">
-                      <span v-if="passwordError" class="text-red-500 text-xs leading-none">{{ passwordError }}</span>
-                    </transition>
-                  </div>
-                </label>
-                <input 
-                  type="password" 
-                  v-model="password"
-                  :placeholder="t('login.passwordPlaceholder')"
-                  :class="[
-                    'input input-bordered w-full rounded-xl bg-white/80 text-gray-800 placeholder-gray-400 border-gray-200 transition-all duration-300',
-                    passwordError ? 'border-red-300 focus:border-red-400 focus:ring-red-200' : 'focus:ring-2 focus:ring-indigo-400'
-                  ]"
-                  :disabled="isLoading"
-                  required
-                />
-              </div>
-
-              <!-- 确认密码输入 -->
-              <div class="form-control w-full relative">
-                <label class="label">
-                  <span class="label-text text-gray-600 text-sm font-medium">
-                    {{ t('initializer.confirmPassword') }}
-                    <span class="text-red-500">*</span>
-                  </span>
-                  <!-- 错误提示 - 与label对齐 -->
-                  <div class="h-4 overflow-hidden flex items-center">
-                    <transition name="slide-down">
-                      <span v-if="confirmPasswordError" class="text-red-500 text-xs leading-none">{{ confirmPasswordError }}</span>
-                    </transition>
-                  </div>
-                </label>
-                <input 
-                  type="password" 
-                  v-model="confirmPassword"
-                  :placeholder="t('initializer.confirmPasswordPlaceholder')"
-                  :class="[
-                    'input input-bordered w-full rounded-xl bg-white/80 text-gray-800 placeholder-gray-400 border-gray-200 transition-all duration-300',
-                    confirmPasswordError ? 'border-red-300 focus:border-red-400 focus:ring-red-200' : 'focus:ring-2 focus:ring-purple-400'
-                  ]"
-                  :disabled="isLoading"
-                  required
-                />
-              </div>
-            </div>
-
-             <!-- 提交按钮 -->
-            <button
-              type="submit"
-              :disabled="!isFormValid || isLoading"
-              :class="[
-                'w-full py-3 rounded-xl font-semibold shadow-lg transform transition-all duration-300',
-                isFormValid && !isLoading
-                  ? 'bg-gradient-to-r from-sky-400 via-blue-500 to-indigo-500 text-white hover:scale-105 hover:shadow-sky-300/50 active:scale-95 cursor-pointer'
-                  : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-              ]"
-            >
-              <span v-if="isLoading" class="flex items-center justify-center space-x-2">
-                <svg class="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
-                <span>{{ t('initializer.initInProgress') }}</span>
-              </span>
-              <span v-else>{{ t('initializer.submitButton') }}</span>
-            </button>
-
-            <!-- 密码要求提示 -->
-            <div class="bg-gray-50/80 border border-gray-200 rounded-lg p-3">
-              <h4 class="text-xs font-medium text-gray-700 mb-2">{{ t('initializer.passwordRequirements') }}:</h4>
-              <ul class="text-xs text-gray-600 space-y-1">
-                <li class="flex items-center space-x-2">
-                  <span :class="isPasswordValid ? 'text-green-500' : 'text-gray-400'">
-                    {{ isPasswordValid ? '✓' : '○' }}
-                  </span>
-                  <span>{{ t('validation.minLength', { min: 6 }) }}</span>
-                </li>
-                <li class="flex items-center space-x-2">
-                  <span :class="isUsernameValid ? 'text-green-500' : 'text-gray-400'">
-                    {{ isUsernameValid ? '✓' : '○' }}
-                  </span>
-                  <span>{{ t('initializer.usernameRequirement') }}</span>
-                </li>
-                <li class="flex items-center space-x-2">
-                  <span :class="isConfirmPasswordValid ? 'text-green-500' : 'text-gray-400'">
-                    {{ isConfirmPasswordValid ? '✓' : '○' }}
-                  </span>
-                  <span>{{ t('initializer.passwordMatch') }}</span>
-                </li>
-              </ul>
-            </div>
-          </form>
-         
+          <div class="text-xs font-black opacity-40 uppercase tracking-widest">{{ t('initializer.stepProgress', { current: currentStep, total: 3 }) }}</div>
         </div>
+      </div>
+
+      <div class="p-6">
+        <ul class="steps steps-vertical lg:steps-horizontal w-full mb-8">
+          <li
+            v-for="step in steps"
+            :key="step.value"
+            class="step cursor-pointer"
+            :class="{
+              'step-primary': currentStep >= step.value,
+              'opacity-50': (step.value === 2 && !databaseInitialized) || (step.value === 3 && !initCompleted),
+            }"
+            @click="goStep(step.value)"
+          >
+            <span class="font-black">{{ step.title }}</span>
+          </li>
+        </ul>
+
+        <transition name="slide-down" mode="out-in">
+          <section v-if="currentStep === 1" key="database" class="space-y-6">
+            <div class="rounded-3xl bg-base-200/40 border border-base-content/5 p-6">
+              <div class="flex items-start justify-between gap-4 mb-5">
+                <div>
+                  <h3 class="text-xl font-black tracking-tight">{{ t('initializer.database.title') }}</h3>
+                  <p class="text-xs opacity-50 mt-2">{{ t('initializer.database.description') }}</p>
+                </div>
+                <div class="badge badge-success badge-soft font-black">{{ t('initializer.database.ready') }}</div>
+              </div>
+              <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                <div class="rounded-2xl bg-base-100 border border-base-content/5 p-4">
+                  <div class="text-[11px] font-black opacity-40 uppercase tracking-widest">Database</div>
+                  <div class="text-sm font-black mt-1">{{ t('initializer.database.structureTitle') }}</div>
+                  <p class="text-xs opacity-40 mt-2 leading-relaxed">{{ t('initializer.database.structureDesc') }}</p>
+                </div>
+                <div class="rounded-2xl bg-base-100 border border-base-content/5 p-4">
+                  <div class="text-[11px] font-black opacity-40 uppercase tracking-widest">Config</div>
+                  <div class="text-sm font-black mt-1">{{ t('initializer.database.configTitle') }}</div>
+                  <p class="text-xs opacity-40 mt-2 leading-relaxed">{{ t('initializer.database.configDesc') }}</p>
+                </div>
+                <div class="rounded-2xl bg-base-100 border border-base-content/5 p-4">
+                  <div class="text-[11px] font-black opacity-40 uppercase tracking-widest">Admin</div>
+                  <div class="text-sm font-black mt-1">{{ t('initializer.database.adminTitle') }}</div>
+                  <p class="text-xs opacity-40 mt-2 leading-relaxed">{{ t('initializer.database.adminDesc') }}</p>
+                </div>
+              </div>
+            </div>
+            <div class="flex justify-end">
+              <button
+                type="button"
+                class="btn btn-primary rounded-2xl px-8 font-black uppercase tracking-widest shadow-xl shadow-primary/20"
+                :class="{ loading: databaseLoading }"
+                :disabled="databaseLoading || databaseInitialized"
+                @click="handleInitDatabase"
+              >
+                {{ databaseLoading ? t('initializer.database.initInProgress') : databaseInitialized ? t('initializer.database.initialized') : t('initializer.database.initButton') }}
+              </button>
+            </div>
+          </section>
+
+          <section v-else-if="currentStep === 2" key="admin" class="space-y-6">
+            <div class="rounded-3xl bg-base-200/40 border border-base-content/5 overflow-hidden">
+              <div class="px-6 py-4 border-b border-base-content/5">
+                <h3 class="text-xl font-black tracking-tight">{{ t('initializer.admin.title') }}</h3>
+                <p class="text-xs opacity-50 mt-1">{{ t('initializer.admin.description') }}</p>
+              </div>
+
+              <form @submit.prevent="handleInit" class="p-6 space-y-5">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div class="form-control w-full relative">
+                    <label class="label py-1">
+                      <span class="label-text text-xs font-black opacity-50 uppercase tracking-widest">
+                        {{ t('common.username') }} <span class="text-error">*</span>
+                      </span>
+                    </label>
+                    <input
+                      type="text"
+                      v-model="username"
+                      :placeholder="t('login.usernamePlaceholder')"
+                      :class="[
+                        'input input-bordered w-full rounded-2xl bg-base-100/70 border-base-content/10 transition-all duration-300',
+                        usernameError ? 'input-error' : 'focus:input-primary'
+                      ]"
+                      :disabled="isLoading"
+                      required
+                    />
+                    <transition name="slide-down">
+                      <span v-if="usernameError" class="text-error text-xs mt-1">{{ usernameError }}</span>
+                    </transition>
+                  </div>
+
+                  <div class="form-control w-full relative">
+                    <label class="label py-1">
+                      <span class="label-text text-xs font-black opacity-50 uppercase tracking-widest">
+                        {{ t('common.password') }} <span class="text-error">*</span>
+                      </span>
+                    </label>
+                    <input
+                      type="password"
+                      v-model="password"
+                      :placeholder="t('login.passwordPlaceholder')"
+                      :class="[
+                        'input input-bordered w-full rounded-2xl bg-base-100/70 border-base-content/10 transition-all duration-300',
+                        passwordError ? 'input-error' : 'focus:input-primary'
+                      ]"
+                      :disabled="isLoading"
+                      required
+                    />
+                    <transition name="slide-down">
+                      <span v-if="passwordError" class="text-error text-xs mt-1">{{ passwordError }}</span>
+                    </transition>
+                  </div>
+
+                  <div class="form-control w-full relative">
+                    <label class="label py-1">
+                      <span class="label-text text-xs font-black opacity-50 uppercase tracking-widest">
+                        {{ t('initializer.confirmPassword') }} <span class="text-error">*</span>
+                      </span>
+                    </label>
+                    <input
+                      type="password"
+                      v-model="confirmPassword"
+                      :placeholder="t('initializer.confirmPasswordPlaceholder')"
+                      :class="[
+                        'input input-bordered w-full rounded-2xl bg-base-100/70 border-base-content/10 transition-all duration-300',
+                        confirmPasswordError ? 'input-error' : 'focus:input-primary'
+                      ]"
+                      :disabled="isLoading"
+                      required
+                    />
+                    <transition name="slide-down">
+                      <span v-if="confirmPasswordError" class="text-error text-xs mt-1">{{ confirmPasswordError }}</span>
+                    </transition>
+                  </div>
+                </div>
+
+                <div class="rounded-2xl bg-base-100 border border-base-content/5 p-4">
+                  <h4 class="text-xs font-black opacity-50 uppercase tracking-widest mb-3">{{ t('initializer.passwordRequirements') }}</h4>
+                  <div class="grid grid-cols-1 md:grid-cols-3 gap-2 text-xs">
+                    <div class="flex items-center gap-2 font-black" :class="isUsernameValid ? 'text-success' : 'opacity-40'">
+                      <span>{{ isUsernameValid ? '✓' : '○' }}</span>
+                      <span>{{ t('initializer.usernameRequirement') }}</span>
+                    </div>
+                    <div class="flex items-center gap-2 font-black" :class="isPasswordValid ? 'text-success' : 'opacity-40'">
+                      <span>{{ isPasswordValid ? '✓' : '○' }}</span>
+                      <span>{{ t('validation.minLength', { min: 6 }) }}</span>
+                    </div>
+                    <div class="flex items-center gap-2 font-black" :class="isConfirmPasswordValid ? 'text-success' : 'opacity-40'">
+                      <span>{{ isConfirmPasswordValid ? '✓' : '○' }}</span>
+                      <span>{{ t('initializer.passwordMatch') }}</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="flex flex-col-reverse gap-3 md:flex-row md:justify-between">
+                  <button type="button" class="btn btn-ghost rounded-2xl px-8 font-black uppercase tracking-widest" @click="previousStep">
+                    {{ t('common.previous') }}
+                  </button>
+                  <button
+                    type="submit"
+                    :disabled="!isFormValid || isLoading"
+                    class="btn btn-primary rounded-2xl px-8 font-black uppercase tracking-widest shadow-xl shadow-primary/20"
+                    :class="{ 'btn-disabled': !isFormValid || isLoading, loading: isLoading }"
+                  >
+                    {{ isLoading ? t('initializer.initInProgress') : t('initializer.submitButton') }}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </section>
+
+          <section v-else key="success">
+            <div class="rounded-3xl bg-success/10 border border-success/10 p-8 text-center">
+              <div class="w-16 h-16 rounded-3xl bg-success text-success-content flex items-center justify-center font-black text-2xl mx-auto mb-5">✓</div>
+              <h3 class="text-2xl font-black tracking-tight">{{ t('initializer.success.title') }}</h3>
+              <p class="text-sm opacity-60 mt-3">{{ t('initializer.success.description') }}</p>
+              <div class="loading loading-spinner loading-md text-success mt-6"></div>
+            </div>
+          </section>
+        </transition>
       </div>
     </div>
   </div>
 </template>
 
-<style scoped>
-.card-container {
-  position: relative;
-  border-radius: 1rem;
-  overflow: visible;
-}
-
-.card-content {
-  position: relative;
-  z-index: 10;
-}
-
-/* 输入框焦点效果 */
-.input:focus {
-  outline: none;
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-}
-
-/* 错误提示过渡动画 */
-.slide-down-enter-active,
-.slide-down-leave-active {
-  transition: all 0.2s ease-out;
-}
-
-.slide-down-enter-from {
-  opacity: 0;
-  transform: translateY(-8px);
-}
-
-.slide-down-leave-to {
-  opacity: 0;
-  transform: translateY(-8px);
-}
-
-.slide-down-enter-to,
-.slide-down-leave-from {
-  opacity: 1;
-  transform: translateY(0);
-}
-
-/* 加载动画 */
-@keyframes spin {
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-.animate-spin {
-  animation: spin 1s linear infinite;
-}
-</style>

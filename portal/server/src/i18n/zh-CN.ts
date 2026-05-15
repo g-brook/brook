@@ -76,6 +76,8 @@ export default {
         upload: "上传",
         running: "运行中",
         copy: "复制",
+        skip: "跳过",
+        done: "完成",
         Upgrade: "数据库有更新，请点击更新",
     },
 
@@ -120,6 +122,61 @@ export default {
         securityNote: "安全提示",
         securityDescription:
             "请妥善保管您的管理员账户信息，这将是您访问系统的唯一凭证",
+        stepProgress: "步骤 {current} / {total}",
+        steps: {
+            database: {
+                title: "初始化数据库",
+                description: "创建系统基础表与运行数据",
+            },
+            admin: {
+                title: "管理员账号",
+                description: "设置登录用户名与密码",
+            },
+            guide: {
+                title: "完成",
+                description: "完成后进行登录",
+            },
+        },
+        database: {
+            title: "1. 初始化数据库",
+            description: "系统将在提交初始化时自动创建数据库结构、默认配置和必要运行数据。",
+            ready: "准备就绪",
+            initButton: "初始化数据库",
+            initInProgress: "正在初始化数据库...",
+            initialized: "数据库已初始化",
+            initSuccess: "数据库初始化成功",
+            initFailed: "数据库初始化失败",
+            structureTitle: "初始化基础结构",
+            structureDesc: "创建系统需要的基础表与索引。",
+            configTitle: "写入默认配置",
+            configDesc: "准备管理面板的默认运行参数。",
+            adminTitle: "等待管理员绑定",
+            adminDesc: "下一步将设置第一个管理员账户。",
+        },
+        admin: {
+            title: "2. 设置管理员账号与密码",
+            description: "该账号将用于后续登录管理面板。",
+        },
+        guide: {
+            title: "3. 使用指南",
+            description: "初始化完成后，请按照以下顺序完成首次使用配置。",
+            pathLabel: "操作入口",
+            stepLabel: "步骤 {step}",
+            imagePlaceholder: "这里预留操作截图位置",
+            tokenTitle: "生成 Token",
+            tokenDesc: "进入我的设置生成连接 Token。客户端连接时需要使用该 Token 完成认证。",
+            tokenPath: "我的设置 / 当前 Token / 生成",
+            tunnelTitle: "新建隧道",
+            tunnelDesc: "进入隧道管理新增代理配置，填写协议、端口、目标地址等信息。",
+            tunnelPath: "隧道管理 / 隧道配置 / 添加",
+            templateTitle: "下载模板",
+            templateDesc: "创建隧道后下载客户端模板，并根据服务端信息启动客户端连接。",
+            templatePath: "隧道管理 / 模板 / 下载",
+        },
+        success: {
+            title: "初始化成功",
+            description: "系统初始化已完成，正在为你刷新并进入登录流程。",
+        },
     },
 
     // 主界面
@@ -147,6 +204,25 @@ export default {
         selectModule: "选择功能模块",
         selectModuleDesc:
             "从左侧导航栏选择您需要的功能模块，开始管理您的 Brook 服务器",
+    },
+
+    firstLoginGuide: {
+        kicker: "首次登录指引",
+        title: "首次登录指引",
+        stepLabel: "步骤 {step}",
+        imagePlaceholder: "这里预留操作截图",
+        tipTitle: "操作说明",
+        tipDesc: "按右侧步骤完成操作后，可关闭该指引。",
+        step1Title: "生成 Token",
+        step1Desc: "进入我的设置生成连接 Token，客户端首次连接需要使用它完成认证。",
+        step1Action: "我的设置 -> 当前 Token -> 生成",
+        step2Title: "新建隧道",
+        step2Desc: "进入隧道管理新建代理配置，填写协议、端口和目标地址。",
+        step2Action: "隧道管理 -> 隧道配置 -> 添加",
+        step3Title: "下载模板",
+        step3Desc: "创建隧道后下载客户端模板，再根据模板启动客户端。",
+        step3Action: "隧道管理 -> 模板 -> 下载",
+        showImage: "点击图片可放大查看"
     },
 
     // 菜单项
@@ -681,6 +757,8 @@ export default {
         dataExported: "数据导出成功",
         dataImported: "数据导入成功",
         copied: "复制成功",
+        tokenGenerated:"生成Token成功",
+        tokenRevoked:"撤销Token成功",
     },
 
     // 确认对话框
