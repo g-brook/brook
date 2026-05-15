@@ -91,15 +91,15 @@ func (receiver *Service) connectionTunnel(cfg *configs.ClientConfig) error {
 	if rsp.TunnelHost != "" {
 		tunnelServer = rsp.TunnelHost
 	}
-	//tunnels := cfg.Tunnels
-	//if rp. {
-	//
-	//}
+	tunnelPort := cfg.ManagerPort
+	if tunnelPort <= 0 && rsp.TunnelPort > 0 {
+		tunnelPort = rsp.TunnelPort
+	}
 	//Bind unId.
 	clis.ManagerTransport.BindUnId(rsp.UnId)
 	//Update configs.
 	newCfg := configs.ClientConfig{
-		ServerPort: rsp.TunnelPort,
+		ServerPort: tunnelPort,
 		ServerHost: tunnelServer,
 		PingTime:   cfg.PingTime,
 		Tunnels:    cfg.Tunnels,

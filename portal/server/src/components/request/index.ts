@@ -102,8 +102,12 @@ export class Request {
         .post(url, data)
         .then((e) => {
           const data = e.data;
-          const rsp = new DefaultResponse<T>(data);
           const errorCode = data.code || data.errorCode;
+          const rsp = new DefaultResponse<T>({
+            ...data,
+            code: errorCode,
+            message: data.message || data.errorMsg || "",
+          });
         
           // 处理未授权错误
           if (errorCode === "NOT_ATH") {

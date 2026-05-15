@@ -17,9 +17,10 @@
 import {computed, reactive} from 'vue'
 import zhCN from './zh-CN'
 import enUS from './en-US'
+import ZhTW from "@/i18n/zh-TW";
 
 // 支持的语言类型
-export type Locale = 'zh-CN' | 'en-US'
+export type Locale = 'zh-CN' | 'en-US' | 'zh-TW'
 
 // 语言包类型
 export type Messages = typeof zhCN
@@ -27,7 +28,8 @@ export type Messages = typeof zhCN
 // 语言包映射
 const messages: Record<Locale, Messages> = {
   'zh-CN': zhCN,
-  'en-US': enUS
+  'en-US': enUS,
+  'zh-TW': ZhTW,
 }
 
 // 全局状态
@@ -87,6 +89,7 @@ export const getAvailableLocales = (): Locale[] => {
 export const getCurrentLocaleName = () => {
   const localeNames: Record<Locale, string> = {
     'zh-CN': '简体中文',
+    'zh-TW': '繁体中文',
     'en-US': 'English'
   }
   return localeNames[state.locale]

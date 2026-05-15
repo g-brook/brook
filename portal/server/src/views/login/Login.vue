@@ -35,6 +35,9 @@ const handleLogin = () => {
       .then((res) => {
         if (res.code === "OK") {
           localStorage.setItem('token', res.data)
+          if (!localStorage.getItem('brook_first_login_guide_seen')) {
+            localStorage.setItem('brook_first_login_guide_pending', '1')
+          }
           router.replace('/index')
         }
       })

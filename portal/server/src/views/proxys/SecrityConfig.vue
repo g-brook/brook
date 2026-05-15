@@ -518,7 +518,7 @@ const formatTime = (value: string) => {
           <td colspan="8" class="text-center py-20 bg-base-100">
             <div class="flex flex-col items-center justify-center max-w-xs mx-auto">
               <div class="w-20 h-20 bg-base-200 rounded-3xl flex items-center justify-center mb-6 rotate-12 group-hover:rotate-0 transition-transform duration-500">
-                <Icon icon="brook-security" class="text-primary/20" style="font-size: 40px;"/>
+                <Icon icon="brook-Firewall-Off" class="text-primary/20" style="font-size: 40px;"/>
               </div>
               <h3 class="text-lg font-black tracking-tight mb-2 opacity-80">{{ t('menu.security.strategy.noStrategies') }}</h3>
               <p class="text-xs font-medium opacity-40 leading-relaxed mb-8">

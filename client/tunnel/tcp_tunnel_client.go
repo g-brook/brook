@@ -20,6 +20,7 @@ import (
 	"context"
 	"io"
 	"net"
+	"time"
 
 	"github.com/g-brook/brook/client/clis"
 	"github.com/g-brook/brook/common/configs"
@@ -94,7 +95,7 @@ func (t *TcpTunnelClient) initOpen(ch *transport.SChannel) error {
 }
 func (t *TcpTunnelClient) localConnection() (net.Conn, error) {
 	connFunction := func() (net.Conn, error) {
-		dial, err := net.Dial(string(lang.NetworkTcp), t.GetCfg().Destination)
+		dial, err := net.DialTimeout(string(lang.NetworkTcp), t.GetCfg().Destination, 5*time.Second)
 		if err != nil {
 			return nil, err
 		}
