@@ -133,7 +133,7 @@ build_target() {
     # Package
     if [ "$DOCKER_BUILD" = "true" ]; then
         echo "→ Building Docker image..."
-        docker buildx build --build-arg APP_PATH="$OUTPUT_DIR" --platform "$PLATFORM" -t "$APP_NAME:$VERSION-$BUILD_ARCH" -f Dockerfile .
+        docker buildx build --load --build-arg APP_PATH="$OUTPUT_DIR" --platform "$PLATFORM" -t "$APP_NAME:$VERSION-$BUILD_ARCH" -f Dockerfile .
     else
         # Compatible way to delete files
         if command -v find >/dev/null 2>&1; then

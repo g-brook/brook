@@ -119,11 +119,11 @@ build_target() {
 
     BUILD_ARGS=""
     if [ "$BUILD_OS" = "windows" ]; then
-      cp run.bat "$OUTPUT_DIR"
-      BUILD_ARGS="-ldflags=-H=windowsgui"
-      GOOS=$BUILD_OS GOARCH=$BUILD_ARCH go build -o "$OUTPUT_FILE" ./main.go
+          cp run.bat "$OUTPUT_DIR"
+          BUILD_ARGS="-ldflags=-H=windowsgui"
+          GOOS=$BUILD_OS GOARCH=$BUILD_ARCH go build -o "$OUTPUT_FILE" ./main.go
     else
-      GOOS=$BUILD_OS GOARCH=$BUILD_ARCH go build -ldflags="-s -w" -o "$OUTPUT_FILE" ./main.go
+          GOOS=$BUILD_OS GOARCH=$BUILD_ARCH go build -ldflags="-s -w" -o "$OUTPUT_FILE" ./main.go
     fi
 
     # Copy resources
@@ -138,7 +138,7 @@ build_target() {
     # Package
     if [ "$DOCKER_BUILD" = "true" ]; then
         echo "→ Building Docker image..."
-        docker buildx build --build-arg APP_PATH=$OUTPUT_DIR --platform "$PLATFORM" -t "$APP_NAME:$VERSION-$BUILD_ARCH" -f Dockerfile .
+        docker buildx build --build-arg APP_PATH=$OUTPUT_DIR --platform "$PLATFORM" -t "$APP_NAME:$VERSION-$BUILD_ARCH" -f Dockerfile --load .
     else
         find "$OUTPUT_DIR" -name ".DS_Store" -delete
         find "$OUTPUT_DIR" -name "._*" -delete

@@ -42,6 +42,10 @@ type InProcess[T exchange.InBound] func(request T, ch transport.Channel) (any, e
 // It takes a heartbeat request and a transport channel as input
 // and returns a response heartbeat or an error
 func pingProcess(request *exchange.Heartbeat, ch transport.Channel) (any, error) {
+	err := ManagerTunnelServer(request, ch)
+	if err != nil {
+		log.Error("ManagerTunnelServer err:", err)
+	}
 	// Log the received ping message with its value and remote address
 	log.Debug("Receiver Ping message : %s:%v", request.Value, ch.RemoteAddr())
 	// Create a heartbeat response with PONG value

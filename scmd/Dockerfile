@@ -1,5 +1,5 @@
 # ---------- 运行阶段 ----------
-FROM debian:bookworm-slim
+FROM docker.1ms.run/library/debian:bookworm-slim
 
 LABEL stage="runtime" \
       app_version="1.0.0" \
@@ -7,12 +7,16 @@ LABEL stage="runtime" \
 
 WORKDIR /app
 
+ARG APP_NAME=brook-sev
+ARG TARGETARCH
+ENV APP_NAME=$APP_NAME
+LABEL container_name=$APP_NAME
+
+
 ARG APP_PATH
 
 COPY $APP_PATH ./
 
 RUN chmod 755 /app && chmod -R 755 /app/*
-
-EXPOSE 8000
 
 CMD ["./brook-sev","--container=true"]
