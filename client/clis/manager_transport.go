@@ -70,6 +70,10 @@ func (b *managerTransport) Read(r *exchange.Protocol, cct *ClientControl) error 
 	return b.PushMessage(r)
 }
 
+func (b *managerTransport) Reconnect(cct *ClientControl) {
+
+}
+
 // NewManagerTransport This function creates a new managerTransport object and returns it
 func NewManagerTransport(tr *Transport) *managerTransport {
 	// Create a new managerTransport object

@@ -1,4 +1,3 @@
-#!/usr/bin/env bash
 #
 # Copyright ©  sixh sixh@apache.org
 #
@@ -15,19 +14,20 @@
 # limitations under the License.
 #
 
-# build.sh - Compatible with Linux and macOS (including bash 3.2)
+#!/bin/sh
+# build.sh
 
 set -e
 
 # =========================
 # User input
 # =========================
-printf "Enter application name (default: brook-cli): "
-read -r APP_NAME
-APP_NAME=${APP_NAME:-brook-cli}
+printf "Enter application name (default: brook-sev): "
+read APP_NAME
+APP_NAME=${APP_NAME:-brook-sev}
 
 printf "Enter version number (default: 1.0.0): "
-read -r VERSION
+read VERSION
 VERSION=${VERSION:-1.0.0}
 
 echo "Select target OS (multiple choices allowed, e.g. 1,2,5):"
@@ -40,19 +40,20 @@ echo "6) Windows ARM64"
 echo "7) Docker ARM64"
 echo "8) Docker AMD64"
 printf "Choose [1-8, comma separated]: "
-read -r OS_CHOICES
+read OS_CHOICES
 
 printf "Copy resource directories? (y/n, default y): "
-read -r COPY_RES
+read COPY_RES
 COPY_RES=${COPY_RES:-y}
 
-rm -rf ./dist
+printf "Copy database file? (y/n, default y): "
+read COPY_DB
+COPY_DB=${COPY_DB:-y}
 
 # =========================
-# Build target mapping (bash 3.2 compatible)
+# Build target mapping (POSIX compatible)
 # =========================
-# macOS default bash (3.2) does not support associative arrays.
-# Use a case statement to map choices to build params.
+# Use case statement to map choices to build params.
 
 resolve_target() {
     choice="$1"
@@ -68,7 +69,7 @@ resolve_target() {
         5)
             BUILD_OS="windows"; BUILD_ARCH="amd64"; FILE_DESC="Windows-x86_64"; DOCKER_BUILD=""; PLATFORM="" ;;
         6)
-            BUILD_OS="windows"; BUILD_ARCH="arm64"; FILE_DESC="Windows-arm64"; DOCKER_BUILD=""; PLATFORM="" ;;
+            BUILD_OS="windows"; BUILD_ARCH="arm64"; FILE_DESC="Windows-ARM64"; DOCKER_BUILD=""; PLATFORM="" ;;
         7)
             BUILD_OS="linux"; BUILD_ARCH="arm64"; FILE_DESC="Docker-ARM64"; DOCKER_BUILD="true"; PLATFORM="linux/arm64" ;;
         8)
@@ -85,10 +86,7 @@ resolve_target() {
 build_target() {
     i="$1"
     # resolve params for this choice
-    if ! resolve_target "$i"; then
-        echo "Skipping choice $i"
-        return
-    fi
+    resolve_target "$i" || { echo "Skipping choice $i"; return; }
 
     echo ""
     echo "=============================="
@@ -102,30 +100,37 @@ build_target() {
     mkdir -p "$OUTPUT_DIR/logs"
     mkdir -p "$OUTPUT_DIR/fdb"
 
-    cp client.json "$OUTPUT_DIR"
+    cp server.json "$OUTPUT_DIR"
+
+    # Optional DB
+    if [ "$COPY_DB" = "y" ] || [ "$COPY_DB" = "Y" ]; then
+        if [ -f db-emp.db ]; then
+            cp db-emp.db "$OUTPUT_DIR/db.db"
+            echo "Database copied."
+        else
+            echo "Warning: db-emp.db not found."
+        fi
+    fi
 
     # Build Go binary
     echo "→ Building Go executable..."
     OUTPUT_FILE="$OUTPUT_DIR/$APP_NAME"
-    if [ "$BUILD_OS" = "windows" ]; then
-        OUTPUT_FILE="$OUTPUT_FILE.exe"
-    fi
+    [ "$BUILD_OS" = "windows" ] && OUTPUT_FILE="$OUTPUT_FILE.exe"
 
     BUILD_ARGS=""
     if [ "$BUILD_OS" = "windows" ]; then
-        cp run.bat "$OUTPUT_DIR"
-        BUILD_ARGS='-ldflags=-H=windowsgui'
-        GOOS=$BUILD_OS GOARCH=$BUILD_ARCH go build -o "$OUTPUT_FILE" ./main.go
+          cp run.bat "$OUTPUT_DIR"
+          BUILD_ARGS="-ldflags=-H=windowsgui"
+          GOOS=$BUILD_OS GOARCH=$BUILD_ARCH go build -o "$OUTPUT_FILE" ./main.go
     else
-        GOOS=$BUILD_OS GOARCH=$BUILD_ARCH go build -ldflags="-s -w" -o "$OUTPUT_FILE" ./main.go
+          GOOS=$BUILD_OS GOARCH=$BUILD_ARCH go build -ldflags="-s -w" -o "$OUTPUT_FILE" ./main.go
     fi
 
     # Copy resources
     if [ "$COPY_RES" = "y" ] || [ "$COPY_RES" = "Y" ]; then
         for r in config static; do
             if [ -d "$r" ]; then
-                cp -r "$r" "$OUTPUT_DIR/"
-                echo "Copied: $r"
+                cp -r "$r" "$OUTPUT_DIR/" && echo "Copied: $r"
             fi
         done
     fi
@@ -133,14 +138,11 @@ build_target() {
     # Package
     if [ "$DOCKER_BUILD" = "true" ]; then
         echo "→ Building Docker image..."
-        docker buildx build --load --build-arg APP_PATH="$OUTPUT_DIR" --platform "$PLATFORM" -t "$APP_NAME:$VERSION-$BUILD_ARCH" -f Dockerfile .
+        docker buildx build --build-arg APP_PATH=$OUTPUT_DIR --platform "$PLATFORM" -t "$APP_NAME:$VERSION-$BUILD_ARCH" -f Dockerfile --load .
     else
-        # Compatible way to delete files
-        if command -v find >/dev/null 2>&1; then
-            find "$OUTPUT_DIR" -name ".DS_Store" -type f -delete 2>/dev/null || true
-            find "$OUTPUT_DIR" -name "._*" -type f -delete 2>/dev/null || true
-        fi
-        tar -czf "$TAR_NAME" -C "$OUTPUT_DIR" .
+        find "$OUTPUT_DIR" -name ".DS_Store" -delete
+        find "$OUTPUT_DIR" -name "._*" -delete
+        tar -czf  "$TAR_NAME" -C "$OUTPUT_DIR" .
         echo "→ Packaged: $TAR_NAME"
     fi
 }
@@ -148,15 +150,13 @@ build_target() {
 # =========================
 # Build multiple targets
 # =========================
-# Split comma-separated choices (bash 3.2 compatible)
 OLD_IFS="$IFS"
 IFS=','
 set -- $OS_CHOICES
 IFS="$OLD_IFS"
 
 for choice in "$@"; do
-    # Trim whitespace
-    choice=$(echo "$choice" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')
+    choice=$(echo "$choice" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
     build_target "$choice"
 done
 

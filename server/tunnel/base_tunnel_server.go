@@ -65,6 +65,7 @@ type BaseTunnelServer struct {
 	trafficMetrics  *metrics.TunnelTraffic
 	runtime         time.Time
 	UpdateConfigFun UpdateConfigFunction
+	channelLock     sync.Mutex
 }
 
 func (b *BaseTunnelServer) Id() string {
@@ -102,8 +103,18 @@ func (b *BaseTunnelServer) AddEvent(etype EventType,
 }
 
 func (b *BaseTunnelServer) PutManager(ch transport.Channel) {
+	log.Debug("PutManager,%s:put manager: %s", b.Cfg.Id, ch.RemoteAddr().String())
+	b.channelLock.Lock()
+	defer b.channelLock.Unlock()
+	contains := b.ManagerChannel.Contains(ch)
+	if contains {
+		return
+	}
 	b.ManagerChannel.Add(ch)
 	ch.OnClose(func(channel transport.Channel) {
+		log.Info("PutManager method, close manager: %s", channel.RemoteAddr().String())
+		b.channelLock.Lock()
+		defer b.channelLock.Unlock()
 		b.ManagerChannel.Remove(channel)
 	})
 }
@@ -238,15 +249,14 @@ func (b *BaseTunnelServer) GetManager() transport.Channel {
 		return nil
 	}
 	activeChannels := make([]transport.Channel, 0)
-	b.ManagerChannel.ForEach(func(ch transport.Channel) bool {
-		if !ch.IsClose() {
-			activeChannels = append(activeChannels, ch)
+	b.ManagerChannel.ForEach(func(value transport.Channel) bool {
+		if !value.IsClose() {
+			activeChannels = append(activeChannels, value)
 		} else {
-			b.ManagerChannel.Remove(ch)
+			b.ManagerChannel.Remove(value)
 		}
 		return true
 	})
-
 	aLen := len(activeChannels)
 	if aLen == 0 {
 		log.Error("2:Tunnel Manager channel is empty. No available manager channel.")

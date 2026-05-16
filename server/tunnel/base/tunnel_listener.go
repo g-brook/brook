@@ -37,6 +37,7 @@ var servers *hash.SyncMap[string, tunnel.TunnelServer]
 func init() {
 	servers = hash.NewSyncMap[string, tunnel.TunnelServer]()
 	remote.OpenTunnelServerFun = OpenTunnelServer
+	remote.ManagerTunnelServerFun = ManagerTunnelServe
 }
 
 // OpenTunnelServer open tcp tunnel server
@@ -65,6 +66,20 @@ func OpenTunnelServer(request *exchange.OpenTunnelReq, manager Channel) (*remote
 		t.PutManager(manager)
 	}
 	return remote.NewTunnelCfg(baseServer.Port(), baseServer.Cfg.Destination), err
+}
+
+func ManagerTunnelServe(proxyId string, manager Channel) error {
+	cfgNode := TunnelCfm.ConfigApi.GetConfig(proxyId)
+	if cfgNode == nil {
+		return fmt.Errorf("not found proxy id %v", proxyId)
+	}
+	cfgNode.openLock.Lock()
+	defer cfgNode.openLock.Unlock()
+	t, b := servers.Load(cfgNode.Config.Id)
+	if b {
+		t.PutManager(manager)
+	}
+	return nil
 }
 
 func running(config *configs.ServerTunnelConfig) (*tunnel.BaseTunnelServer, error) {

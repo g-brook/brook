@@ -40,10 +40,27 @@ func NewTunnelCfg(remotePort int, destination string) *TunnelCfg {
 
 var OpenTunnelServerFun func(req *exchange.OpenTunnelReq, ch transport.Channel) (*TunnelCfg, error)
 
+var ManagerTunnelServerFun func(proxyId string, ch transport.Channel) error
+
 func OpenTunnelServer(req *exchange.OpenTunnelReq, ch transport.Channel) (*TunnelCfg, error) {
 	if OpenTunnelServerFun == nil {
 		log.Error("not found open tunnel function")
 		return nil, fmt.Errorf("not found open tunnel function")
 	}
 	return OpenTunnelServerFun(req, ch)
+}
+
+func ManagerTunnelServer(req *exchange.Heartbeat, ch transport.Channel) error {
+	if ManagerTunnelServerFun == nil {
+		log.Error("not found manager tunnel function")
+		return fmt.Errorf("not found manager tunnel function")
+	}
+	proxyIds := req.ProxyId
+	if proxyIds == nil || len(proxyIds) == 0 {
+		log.Error("proxy id is empty")
+	}
+	for _, id := range proxyIds {
+		_ = ManagerTunnelServerFun(id, ch)
+	}
+	return nil
 }

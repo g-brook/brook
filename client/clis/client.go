@@ -66,42 +66,12 @@ type ClientControl struct {
 }
 
 type ClientHandler interface {
-	//
-	// Close
-	//  @Description: Shutdown.
-	//
 	Close(cct *ClientControl)
-
-	//
-	// Connection
-	//  @Description: Connection.
-	//  @param cct
-	//
 	Connection(cct *ClientControl)
-
-	//
-	// Read
-	//  @Description: bytes cli
-	//  @param bytes
-	//  @param cli
-	//  @return int
-	//  @return error
-	//
 	Read(buffer *exchange.Protocol, cct *ClientControl) error
-
-	//
-	// Error
-	//  @Description: ERROR
-	//  @param err
-	//
 	Error(err error, cct *ClientControl)
-
-	//
-	// Timeout
-	//  @Description:
-	//  @param cct
-	//
 	Timeout(cct *ClientControl)
+	Reconnect(cct *ClientControl)
 }
 
 type BaseClientHandler struct {
@@ -110,6 +80,7 @@ type BaseClientHandler struct {
 func (b BaseClientHandler) Close(*ClientControl) {
 }
 
+// Connection successful.
 func (b BaseClientHandler) Connection(*ClientControl) {}
 
 func (b BaseClientHandler) Read(*exchange.Protocol, *ClientControl) error {
@@ -121,6 +92,11 @@ func (b BaseClientHandler) Error(error, *ClientControl) {
 }
 
 func (b BaseClientHandler) Timeout(*ClientControl) {
+
+}
+
+// Reconnect successful.
+func (b BaseClientHandler) Reconnect(v *ClientControl) {
 
 }
 
@@ -200,7 +176,15 @@ func (c *Client) AddHandler(h ...ClientHandler) {
 // Reconnection is
 func (c *Client) Reconnection() error {
 	if !c.IsConnection() {
-		return c.doConnection()
+		err := c.doConnection()
+		if err != nil {
+			return err
+		}
+		if c.IsConnection() {
+			c.callHandler(func(h ClientHandler) {
+				h.Reconnect(c.cct)
+			})
+		}
 	}
 	return nil
 }
@@ -410,47 +394,50 @@ func (c *Client) handleLoop() {
 			log.Debug("Client state change,%d:%s", c.port, c.state.String())
 			if c.state == Active {
 				c.revReadNext()
-				for _, t := range c.handlers {
-					// Notify all handlers of connection establishment
-					t.Connection(c.cct)
-				}
+				c.callHandler(func(h ClientHandler) {
+					h.Connection(c.cct)
+				})
 			}
 			if c.state == Closed {
 				_ = _close()
 				// Close connection and notify handlers of closure
-				for _, t := range c.handlers {
-					t.Close(c.cct)
-				}
+				c.callHandler(func(h ClientHandler) {
+					h.Close(c.cct)
+				})
 			}
 		case err := <-c.cct.errors:
 			// Handle errors
 			//sendError.
-			for _, t := range c.handlers {
-				// Notify all handlers of errors
-				t.Error(err, c.cct)
-			}
+			c.callHandler(func(h ClientHandler) {
+				h.Error(err, c.cct)
+			})
 		case b := <-c.cct.read:
 			// Handle incoming data
-			for _, t := range c.handlers {
-				// Process received data through all handlers
-				err := t.Read(b, c.cct)
+			c.callHandler(func(h ClientHandler) {
+				err := h.Read(b, c.cct)
 				if err != nil {
 					_ = c.error("Read error", err)
 				}
-			}
+			})
 		case bytes := <-c.cct.write:
 			// Handle outgoing data
 			_, _ = c.conn.Write(bytes)
 			// Write data to the connection
 		case <-c.cct.timeout:
 			// Handle timeout events
-			for _, t := range c.handlers {
-				// Notify all handlers of timeout
-				t.Timeout(c.cct)
-			}
+			c.callHandler(func(h ClientHandler) {
+				h.Timeout(c.cct)
+			})
 		}
 	}
 }
+
+func (c *Client) callHandler(fun func(h ClientHandler)) {
+	for _, t := range c.handlers {
+		fun(t)
+	}
+}
+
 func (c *Client) revReadNext() {
 	select {
 	case c.cct.revRead <- struct{}{}:
