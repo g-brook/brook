@@ -61,7 +61,11 @@ func (htl *Resources) createConnection() error {
 }
 
 func (htl *Resources) get() (trp.Channel, error) {
-	return htl.pool.Get()
+	sch, err := htl.pool.Get()
+	if sch != nil {
+		log.Debug("get channel is : %s", sch.RemoteAddr().String())
+	}
+	return sch, err
 }
 
 func (htl *Resources) put(ch trp.Channel) error {

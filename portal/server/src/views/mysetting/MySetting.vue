@@ -22,6 +22,7 @@ import Message from '@/components/message'
 import useI18n from '@/components/lang/useI18n'
 import TlsSetting from "@/views/mysetting/TlsSetting.vue";
 import Modal from "@/components/modal";
+import copy from 'copy-to-clipboard'
 
 // Token 相关状态
 const showToken = ref(false)
@@ -91,10 +92,13 @@ const tolgenToken = () => {
   showToken.value = !showToken.value
 }
 
-const copyToken = () => {
-  navigator.clipboard.writeText(tokenInfo.value.token)
-      .then(() => Message.success(t('success.copied')))
-      .catch(() => Message.error(t('errors.copyFailed')))
+const copyToken = async () => {
+  const ok = copy(tokenInfo.value.token)
+  if (ok) {
+    Message.success(t('success.copied'))
+  } else {
+    Message.error(t('errors.copyFailed'))
+  }
 }
 
 onMounted(() => {

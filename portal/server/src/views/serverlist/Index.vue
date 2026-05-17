@@ -73,11 +73,11 @@ const { t } = useI18n()
               </div>
               {{ server.name }}
               <div class="badge badge-sm "
-                   :class="server.proxyId==selectProxyId ?'badge-dash':'badge-primary badge-outline'">{{ server.tag }}
+                   :class="server.proxyId==selectProxyId ?'badge-dash':'badge-primary badge-outline'" v-if="server.tag">{{ server.tag }}
               </div>
             </div>
-            <div class="flex flex-row justify-between pt-2">
-              <div class="font-serif border-1 border-dashed rounded-lg px-2 py-2">
+            <div class="flex flex-row justify-between pt-2 items-center">
+              <div class="font-serif border-1 border-dashed rounded-lg px-1 py-1">
                 {{ dayjs(server.runtime).format('YYYY-MM-DD HH:mm:ss') }}
               </div>
               <div class="flex flex-col items-center">

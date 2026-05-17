@@ -28,6 +28,7 @@ import Message from '@/components/message';
 import DownloadConfig from "./DownloadConfig.vue";
 import message from "@/components/message";
 import type { IpRule, IpStrategy } from '@/types/ip';
+import copy from 'copy-to-clipboard'
 
 // 定义配置项的类型
 interface ConfigItem {
@@ -259,11 +260,11 @@ const handleClickDownload = () => {
 }
 
 const handleCopyProxyId = async (proxyId: string) => {
-  try {
-    await navigator.clipboard.writeText(proxyId);
-    Message.success('Proxy ID copied');
-  } catch (_error) {
-    Message.error('Copy failed');
+  const ok = copy(proxyId)
+  if (ok) {
+    Message.success(t('success.copied'))
+  } else {
+    Message.error(t('errors.copyFailed'))
   }
 }
 </script>
