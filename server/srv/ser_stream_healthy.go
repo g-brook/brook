@@ -44,7 +44,7 @@ func _check(_, v any) {
 	if v != nil {
 		schannel := v.(*transport.SChannel)
 		if schannel.IsClose() {
-			log.Debug("schannel healthy check: false, close")
+			log.Debug("schannel healthy check: false, close:%s:healthy:%s", schannel.IsClose(), schannel.IsHealthy())
 			_ = schannel.Close()
 		} else {
 			log.Debug("schannel healthy check: true")

@@ -19,6 +19,7 @@ package http
 import (
 	"io"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/g-brook/brook/common/exchange"
@@ -40,11 +41,17 @@ type WsFuture struct {
 	buffer  *ringbuffer.RingBuffer
 	reqId   int64
 	tracker *Tracker
-	isClose bool
+	isClose atomic.Bool
+	bufLock sync.Mutex
 }
 
 func (f *WsFuture) Read(bytes []byte) (int, error) {
-	if f.isClose {
+	if f.isClose.Load() {
+		return 0, io.EOF
+	}
+	f.bufLock.Lock()
+	defer f.bufLock.Unlock()
+	if f.isClose.Load() {
 		return 0, io.EOF
 	}
 	return f.buffer.Read(bytes)
@@ -55,7 +62,7 @@ func (f *WsFuture) ReqId() int64 {
 }
 
 func (f *WsFuture) Close() {
-	f.isClose = true
+	f.isClose.Store(true)
 }
 
 func newWsFuture(tracker *Tracker, reqId int64) *WsFuture {
@@ -70,6 +77,14 @@ func newWsFuture(tracker *Tracker, reqId int64) *WsFuture {
 }
 
 func (f *WsFuture) Done(data []byte) {
+	if f.isClose.Load() {
+		return
+	}
+	f.bufLock.Lock()
+	defer f.bufLock.Unlock()
+	if f.isClose.Load() {
+		return
+	}
 	_, _ = f.buffer.Write(data)
 }
 
@@ -134,12 +149,15 @@ func (f *ResponseFuture) Wait() ([]byte, error) {
 
 // WaitTimeout waits with timeout
 func (f *ResponseFuture) WaitTimeout(d time.Duration) ([]byte, error) {
+	timer := time.NewTimer(d)
+	defer timer.Stop()
+
 	select {
 	case <-f.done:
 		f.mu.Lock()
 		defer f.mu.Unlock()
 		return f.data, f.err
-	case <-time.After(d):
+	case <-timer.C:
 		return nil, timeoutErr
 	}
 }
@@ -197,10 +215,23 @@ func (receiver *Tracker) readRev() {
 		}
 		err := readResponse()
 		if err == io.EOF {
+			log.Error("readResponse eof: %v", err)
+			receiver.closeAll()
+			return
+		} else if err != nil {
 			log.Error("readResponse error: %v", err)
+			receiver.closeAll()
 			return
 		}
 	}
+}
+
+func (receiver *Tracker) closeAll() {
+	receiver.trackers.Range(func(key int64, future Future) bool {
+		future.Close()
+		receiver.trackers.Delete(key)
+		return true
+	})
 }
 
 func (receiver *Tracker) send(pt *exchange.TunnelProtocol) {

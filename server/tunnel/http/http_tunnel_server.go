@@ -77,15 +77,19 @@ func NewHttpTunnelServer(server *tunnel.BaseTunnelServer) (*TunnelHttpServer, er
 	server.DoStart = tunnelServer.startAfter
 	server.UpdateConfigFun = func(cfg *configs.ServerTunnelConfig) {
 		log.Info("http tunnel server config updated")
-		formatCfg(cfg, tunnelServer)
+		if err := formatCfg(cfg, tunnelServer); err != nil {
+			log.Error("http tunnel server config update failed: %v", err)
+		}
 	}
 	server.AddEvent(tunnel.Unregister, tunnelServer.unRegisterConn)
-	server.UpdateConfig(server.Cfg)
+	if err := formatCfg(server.Cfg, tunnelServer); err != nil {
+		return nil, err
+	}
 	return tunnelServer, nil
 }
 
 // addRoute is a function that adds route information to the HttpTunnelServer. It
-func formatCfg(cfg *configs.ServerTunnelConfig, this *TunnelHttpServer) {
+func formatCfg(cfg *configs.ServerTunnelConfig, this *TunnelHttpServer) error {
 	RouteClean()
 	for _, httpJson := range cfg.Http {
 		AddRouteInfo(httpJson.Id, httpJson.Domain, httpJson.Paths, this.getProxyConnection)
@@ -93,12 +97,16 @@ func formatCfg(cfg *configs.ServerTunnelConfig, this *TunnelHttpServer) {
 			this.proxyToConn.Store(httpJson.Id, hash.NewSyncMap[string, *Tracker]())
 		}
 	}
+	this.isHttps = false
+	this.tlsConfig = nil
 	if cfg.Type == lang.Https {
-		if loadTls(cfg, this) != nil {
-			panic("loadTls error.")
+		if err := loadTls(cfg, this); err != nil {
+			log.Error("loadTls error. %v", err)
+			return err
 		}
 		this.isHttps = true
 	}
+	return nil
 }
 
 func loadTls(cfg *configs.ServerTunnelConfig, this *TunnelHttpServer) error {
@@ -113,7 +121,11 @@ func loadTls(cfg *configs.ServerTunnelConfig, this *TunnelHttpServer) error {
 			log.Error("certFile or KeyFile is not exist")
 			return errors.New("certFile or KeyFile is not exist")
 		}
-		pair, _ := tls.LoadX509KeyPair(cf, kf)
+		pair, err := tls.LoadX509KeyPair(cf, kf)
+		if err != nil {
+			log.Error("load x509 key pair error: %v", err)
+			return err
+		}
 		this.tlsConfig = &tls.Config{
 			Certificates: []tls.Certificate{pair},
 		}
@@ -298,10 +310,15 @@ func (htl *TunnelHttpServer) startAfter() error {
 // getRoute is a method of HttpTunnelServer, which is used to get the route information based on the request path.
 func (htl *TunnelHttpServer) getRoute(req *http.Request) (*RouteInfo, error) {
 	host := req.Host
-	hosts := strings.Split(host, ":")
-	info := GetRouteInfo(hosts[0], req.URL.Path)
+	hostOnly := host
+	if parsedHost, _, err := net.SplitHostPort(host); err == nil {
+		hostOnly = parsedHost
+	} else if strings.HasPrefix(host, "[") && strings.Contains(host, "]") {
+		hostOnly = strings.TrimPrefix(strings.Split(host, "]")[0], "[")
+	}
+	info := GetRouteInfo(hostOnly, req.URL.Path)
 	if info == nil {
-		return nil, errors.New("route info not found:" + hosts[0] + ":" + req.URL.Path)
+		return nil, errors.New("route info not found:" + hostOnly + ":" + req.URL.Path)
 	}
 	return info, nil
 }

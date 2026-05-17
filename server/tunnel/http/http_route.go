@@ -19,9 +19,11 @@ package http
 import (
 	"net"
 	"net/http"
+	"strings"
 	"sync"
 
 	"github.com/g-brook/brook/common/httpx"
+	"github.com/g-brook/brook/common/log"
 )
 
 var routes []*RouteInfo
@@ -42,6 +44,8 @@ type RouteInfo struct {
 
 	domain string
 
+	paths []string
+
 	getProxyConnection ProxyConnectionFunction
 }
 
@@ -53,6 +57,7 @@ func AddRouteInfo(httpId string, domain string, paths []string, fun ProxyConnect
 		httpId:             httpId,
 		getProxyConnection: fun,
 		domain:             domain,
+		paths:              append([]string(nil), paths...),
 	}
 	info.matcher = httpx.NewPathMatcher(info)
 	for _, path := range paths {
@@ -71,17 +76,99 @@ func RouteClean() {
 func GetRouteInfo(domain string, path string) *RouteInfo {
 	lock.RLock()
 	defer lock.RUnlock()
-	var infos []*RouteInfo
+	var selected *RouteInfo
+	bestScore := -1
 	for _, info := range routes {
 		if !httpx.MatchDomain(info.domain, domain) {
 			continue
 		}
 		if info.matcher.Match(path).Matched {
-			infos = append(infos, info)
+			matchScore := routeScore(info, domain, path)
+			if matchScore > bestScore {
+				bestScore = matchScore
+				selected = info
+			}
 		}
 	}
-	if infos != nil {
-		return infos[0]
+	if selected == nil {
+		log.Warn("No route info for domain %s", domain)
 	}
-	return nil
+	return selected
+}
+
+func routeScore(info *RouteInfo, domain string, path string) int {
+	score := 0
+	if info.domain == domain {
+		score += 10000
+	} else {
+		score += len(info.domain) * 100
+	}
+
+	bestPathScore := 0
+	for _, pattern := range info.paths {
+		if !patternMatch(pattern, path) {
+			continue
+		}
+		pathScore := patternSpecificity(pattern)
+		if pathScore > bestPathScore {
+			bestPathScore = pathScore
+		}
+	}
+	return score + bestPathScore
+}
+
+func patternMatch(pattern string, path string) bool {
+	patternParts := splitRoutePattern(pattern)
+	pathParts := splitRoutePattern(path)
+	return matchParts(patternParts, pathParts)
+}
+
+func matchParts(patternParts []string, pathParts []string) bool {
+	if len(patternParts) == 0 {
+		return len(pathParts) == 0
+	}
+	for i := 0; i < len(patternParts); i++ {
+		if i >= len(pathParts) {
+			return false
+		}
+		segment := patternParts[i]
+		switch {
+		case segment == "":
+			continue
+		case segment[0] == '*':
+			return true
+		case segment[0] == ':':
+			continue
+		default:
+			if segment != pathParts[i] {
+				return false
+			}
+		}
+	}
+	return len(pathParts) == len(patternParts)
+}
+
+func patternSpecificity(pattern string) int {
+	segments := splitRoutePattern(pattern)
+	score := 0
+	for _, segment := range segments {
+		switch {
+		case segment == "":
+		case segment[0] == '*':
+			score += 1
+		case segment[0] == ':':
+			score += 10
+		default:
+			score += 100 + len(segment)
+		}
+	}
+	return score + len(segments)
+}
+
+func splitRoutePattern(path string) []string {
+	path = strings.Trim(path, "/")
+	if path == "" {
+		return []string{}
+	}
+	return strings.Split(path, "/")
 }

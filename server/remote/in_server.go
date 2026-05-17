@@ -20,7 +20,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"os"
 
 	"github.com/g-brook/brook/common/configs"
 	"github.com/g-brook/brook/common/exchange"
@@ -81,6 +80,16 @@ func (t *InServer) Reader(ch transport.Channel, traverse srv.TraverseBy) error {
 	return nil
 }
 
+func (t *InServer) Open(ch transport.Channel, traverse srv.TraverseBy) error {
+	if c, ok := ch.(*srv.GChannel); ok {
+		addHealthyCheckChannel(c)
+	}
+	if traverse != nil {
+		traverse()
+	}
+	return nil
+}
+
 func (t *InServer) isTunnelConn(conn *srv.GChannel) bool {
 	attr, b := conn.GetContext().GetAttr(isTunnelConnKey)
 	if b {
@@ -115,6 +124,11 @@ func (t *InServer) Shutdown() {
 func inProcess(p *exchange.Protocol, conn transport.Channel) {
 	// Get the command from the protocol
 	cmd := p.Cmd
+	defer func() {
+		if rec := recover(); rec != nil {
+			log.Error("inProcess panic for cmd %v: %v", cmd, rec)
+		}
+	}()
 	// Check if the command is known
 	entry, ok := handlers[cmd]
 	if !ok {
@@ -194,7 +208,7 @@ func (t *InServer) onStartServer(cf *configs.ServerConfig) {
 	err := t.server.Start()
 	if err != nil {
 		log.Error(err.Error())
-		os.Exit(1)
+		return
 	}
 }
 
@@ -210,7 +224,7 @@ func (t *InServer) onStartTunnelServer(cf *configs.ServerConfig) {
 	err := t.tunnelServer.Start()
 	if err != nil {
 		log.Error(err.Error())
-		os.Exit(1)
+		return
 	}
 }
 

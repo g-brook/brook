@@ -196,7 +196,7 @@ func (c *SChannel) Ctx() context.Context {
 func (c *SChannel) IsHealthy() bool {
 	now := time.Now()
 	sub := now.Sub(c.lastTime)
-	return sub <= 500*time.Second
+	return sub <= 100*time.Second
 }
 
 func (c *SChannel) LastTime() time.Time {

@@ -55,7 +55,7 @@ type GChannel struct {
 
 func (c *GChannel) SendTo(by []byte, addr net.Addr) (int, error) {
 	if c.protocol != lang.NetworkUdp {
-		return 0, nil
+		return 0, errors.New("sendto only supports udp")
 	}
 	return c.conn.SendTo(by, addr)
 }
@@ -101,10 +101,6 @@ func (c *GChannel) Read(out []byte) (int, error) {
 	//ErrShortBuffer
 	n, err := c.conn.Read(out)
 	if errors.Is(err, io.ErrShortBuffer) {
-		//try read.
-		if len(out) <= 4 {
-			return 0, nil
-		}
 		return 0, err
 	}
 	return n, err
@@ -195,4 +191,11 @@ func (c *GChannel) GetId() string {
 
 func (c *GChannel) Done() <-chan struct{} {
 	return c.bgCtx.Done()
+}
+
+func (c *GChannel) IsHealthy() bool {
+	now := time.Now()
+	lastTime := c.LastTime()
+	sub := now.Sub(lastTime)
+	return sub <= 100*time.Second
 }

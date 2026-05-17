@@ -64,6 +64,7 @@ type Conn struct {
 	dataCh      chan struct{}
 	isWebSocket bool
 	timeStop    *time.Timer
+	timeMu      sync.Mutex
 	closeOnce   sync.Once
 }
 
@@ -123,6 +124,11 @@ func isHttpRequest(data []byte) bool {
 // OnData handles incoming data for the HTTP connection
 // It writes the data to an internal buffer and signals that new data is available
 func (h *Conn) OnData(b []byte) {
+	select {
+	case <-h.closed:
+		return
+	default:
+	}
 	n, err := h.buffer.Write(b)
 	if err != nil {
 		return
@@ -132,6 +138,8 @@ func (h *Conn) OnData(b []byte) {
 	}
 	select {
 	case h.dataCh <- struct{}{}:
+	case <-h.closed:
+		return
 	default:
 	}
 }
@@ -142,35 +150,58 @@ func (h *Conn) Read(b []byte) (n int, err error) {
 	for {
 		if !h.buffer.IsEmpty() {
 			read, _ := h.buffer.Read(b)
+			payload := b[:read]
 			if h.isWebSocket {
+				h.resetTimer()
 				return read, nil
 			}
 			if h.https && !h.handshake {
-				if !isTLSHandshake(b[:read]) {
+				if !isTLSHandshake(payload) {
 					return 0, PHttpsErr
 				}
 				h.handshake = true
-			} else if !h.https && !isHttpRequest(b) {
+			} else if !h.https && !h.handshake {
+				if !isHttpRequest(payload) {
+					return 0, PHttpErr
+				}
 				// Validate for HTTP protocol if not HTTPS
-				return 0, PHttpErr
+				h.handshake = true
 			}
-			if !h.timeStop.Stop() {
-				<-h.timeStop.C
+			if !h.stopTimer() {
+				select {
+				case <-h.timeStop.C:
+				default:
+				}
 			}
-			h.timeStop.Reset(timeout)
+			h.resetTimer()
 			return read, nil
 		}
 		select {
 		case <-h.dataCh:
 		case <-h.timeStop.C:
-			if h.isWebSocket {
-				return 0, nil
-			}
 			return 0, PTimeout
 		case <-h.closed:
 			return 0, io.EOF
 		}
 	}
+}
+
+func (h *Conn) resetTimer() {
+	h.timeMu.Lock()
+	defer h.timeMu.Unlock()
+	if h.timeStop == nil {
+		return
+	}
+	h.timeStop.Reset(timeout)
+
+}
+func (h *Conn) stopTimer() bool {
+	h.timeMu.Lock()
+	defer h.timeMu.Unlock()
+	if h.timeStop == nil {
+		return false
+	}
+	return h.timeStop.Stop()
 }
 
 func (h *Conn) Write(b []byte) (n int, err error) {
@@ -187,7 +218,7 @@ func (h *Conn) Close() error {
 		default:
 			close(h.closed)
 		}
-		h.timeStop.Stop()
+		h.stopTimer()
 		_ = h.ch.Close()
 	})
 	return nil

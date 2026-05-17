@@ -36,13 +36,14 @@ export class Request {
     headers: { "Content-Type": "application/json;charset=UTF-8" },
   };
   constructor(config: AxiosRequestConfig) {
-    this.instance = axios.create(Object.assign(this.baseConfig, config));
+    this.instance = axios.create(Object.assign({}, this.baseConfig, config));
     this.instance.interceptors.request.use(
       (config) => {
           NProgress.start();
+        config.headers = config.headers || {};
         const token = localStorage.getItem("token");
         if (token) {
-          config.headers["Authorization"] = `${token}`;
+          config.headers["Authorization"] = token;
         }
         // 添加时间戳防止缓存
         const timestamp = Date.now();
@@ -54,14 +55,7 @@ export class Request {
           };
         } else {
           // POST 等其他请求添加到 headers
-          config.headers["X-Timestamp"] = timestamp.toString();
-          // 也可以添加到请求体中（如果需要）
-          if (config.data && typeof config.data === 'object') {
-            config.data = {
-              ...config.data,
-              _timestamp: timestamp
-            };
-          }
+          config.headers["X-Timestamp"] = String(timestamp);
         }
         
         return config;
@@ -113,8 +107,9 @@ export class Request {
           if (errorCode === "NOT_ATH") {
             // 清除本地存储的 token
             localStorage.removeItem("token");
-            // 跳转到登录页面
-            window.location.href = "/";
+            if (window.location.pathname !== "/login") {
+              window.location.replace("/login");
+            }
             return;
           }
           
@@ -128,7 +123,7 @@ export class Request {
             new DefaultResponse<T>({
               code: "local_error",
               message: "",
-              data: [] as T,
+              data: null as T,
               success() {
                 return false;
               },

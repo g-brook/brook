@@ -37,8 +37,9 @@ const {isDark, toggleTheme} = getGlobalTheme();
 const loadBaseInfo = async () => {
   try {
     const res = await baseInfo.getBaseInfo();
-    version.value = res.data.version;
-    isRunning.value = res.data.isRunning;
+    const data = res?.data || {};
+    version.value = data.version || '';
+    isRunning.value = Boolean(data.isRunning);
   } catch (err) {
     console.error(err);
     loadingError.value = true;

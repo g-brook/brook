@@ -25,7 +25,10 @@ const routes = [
   },
     {
         path: "/",
-        redirect: "/index",
+        redirect: () => {
+          const token = localStorage.getItem("token");
+          return token ? "/index" : "/login";
+        },
     },
   {
     path: "/login",
@@ -43,7 +46,7 @@ const router = createRouter({
   routes,
 });
 
-router.beforeEach((to, from, next) => {
+router.beforeEach((to, _from, next) => {
   if (to.meta.requiresAuth) {
     const token = localStorage.getItem("token");
     if (!token) {

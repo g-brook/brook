@@ -180,7 +180,7 @@ func (sever *Server) OnTraffic(c gnet.Conn) gnet.Action {
 	}
 	defer sever.removeIfConnection(conn)
 	conn.GetContext().LastActive()
-	sever.next(func(s ServerHandler, newCh trp.Channel) (bool, error) {
+	_ = sever.next(func(s ServerHandler, newCh trp.Channel) (bool, error) {
 		b := true
 		err := s.Reader(newCh, func() {
 			b = false
