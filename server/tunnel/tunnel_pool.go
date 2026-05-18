@@ -54,33 +54,42 @@ func (r *TunnelPool) Get() (sch transport.Channel, err error) {
 		}
 	}()
 	var ok bool
-	select {
-	case sch, ok = <-r.channels:
-		if ok {
+	for {
+		select {
+		case sch, ok = <-r.channels:
+			if !ok {
+				return nil, fmt.Errorf("tunnel pool closed")
+			}
 			if r.checkHealthFunc != nil && !r.checkHealthFunc(sch) {
 				_ = sch.Close()
-			} else {
-				return
+				continue
 			}
+			return sch, nil
+		default:
 		}
-	default:
 
-	}
-	err = r.factory()
-	if err != nil {
-		log.Error("tunnel pool get error: %v", err)
-		return nil, err
-	}
-	select {
-	case sch, ok = <-r.channels:
-		if !ok {
-			return nil, fmt.Errorf("tunnel pool get error: %v", err)
+		err = r.factory()
+		if err != nil {
+			log.Error("tunnel pool get error: %v", err)
+			return nil, err
 		}
-	case <-time.After(10 * time.Second):
-		log.Debug("get user tunnel timeout, 10s")
-		return nil, fmt.Errorf("tunnel pool get timeout")
+
+		select {
+		case sch, ok = <-r.channels:
+			if !ok {
+				return nil, fmt.Errorf("tunnel pool closed")
+			}
+			if r.checkHealthFunc != nil && !r.checkHealthFunc(sch) {
+				_ = sch.Close()
+				continue
+			}
+			log.Debug("tunnel pool get success")
+			return sch, nil
+		case <-time.After(10 * time.Second):
+			log.Debug("get user tunnel timeout, 10s")
+			return nil, fmt.Errorf("tunnel pool get timeout")
+		}
 	}
-	return
 }
 
 // Put This function takes a pointer to a transport.SChannel and puts it into a channel
