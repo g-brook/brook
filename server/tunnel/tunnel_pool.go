@@ -49,45 +49,47 @@ var NewTunnelPool = func(factory GetFunction, size int) *TunnelPool {
 
 func (r *TunnelPool) Get() (sch transport.Channel, err error) {
 	defer func() {
-		if rec := recover(); rec != nil {
-			log.Error("tunnel pool get panic: %v", rec)
-			sch = nil
-			err = fmt.Errorf("tunnel pool get panic: %v", rec)
+		if err := recover(); err != nil {
+			log.Error("tunnel pool get panic", err)
 		}
 	}()
 	var ok bool
-	select {
-	case sch, ok = <-r.channels:
-		if ok {
+	for {
+		select {
+		case sch, ok = <-r.channels:
+			if !ok {
+				return nil, fmt.Errorf("tunnel pool closed")
+			}
 			if r.checkHealthFunc != nil && !r.checkHealthFunc(sch) {
 				_ = sch.Close()
-				sch = nil
-			} else {
-				return
+				continue
 			}
+			return sch, nil
+		default:
 		}
-	default:
 
-	}
-	err = r.factory()
-	if err != nil {
-		log.Error("tunnel pool get error: %v", err)
-		return nil, err
-	}
-	select {
-	case sch, ok = <-r.channels:
-		if !ok {
-			return nil, fmt.Errorf("tunnel pool get error: channel closed")
+		err = r.factory()
+		if err != nil {
+			log.Error("tunnel pool get error: %v", err)
+			return nil, err
 		}
-		if r.checkHealthFunc != nil && !r.checkHealthFunc(sch) {
-			_ = sch.Close()
-			return nil, fmt.Errorf("tunnel pool get error: unhealthy channel")
+
+		select {
+		case sch, ok = <-r.channels:
+			if !ok {
+				return nil, fmt.Errorf("tunnel pool closed")
+			}
+			if r.checkHealthFunc != nil && !r.checkHealthFunc(sch) {
+				_ = sch.Close()
+				continue
+			}
+			log.Debug("tunnel pool get success")
+			return sch, nil
+		case <-time.After(10 * time.Second):
+			log.Debug("get user tunnel timeout, 10s")
+			return nil, fmt.Errorf("tunnel pool get timeout")
 		}
-	case <-time.After(10 * time.Second):
-		log.Debug("get user tunnel timeout, 10s")
-		return nil, fmt.Errorf("tunnel pool get timeout")
 	}
-	return
 }
 
 // Put This function takes a pointer to a transport.SChannel and puts it into a channel
@@ -122,13 +124,12 @@ func DefaultCheckHealth(ch transport.Channel) bool {
 	if ch == nil {
 		return false
 	}
-	if ch.IsClose() {
+	_, err := ch.Write([]byte{})
+	if err != nil {
 		return false
 	}
-	select {
-	case <-ch.Done():
+	if ch.IsClose() {
 		return false
-	default:
 	}
 	return true
 }
