@@ -27,13 +27,14 @@ type Channel struct {
 }
 
 func NewMetricsChannel(src transport.Channel, traffic *TunnelTraffic) *Channel {
-	return &Channel{
-		GChannel: src.(*srv.GChannel),
-		traffic:  traffic,
-	}
+	gch, _ := src.(*srv.GChannel)
+	return &Channel{GChannel: gch, traffic: traffic}
 }
 
 func (c *Channel) Write(p []byte) (n int, err error) {
+	if c == nil || c.GChannel == nil {
+		return 0, nil
+	}
 	write, err := c.GChannel.Write(p)
 	if c.traffic != nil && err == nil {
 		c.traffic.AddOutBytes(write)
@@ -42,9 +43,34 @@ func (c *Channel) Write(p []byte) (n int, err error) {
 }
 
 func (c *Channel) Read(p []byte) (n int, err error) {
+	if c == nil || c.GChannel == nil {
+		return 0, nil
+	}
 	read, err := c.GChannel.Read(p)
 	if c.traffic != nil && err == nil {
 		c.traffic.AddInBytes(read)
 	}
 	return read, err
+}
+
+func (c *Channel) Next(pos int) ([]byte, error) {
+	bytes, err := c.GChannel.Next(pos)
+	if err != nil {
+		return []byte{}, err
+	}
+	if c.traffic != nil {
+		c.traffic.AddInBytes(len(bytes))
+	}
+	return bytes, err
+}
+
+func (c *Channel) Peek(n int) (buf []byte, err error) {
+	bytes, err := c.GChannel.Peek(n)
+	if err != nil {
+		return []byte{}, err
+	}
+	if c.traffic != nil {
+		c.traffic.AddInBytes(len(bytes))
+	}
+	return bytes, err
 }

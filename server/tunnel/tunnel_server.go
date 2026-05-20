@@ -17,6 +17,8 @@
 package tunnel
 
 import (
+	"time"
+
 	"github.com/g-brook/brook/common/exchange"
 	"github.com/g-brook/brook/common/lang"
 	"github.com/g-brook/brook/common/transport"
@@ -46,6 +48,15 @@ func GetTunnel(port int) TunnelServer {
 	tunnel, ok := tunnels[port]
 	if ok {
 		return tunnel
+	}
+	return nil
+}
+
+func GetTunnelById(id string) TunnelServer {
+	for _, tunnel := range tunnels {
+		if tunnel != nil && tunnel.Id() == id {
+			return tunnel
+		}
 	}
 	return nil
 }
@@ -80,4 +91,6 @@ type TunnelServer interface {
 
 	// Shutdown shutdown.
 	Shutdown()
+
+	ObserveLatency(d time.Duration)
 }

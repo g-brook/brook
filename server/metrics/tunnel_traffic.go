@@ -17,6 +17,7 @@
 package metrics
 
 import (
+	"math"
 	"sync"
 	"time"
 )
@@ -35,18 +36,33 @@ type TunnelTraffic struct {
 	mu       sync.Mutex
 	interval time.Duration
 	size     int
+	window   time.Duration
+	latency  latencyStats
 }
 
-func NewTunnelTraffic(Id string, port int, name string, window time.Duration, interval time.Duration) *TunnelTraffic {
+type latencyStats struct {
+	lastMs float64
+	sumMs  float64
+	count  uint64
+}
+
+func NewTunnelTraffic(id string, port int, name string, window time.Duration, interval time.Duration) *TunnelTraffic {
+	if interval <= 0 {
+		interval = time.Second
+	}
 	if window < interval {
 		window = interval
 	}
 	size := int(window / interval)
+	if size < 1 {
+		size = 1
+	}
 	return &TunnelTraffic{
-		Id:       Id,
+		Id:       id,
 		buckets:  make([]bucket, size),
 		size:     size,
 		interval: interval,
+		window:   window,
 		port:     port,
 		name:     name,
 	}
@@ -61,51 +77,98 @@ func (ts *TunnelTraffic) AddOutBytes(bytes int) {
 }
 
 func (ts *TunnelTraffic) addBytes(bytes int, isIn bool) {
+	if ts == nil || bytes <= 0 {
+		return
+	}
 	ts.mu.Lock()
 	defer ts.mu.Unlock()
 
 	now := time.Now().UnixNano() / ts.interval.Nanoseconds()
 	idx := int(now % int64(ts.size))
-
-	// 如果桶过期，清零
 	if ts.buckets[idx].timestamp != now {
 		ts.buckets[idx] = bucket{timestamp: now}
 	}
 	if isIn {
 		ts.buckets[idx].inBytes += uint64(bytes)
-	} else {
-		ts.buckets[idx].outBytes += uint64(bytes)
+		return
 	}
-
+	ts.buckets[idx].outBytes += uint64(bytes)
 }
 
-// Sum calculates the total incoming and outgoing traffic in the tunnel
-// It only considers the buckets within the time window defined by the interval and size
-// Returns:
-//   - in: total incoming traffic (bytes)
-//   - out: total outgoing traffic (bytes)
 func (ts *TunnelTraffic) Sum() (in uint64, out uint64) {
-	// Lock the mutex to ensure thread-safe access to the buckets
+	if ts == nil {
+		return 0, 0
+	}
 	ts.mu.Lock()
 	defer ts.mu.Unlock()
 
 	now := time.Now().UnixNano() / ts.interval.Nanoseconds()
+	oldest := now - int64(ts.size)
 	for _, b := range ts.buckets {
-		if b.timestamp >= now-int64(ts.size) {
-			in += b.inBytes   // Add incoming bytes
-			out += b.outBytes // Add outgoing bytes
+		if b.timestamp >= oldest {
+			in += b.inBytes
+			out += b.outBytes
 		}
 	}
 	return
 }
 
-//func (ts *TunnelTraffic) Print() {
-//	go func() {
-//		ticker := time.NewTicker(5 * time.Second)
-//		defer ticker.Stop()
-//		for range ticker.C {
-//			in, out := ts.Sum()
-//			println("TunnelTraffic", ts.Id, ts.port, ts.name, in, out, defin.NumGoroutine())
-//		}
-//	}()
-//}
+func (ts *TunnelTraffic) Rate() (float64, float64) {
+	in, out := ts.Sum()
+	seconds := ts.window.Seconds()
+	if seconds <= 0 {
+		seconds = ts.interval.Seconds()
+	}
+	return float64(in) / seconds, float64(out) / seconds
+}
+
+func (ts *TunnelTraffic) InRateBps() float64 {
+	in, _ := ts.Rate()
+	return in
+}
+
+func (ts *TunnelTraffic) OutRateBps() float64 {
+	_, out := ts.Rate()
+	return out
+}
+
+func (ts *TunnelTraffic) Port() int {
+	if ts == nil {
+		return 0
+	}
+	return ts.port
+}
+
+func (ts *TunnelTraffic) ObserveLatency(d time.Duration) {
+	if ts == nil || d <= 0 {
+		return
+	}
+	ms := float64(d) / float64(time.Millisecond)
+	if math.IsNaN(ms) || math.IsInf(ms, 0) {
+		return
+	}
+	ts.mu.Lock()
+	ts.latency.lastMs = ms
+	ts.latency.sumMs += ms
+	ts.latency.count++
+	ts.mu.Unlock()
+}
+
+func (ts *TunnelTraffic) LatencyMs() float64 {
+	if ts == nil {
+		return 0
+	}
+	ts.mu.Lock()
+	defer ts.mu.Unlock()
+	if ts.latency.count == 0 {
+		return 0
+	}
+	return ts.latency.lastMs
+}
+
+func (ts *TunnelTraffic) Name() string {
+	if ts == nil {
+		return ""
+	}
+	return ts.name
+}

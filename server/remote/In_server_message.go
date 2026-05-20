@@ -18,19 +18,24 @@ package remote
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/g-brook/brook/common/exchange"
 	"github.com/g-brook/brook/common/log"
 	"github.com/g-brook/brook/common/transport"
+	"github.com/g-brook/brook/server/tunnel"
 )
 
+// Inserver holds the active inbound server instance.
 var Inserver *InServer
 
+// TunnelCfg describes the tunnel configuration returned by the server.
 type TunnelCfg struct {
 	RemotePort  int
 	Destination string
 }
 
+// NewTunnelCfg creates a new TunnelCfg with the provided values.
 func NewTunnelCfg(remotePort int, destination string) *TunnelCfg {
 	return &TunnelCfg{
 		RemotePort:  remotePort,
@@ -38,10 +43,13 @@ func NewTunnelCfg(remotePort int, destination string) *TunnelCfg {
 	}
 }
 
+// OpenTunnelServerFun handles open-tunnel requests on the server.
 var OpenTunnelServerFun func(req *exchange.OpenTunnelReq, ch transport.Channel) (*TunnelCfg, error)
 
+// ManagerTunnelServerFun handles heartbeat-driven tunnel management.
 var ManagerTunnelServerFun func(proxyId string, ch transport.Channel) error
 
+// OpenTunnelServer dispatches an open-tunnel request to the configured handler.
 func OpenTunnelServer(req *exchange.OpenTunnelReq, ch transport.Channel) (*TunnelCfg, error) {
 	if OpenTunnelServerFun == nil {
 		log.Error("not found open tunnel function")
@@ -50,6 +58,7 @@ func OpenTunnelServer(req *exchange.OpenTunnelReq, ch transport.Channel) (*Tunne
 	return OpenTunnelServerFun(req, ch)
 }
 
+// ManagerTunnelServer dispatches heartbeat tunnel updates to the configured handler.
 func ManagerTunnelServer(req *exchange.Heartbeat, ch transport.Channel) error {
 	if ManagerTunnelServerFun == nil {
 		log.Error("not found manager tunnel function")
@@ -60,6 +69,11 @@ func ManagerTunnelServer(req *exchange.Heartbeat, ch transport.Channel) error {
 		log.Error("proxy id is empty")
 	}
 	for _, id := range proxyIds {
+		if req.StartTime > 0 {
+			if t := tunnel.GetTunnelById(id); t != nil {
+				t.ObserveLatency(time.Since(time.UnixMilli(req.StartTime)))
+			}
+		}
 		_ = ManagerTunnelServerFun(id, ch)
 	}
 	return nil

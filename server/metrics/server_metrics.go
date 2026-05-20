@@ -32,3 +32,20 @@ type TunnelMetrics interface {
 	Runtime() time.Time
 	ClientsInfo() []transport.Channel
 }
+
+type TunnelTrafficSnapshot struct {
+	ID          string    `json:"id"`
+	Name        string    `json:"name"`
+	Type        string    `json:"type"`
+	Port        int       `json:"port"`
+	Connections int       `json:"connections"`
+	Clients     int       `json:"clients"`
+	Runtime     time.Time `json:"runtime"`
+	LastSeen    time.Time `json:"last_seen"`
+	AgeSeconds  float64   `json:"age_seconds"`
+	InBytes     uint64    `json:"in_bytes"`
+	OutBytes    uint64    `json:"out_bytes"`
+	InRateBps   float64   `json:"in_rate_bps"`
+	OutRateBps  float64   `json:"out_rate_bps"`
+	LatencyMs   float64   `json:"latency_ms"`
+}

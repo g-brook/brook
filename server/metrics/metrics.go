@@ -17,7 +17,7 @@
 package metrics
 
 import (
-	"time"
+	"net/http"
 
 	"github.com/g-brook/brook/common/hash"
 )
@@ -25,40 +25,61 @@ import (
 type Metrics struct {
 	servers  *hash.SyncSet[TunnelMetrics]
 	traffics *hash.SyncMap[string, *TunnelTraffic]
+	registry *Registry
 }
 
 var M = newMetrics()
 
 func newMetrics() *Metrics {
+	registry := Default.registry
 	return &Metrics{
 		servers:  hash.NewSyncSet[TunnelMetrics](),
 		traffics: hash.NewSyncMap[string, *TunnelTraffic](),
+		registry: registry,
 	}
 }
 
-func (receiver *Metrics) PutServer(server TunnelMetrics) *TunnelTraffic {
-	receiver.servers.Add(server)
-	if server != nil {
-		traffic := NewTunnelTraffic(server.Id(), server.Port(), server.Name(), 1*time.Hour, 5*time.Second)
-		receiver.PutTraffics(traffic)
-		return traffic
+func (m *Metrics) PutServer(server TunnelMetrics) *TunnelTraffic {
+	if server == nil {
+		return nil
 	}
-	return nil
+	m.servers.Add(server)
+	traffic := m.registry.Register(server)
+	m.PutTraffics(traffic)
+	return traffic
 }
 
-func (receiver *Metrics) RemoveServer(server TunnelMetrics) {
-	receiver.servers.Remove(server)
-	receiver.traffics.Delete(server.Id())
+func (m *Metrics) RemoveServer(server TunnelMetrics) {
+	if server == nil {
+		return
+	}
+	m.servers.Remove(server)
+	m.traffics.Delete(server.Id())
+	m.registry.Unregister(server.Id())
 }
 
-func (receiver *Metrics) GetServers() []TunnelMetrics {
-	return receiver.servers.List()
+func (m *Metrics) GetServers() []TunnelMetrics {
+	return m.servers.List()
 }
 
-func (receiver *Metrics) PutTraffics(traffic *TunnelTraffic) {
-	receiver.traffics.Store(traffic.Id, traffic)
+func (m *Metrics) PutTraffics(traffic *TunnelTraffic) {
+	if traffic == nil {
+		return
+	}
+	m.traffics.Store(traffic.Id, traffic)
 }
 
-func (receiver *Metrics) GetTraffics(id string) {
-	receiver.traffics.Load(id)
+func (m *Metrics) GetTraffics(id string) (*TunnelTraffic, bool) {
+	if traffic, ok := m.registry.GetTraffic(id); ok {
+		return traffic, true
+	}
+	return m.traffics.Load(id)
+}
+
+func (m *Metrics) Snapshot() []TunnelTrafficSnapshot {
+	return m.registry.Snapshot()
+}
+
+func (m *Metrics) PrometheusHandler() http.Handler {
+	return NewPrometheusHandler(m.registry)
 }

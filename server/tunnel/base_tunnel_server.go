@@ -93,6 +93,13 @@ func (b *BaseTunnelServer) TrafficObj() *metrics.TunnelTraffic {
 	return b.trafficMetrics
 }
 
+func (b *BaseTunnelServer) ObserveLatency(d time.Duration) {
+	if b == nil || b.trafficMetrics == nil {
+		return
+	}
+	b.trafficMetrics.ObserveLatency(d)
+}
+
 func (b *BaseTunnelServer) ClientsInfo() []transport.Channel {
 	return b.TunnelChannel.Values()
 }
