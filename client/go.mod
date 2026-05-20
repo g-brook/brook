@@ -6,7 +6,6 @@ require (
 	charm.land/bubbles/v2 v2.0.0
 	charm.land/bubbletea/v2 v2.0.2
 	charm.land/lipgloss/v2 v2.0.1
-	github.com/g-brook/brook/common v0.0.0-20260308085737-1fb88c2cd48b
 	github.com/gobwas/ws v1.4.0
 	github.com/xtaci/smux v1.5.50
 	go.uber.org/zap v1.27.0

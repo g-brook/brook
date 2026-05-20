@@ -3,8 +3,6 @@ module github.com/g-brook/brook/server
 go 1.25.0
 
 require (
-	github.com/g-brook/brook/common v0.0.0-20260518150217-d8d7183b3b00
-	github.com/g-brook/brook/scmd v0.0.0-20260518150217-d8d7183b3b00
 	github.com/gobwas/ws v1.4.0
 	github.com/google/uuid v1.6.0
 	github.com/panjf2000/gnet/v2 v2.9.7

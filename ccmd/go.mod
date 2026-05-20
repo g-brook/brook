@@ -4,8 +4,6 @@ go 1.25.0
 
 require (
 	github.com/charmbracelet/bubbletea v1.3.10
-	github.com/g-brook/brook/client v0.0.0-20260308085737-1fb88c2cd48b
-	github.com/g-brook/brook/common v0.0.0-20260308085737-1fb88c2cd48b
 	github.com/mattn/go-isatty v0.0.20
 	github.com/spf13/cobra v1.10.2
 )
