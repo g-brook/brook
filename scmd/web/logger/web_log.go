@@ -18,24 +18,19 @@ package logger
 
 import (
 	sql2 "database/sql"
-	"time"
 
 	"github.com/g-brook/brook/common/log"
 	"github.com/g-brook/brook/scmd/web/sql"
+	"github.com/g-brook/brook/server/logger"
 )
 
-type WebLogger struct {
-	Protocol string    `json:"protocol"`
-	Path     string    `json:"path"`
-	Host     string    `json:"host"`
-	Method   string    `json:"method"`
-	Status   int       `json:"status"`
-	ProxyId  string    `json:"proxyId"`
-	HttpId   string    `json:"httpId"`
-	Time     time.Time `json:"time"`
+func init() {
+	logger.HttpCollector().Subscribe(func(ft *logger.WebLogger) {
+		withWebLog(ft)
+	})
 }
 
-func WithWebLog(logger *WebLogger) {
+func withWebLog(logger *logger.WebLogger) {
 	log.Debug("info %v,%v,%v,%v,%v,%v,%v", logger.ProxyId, logger.Protocol, logger.Path, logger.Host, logger.Method, logger.Status, logger.HttpId)
 	_ = sql.AddWebLog(&sql.DBWebLogger{
 		Protocol: logger.Protocol,

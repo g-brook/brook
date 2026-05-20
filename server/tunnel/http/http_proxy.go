@@ -28,7 +28,7 @@ import (
 	"github.com/g-brook/brook/common/httpx"
 	"github.com/g-brook/brook/common/iox"
 	"github.com/g-brook/brook/common/log"
-	"github.com/g-brook/brook/scmd/web/logger"
+	"github.com/g-brook/brook/server/logger"
 )
 
 type Proxy struct {
@@ -83,17 +83,8 @@ func httpProxy(proxyId string) *httputil.ReverseProxy {
 		},
 		ModifyResponse: func(response *http.Response) error {
 			req := response.Request
-			logger.WithWebLog(&logger.WebLogger{
-				Protocol: req.Proto,
-				Path:     req.URL.Path,
-				Host:     req.Host,
-				Method:   req.Method,
-				ProxyId:  proxyId,
-				Status:   response.StatusCode,
-				HttpId:   req.Header.Get(RequestHttpIdKey),
-				Time:     time.Now(),
-			})
 			response.Header.Del(RequestInfoKey)
+			referToHttpLog(req, response.StatusCode, proxyId)
 			return nil
 		},
 
@@ -135,17 +126,21 @@ func httpProxy(proxyId string) *httputil.ReverseProxy {
 			log.Error("Not found path %v", err)
 			writer.WriteHeader(state)
 			_, _ = writer.Write(httpx.GetPageNotFound(state))
-			logger.WithWebLog(&logger.WebLogger{
-				Protocol: req.Proto,
-				Path:     req.URL.Path,
-				Host:     req.Host,
-				Method:   req.Method,
-				ProxyId:  proxyId,
-				Status:   state,
-				HttpId:   req.Header.Get(RequestHttpIdKey),
-				Time:     time.Now(),
-			})
+			referToHttpLog(req, state, proxyId)
 		},
 	}
 	return reverseProxy
+}
+
+func referToHttpLog(req *http.Request, state int, proxyId string) {
+	logger.HttpCollector().Print(&logger.WebLogger{
+		Protocol: req.Proto,
+		Path:     req.URL.Path,
+		Host:     req.Host,
+		Method:   req.Method,
+		ProxyId:  proxyId,
+		Status:   state,
+		HttpId:   req.Header.Get(RequestHttpIdKey),
+		Time:     time.Now(),
+	})
 }
