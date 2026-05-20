@@ -52,9 +52,13 @@ func (htl *Resources) createConnection() error {
 		req := &exchange.WorkConnReq{
 			ProxyId: htl.cfg.Id,
 		}
+		log.Debug("create work conn request %v to %v", req, manager.RemoteAddr())
 		request, _ := exchange.NewRequest(req)
-		_, _ = manager.Write(request.Bytes())
-		return nil
+		_, err := manager.Write(request.Bytes())
+		if err != nil {
+			log.Error("write work conn request %v to %v err %v", request, manager.RemoteAddr(), err)
+		}
+		return err
 	}
 	log.Debug("manager channel is nil")
 	return errors.New("manager is nil, can't create connection")
