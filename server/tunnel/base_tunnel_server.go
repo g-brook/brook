@@ -248,6 +248,7 @@ func (b *BaseTunnelServer) GetManager() transport.Channel {
 		log.Error("1:Tunnel Manager channel is empty. No available manager channel.")
 		return nil
 	}
+	log.Debug("manager channel length: %v", b.ManagerChannel.Len())
 	activeChannels := make([]transport.Channel, 0)
 	b.ManagerChannel.ForEach(func(value transport.Channel) bool {
 		if !value.IsClose() {
