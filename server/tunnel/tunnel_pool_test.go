@@ -2,12 +2,13 @@ package tunnel
 
 import (
 	"context"
-	"errors"
 	"io"
 	"net"
 	"testing"
 	"time"
 
+	"github.com/g-brook/brook/common/lang"
+	"github.com/g-brook/brook/common/transport"
 	"github.com/gobwas/pool"
 )
 
@@ -19,6 +20,31 @@ func (a fakeAddr) String() string  { return string(a) }
 type fakeChannel struct {
 	closed bool
 	done   chan struct{}
+}
+
+func (f *fakeChannel) GetId() string {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (f *fakeChannel) GetAttr(key lang.KeyType) (interface{}, bool) {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (f *fakeChannel) OnClose(event transport.CloseEvent) {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (f *fakeChannel) LastTime() time.Time {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (f *fakeChannel) ActiveTime() time.Time {
+	//TODO implement me
+	panic("implement me")
 }
 
 func newFakeChannel() *fakeChannel {
@@ -93,7 +119,7 @@ func TestTunnelPoolGetRejectsUnhealthyChannel(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected unhealthy channel error")
 	}
-	if !errors.Is(err, err) {
-		// keep compiler happy; string check below is the assertion we care about
+	if err.Error() != "tunnel pool get timeout" {
+		t.Fatalf("expected timeout after unhealthy channel, got: %v", err)
 	}
 }

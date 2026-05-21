@@ -21,19 +21,6 @@ import (
 	"fmt"
 )
 
-const CreateUsersTableSQL = `create table users
-(
-    id       integer
-        constraint users_pk
-            primary key autoincrement,
-    user_id  text
-        constraint users_pk_2
-            unique,
-    password text,
-    icon     text,
-    is_admin bool
-);`
-
 type Users struct {
 	Id       int64  `db:"id" maps:"id"`
 	UserId   string `db:"user_id" maps:"user_id"`

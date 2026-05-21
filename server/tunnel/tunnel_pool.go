@@ -49,8 +49,10 @@ var NewTunnelPool = func(factory GetFunction, size int) *TunnelPool {
 
 func (r *TunnelPool) Get() (sch transport.Channel, err error) {
 	defer func() {
-		if err := recover(); err != nil {
-			log.Error("tunnel pool get panic", err)
+		if panicErr := recover(); panicErr != nil {
+			log.Error("tunnel pool get panic", panicErr)
+			err = fmt.Errorf("tunnel pool get panic: %v", panicErr)
+			sch = nil
 		}
 	}()
 	var ok bool
