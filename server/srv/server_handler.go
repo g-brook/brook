@@ -17,11 +17,19 @@
 package srv
 
 import (
+	"context"
+
 	trp "github.com/g-brook/brook/common/transport"
 )
 
 type BootServer interface {
 	Start(opt ...ServerOption) error
+
+	AddHandler(handler ...ServerHandler)
+
+	Shutdown(ctx context.Context)
+
+	Connections() int
 }
 
 type ServerHandler interface {

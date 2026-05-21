@@ -35,7 +35,7 @@ type TraverseBy func()
 
 type InitConnHandler func(conn *GChannel)
 
-func NewChannel(conn gnet.Conn, t *Server) *GChannel {
+func NewChannel(conn gnet.Conn, t *GnetServer) *GChannel {
 	ctx := conn.Context()
 	if ctx == nil && t.isDatagram() {
 		ctx = NewConnContext(t.isDatagram(), conn.RemoteAddr().String())
@@ -72,8 +72,8 @@ func NewChannel(conn gnet.Conn, t *Server) *GChannel {
 	return gn
 }
 
-// Server /*
-type Server struct {
+// GnetServer /*
+type GnetServer struct {
 	*gnet.BuiltinEventEngine
 
 	engine gnet.Engine
@@ -90,23 +90,23 @@ type Server struct {
 	InitConnHandler InitConnHandler
 }
 
-func NewServer(port int) *Server {
-	return &Server{
+func NewServer(port int) *GnetServer {
+	return &GnetServer{
 		port:        port,
 		connections: hash.NewSyncMap[string, *GChannel](),
 		handlers:    make([]ServerHandler, 0),
 	}
 }
 
-func (sever *Server) AddHandler(handler ...ServerHandler) {
+func (sever *GnetServer) AddHandler(handler ...ServerHandler) {
 	sever.handlers = append(sever.handlers, handler...)
 }
 
-func (sever *Server) AddInitConnHandler(init InitConnHandler) {
+func (sever *GnetServer) AddInitConnHandler(init InitConnHandler) {
 	sever.InitConnHandler = init
 }
 
-func (sever *Server) Connections() map[string]*GChannel {
+func (sever *GnetServer) Channels() map[string]*GChannel {
 	tb := make(map[string]*GChannel)
 	f := func(key string, value *GChannel) bool {
 		tb[key] = value
@@ -116,7 +116,11 @@ func (sever *Server) Connections() map[string]*GChannel {
 	return tb
 }
 
-func (sever *Server) GetConnection(id string) (*GChannel, bool) {
+func (sever *GnetServer) Connections() int {
+	return sever.connections.Len()
+}
+
+func (sever *GnetServer) GetConnection(id string) (*GChannel, bool) {
 	if sever.isDatagram() {
 		log.Warn("server protocol is udp, can not get connection by id: %s", id)
 		return nil, false
@@ -124,7 +128,8 @@ func (sever *Server) GetConnection(id string) (*GChannel, bool) {
 	v2, ok := sever.connections.Load(id)
 	return v2, ok
 }
-func (sever *Server) OnBoot(engine gnet.Engine) (action gnet.Action) {
+
+func (sever *GnetServer) OnBoot(engine gnet.Engine) (action gnet.Action) {
 	sever.engine = engine
 	log.Info("Server started %d", sever.port)
 	_ = sever.next(func(s ServerHandler, conn trp.Channel) (bool, error) {
@@ -137,7 +142,7 @@ func (sever *Server) OnBoot(engine gnet.Engine) (action gnet.Action) {
 	return gnet.None
 }
 
-func (sever *Server) OnClose(c gnet.Conn, _ error) gnet.Action {
+func (sever *GnetServer) OnClose(c gnet.Conn, _ error) gnet.Action {
 	log.Debug("Close an Connection: %s", c.RemoteAddr().String())
 	conn := NewChannel(c, sever)
 	defer sever.removeIfConnection(conn)
@@ -153,7 +158,7 @@ func (sever *Server) OnClose(c gnet.Conn, _ error) gnet.Action {
 	return gnet.None
 }
 
-func (sever *Server) OnOpen(c gnet.Conn) (out []byte, action gnet.Action) {
+func (sever *GnetServer) OnOpen(c gnet.Conn) (out []byte, action gnet.Action) {
 	log.Debug("Open an Connection: %s", c.RemoteAddr().String())
 	c.SetContext(NewConnContext(false, ""))
 	conn := NewChannel(c, sever)
@@ -172,7 +177,7 @@ func (sever *Server) OnOpen(c gnet.Conn) (out []byte, action gnet.Action) {
 	return nil, gnet.None
 }
 
-func (sever *Server) OnTraffic(c gnet.Conn) gnet.Action {
+func (sever *GnetServer) OnTraffic(c gnet.Conn) gnet.Action {
 	conn := NewChannel(c, sever)
 	if conn == nil {
 		log.Warn("connection is nil, can not open connection")
@@ -190,7 +195,7 @@ func (sever *Server) OnTraffic(c gnet.Conn) gnet.Action {
 	return gnet.None
 }
 
-func (sever *Server) next(fun func(s ServerHandler, conn trp.Channel) (bool, error), conn *GChannel) error {
+func (sever *GnetServer) next(fun func(s ServerHandler, conn trp.Channel) (bool, error), conn *GChannel) error {
 	for i := 0; i < len(sever.handlers); i++ {
 		var newCh trp.Channel
 		channelFunc := sever.opts.newChannelFunc
@@ -208,16 +213,16 @@ func (sever *Server) next(fun func(s ServerHandler, conn trp.Channel) (bool, err
 }
 
 // isDatagram checks if the server is using UDP protocol and initializes the event engine accordingly
-func (sever *Server) isDatagram() bool {
+func (sever *GnetServer) isDatagram() bool {
 	// Check if the server is configured to use UDP network
 	return sever.opts.network == lang.NetworkUdp
 }
 
-func (sever *Server) GetPort() int {
+func (sever *GnetServer) GetPort() int {
 	return sever.port
 }
 
-func (sever *Server) removeIfConnection(v2 *GChannel) {
+func (sever *GnetServer) removeIfConnection(v2 *GChannel) {
 	if v2.IsClose() {
 		//This use v2.id removing map element.
 		// v2.id eq context.id, so yet use v2.id.
@@ -231,7 +236,7 @@ func (sever *Server) removeIfConnection(v2 *GChannel) {
 }
 
 // Start is function start tcp server.
-func (sever *Server) Start(opt ...ServerOption) error {
+func (sever *GnetServer) Start(opt ...ServerOption) error {
 	//load sOptions configs.
 	sever.opts = serverOptions(opt...)
 	network := sever.opts.network
@@ -257,7 +262,7 @@ func (sever *Server) Start(opt ...ServerOption) error {
 	return nil
 }
 
-func (sever *Server) Shutdown(ctx context.Context) {
+func (sever *GnetServer) Shutdown(ctx context.Context) {
 	log.Info("Server shutdown: %d.", sever.GetPort())
 	_ = sever.engine.Stop(ctx)
 }

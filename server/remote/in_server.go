@@ -39,10 +39,10 @@ type InServer struct {
 	srv.BaseServerHandler
 
 	//Current server.
-	server *srv.Server
+	server *srv.GnetServer
 
 	//tunnelServer
-	tunnelServer *srv.DupServer
+	tunnelServer *srv.StdServer
 }
 
 func New() *InServer {

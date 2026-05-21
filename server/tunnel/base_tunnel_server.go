@@ -53,7 +53,7 @@ type BaseTunnelServer struct {
 	srv.BaseServerHandler
 	port            int
 	Cfg             *configs.ServerTunnelConfig
-	Server          *srv.Server
+	Server          srv.BootServer
 	DoStart         func() error
 	TunnelChannel   *hash.SyncMap[string, transport.Channel]
 	ManagerChannel  *hash.SyncSet[transport.Channel]
@@ -78,7 +78,7 @@ func (b *BaseTunnelServer) Type() string {
 }
 
 func (b *BaseTunnelServer) Connections() int {
-	return len(b.Server.Connections())
+	return b.Server.Connections()
 }
 
 func (b *BaseTunnelServer) Name() string {
@@ -164,7 +164,13 @@ func (b *BaseTunnelServer) Boot(_ srv.BootServer, _ srv.TraverseBy) error {
 // Start  the tunnel server
 func (b *BaseTunnelServer) Start(network lang.Network) error {
 	threading.GoSafe(func() {
-		b.Server = srv.NewServer(b.port)
+		tserverModel, err := modules.GetModuleByDescFirst(modules.TServerModule)
+		if err != nil {
+			log.Error("Start Start tunnel server %s error: %v", b.Cfg.Id, err)
+			return
+		}
+		server := tserverModel.New().(srv.TServer)
+		b.Server = server.Open(b.port)
 		//get plugins.
 		modes, err2 := modules.GetModuleByType(modules.TunnelPluginsModule)
 		if err2 == nil {
@@ -178,7 +184,7 @@ func (b *BaseTunnelServer) Start(network lang.Network) error {
 			}
 		}
 		b.Server.AddHandler(b)
-		err := b.Server.Start(srv.WithNetwork(network), srv.WithNewChannelFunc(func(ch transport.Channel) transport.Channel {
+		err = b.Server.Start(srv.WithNetwork(network), srv.WithNewChannelFunc(func(ch transport.Channel) transport.Channel {
 			return metrics.NewMetricsChannel(ch, b.trafficMetrics)
 		}))
 		if err != nil {

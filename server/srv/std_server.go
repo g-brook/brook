@@ -31,7 +31,7 @@ import (
 	"github.com/xtaci/smux"
 )
 
-type DupServer struct {
+type StdServer struct {
 	ln                net.Listener
 	handlers          []ServerHandler
 	opts              *sOptions
@@ -39,22 +39,7 @@ type DupServer struct {
 	port              int
 }
 
-func NewDupServer(port int, opt ...ServerOption) *DupServer {
-	options := serverOptions(opt...)
-	network := options.network
-	if network == "" {
-		network = lang.NetworkTcp
-		options.network = network
-	}
-	server := &DupServer{
-		opts:     options,
-		handlers: make([]ServerHandler, 0),
-		port:     port,
-	}
-	return server
-}
-
-func (sever *DupServer) Start() error {
+func (sever *StdServer) Start(opt ...ServerOption) error {
 	if !sever.isTunnelServer() {
 		return errors.New("server is disabled,please use server")
 	}
@@ -80,7 +65,22 @@ func (sever *DupServer) Start() error {
 	return nil
 }
 
-func (sever *DupServer) OnOpen(conn trp.Channel) error {
+func NewDupServer(port int, opt ...ServerOption) *StdServer {
+	options := serverOptions(opt...)
+	network := options.network
+	if network == "" {
+		network = lang.NetworkTcp
+		options.network = network
+	}
+	server := &StdServer{
+		opts:     options,
+		handlers: make([]ServerHandler, 0),
+		port:     port,
+	}
+	return server
+}
+
+func (sever *StdServer) OnOpen(conn trp.Channel) error {
 	return sever.next(func(s ServerHandler, newCh trp.Channel) (bool, error) {
 		b := true
 		err := s.Open(newCh, func() {
@@ -90,7 +90,7 @@ func (sever *DupServer) OnOpen(conn trp.Channel) error {
 	}, conn)
 }
 
-func (sever *DupServer) OnRead(conn trp.Channel) error {
+func (sever *StdServer) OnRead(conn trp.Channel) error {
 	return sever.next(func(s ServerHandler, newCh trp.Channel) (bool, error) {
 		b := true
 		err := s.Reader(newCh, func() {
@@ -100,7 +100,7 @@ func (sever *DupServer) OnRead(conn trp.Channel) error {
 	}, conn)
 }
 
-func (sever *DupServer) OnError(conn trp.Channel, err error) {
+func (sever *StdServer) OnError(conn trp.Channel, err error) {
 	_ = sever.next(func(s ServerHandler, newCh trp.Channel) (bool, error) {
 		b := true
 		s.Error(newCh, err, func() {
@@ -110,7 +110,7 @@ func (sever *DupServer) OnError(conn trp.Channel, err error) {
 	}, conn)
 }
 
-func (sever *DupServer) OnClose(conn trp.Channel) {
+func (sever *StdServer) OnClose(conn trp.Channel) {
 	log.Debug("Close an Connection: %s", conn.RemoteAddr().String())
 	_ = conn.Close()
 	_ = sever.next(func(s ServerHandler, newCh trp.Channel) (bool, error) {
@@ -121,7 +121,7 @@ func (sever *DupServer) OnClose(conn trp.Channel) {
 		return b, err
 	}, conn)
 }
-func (sever *DupServer) openStream(ch net.Conn) {
+func (sever *StdServer) openStream(ch net.Conn) {
 	log.Debug("Start smux server.%s", ch.RemoteAddr().String())
 	err := sever.startTunnelServer(
 		ch, nil,
@@ -132,17 +132,17 @@ func (sever *DupServer) openStream(ch net.Conn) {
 	}
 }
 
-func (sever *DupServer) isDatagram() bool {
+func (sever *StdServer) isDatagram() bool {
 	// Check if the server is configured to use UDP network
 	return sever.opts.network == lang.NetworkUdp
 }
 
-func (sever *DupServer) isTunnelServer() bool {
+func (sever *StdServer) isTunnelServer() bool {
 	// Check if the server is configured to use UDP network
 	return sever.opts.withSmux != nil && sever.opts.withSmux.enable
 }
 
-func (sever *DupServer) next(fun func(s ServerHandler, conn trp.Channel) (bool, error), conn trp.Channel) error {
+func (sever *StdServer) next(fun func(s ServerHandler, conn trp.Channel) (bool, error), conn trp.Channel) error {
 	for i := 0; i < len(sever.handlers); i++ {
 		var newCh trp.Channel
 		channelFunc := sever.opts.newChannelFunc
@@ -162,7 +162,7 @@ func (sever *DupServer) next(fun func(s ServerHandler, conn trp.Channel) (bool, 
 	return nil
 }
 
-func (sever *DupServer) streamAssignment() {
+func (sever *StdServer) streamAssignment() {
 	sever.startTunnelServer = func(conn net.Conn, option *SmuxServerOption) error {
 		threading.GoSafe(func() {
 			config := smux.DefaultConfig()
@@ -206,7 +206,7 @@ func (sever *DupServer) streamAssignment() {
 	}
 }
 
-func (sever *DupServer) readLoopStream(ch *trp.SChannel) {
+func (sever *StdServer) readLoopStream(ch *trp.SChannel) {
 	for {
 		if ch.IsOpenTunnel {
 			return
@@ -227,11 +227,11 @@ func (sever *DupServer) readLoopStream(ch *trp.SChannel) {
 	sever.OnClose(ch)
 }
 
-func (sever *DupServer) AddHandler(handler ...ServerHandler) {
+func (sever *StdServer) AddHandler(handler ...ServerHandler) {
 	sever.handlers = append(sever.handlers, handler...)
 }
 
-func (sever *DupServer) Shutdown(ctx context.Context) {
+func (sever *StdServer) Shutdown(ctx context.Context) {
 	log.Info("Server shutdown: %d.", sever.port)
 	_ = sever.ln.Close()
 }

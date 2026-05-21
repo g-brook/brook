@@ -18,6 +18,7 @@ package modules
 
 import (
 	"errors"
+	"sort"
 	"sync"
 )
 
@@ -39,12 +40,16 @@ const (
 	TunnelPluginsModule = ModuleType("tunnelPlugins")
 
 	ConfigsModule = ModuleType("configs")
+
+	TServerModule = ModuleType("tServer")
 )
 
 type ModuleInfo struct {
 	ID ModuleID
 
 	ModuleType ModuleType
+
+	Sort int
 
 	New func() Module
 }
@@ -77,6 +82,20 @@ func GetModule(name ModuleID) (ModuleInfo, error) {
 		return mod, nil
 	}
 	return ModuleInfo{}, errors.New("module not found: " + string(name))
+}
+
+func GetModuleByDescFirst(name ModuleType) (ModuleInfo, error) {
+	list, err := GetModuleByType(name)
+	if err != nil || len(list) == 0 {
+		return ModuleInfo{}, errors.New("module not found: " + string(name))
+	}
+	if len(list) == 1 {
+		return list[0], nil
+	}
+	sort.Slice(list, func(i, j int) bool {
+		return list[i].Sort > list[j].Sort
+	})
+	return list[0], nil
 }
 
 func GetModuleByType(name ModuleType) ([]ModuleInfo, error) {

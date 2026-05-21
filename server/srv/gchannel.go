@@ -38,7 +38,7 @@ type GChannel struct {
 
 	Context *ConnContext
 
-	Server *Server
+	Server *GnetServer
 
 	bgCtx context.Context
 
@@ -129,7 +129,7 @@ func (c *GChannel) Peek(n int) (buf []byte, err error) {
 	return c.conn.Peek(n)
 }
 
-func (c *GChannel) GetServer() *Server {
+func (c *GChannel) GetServer() *GnetServer {
 	return c.Server
 }
 
