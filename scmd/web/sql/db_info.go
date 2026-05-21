@@ -43,6 +43,33 @@ var sqlFiles embed.FS
 
 var staticFs, _ = fs.Sub(sqlFiles, sqlFileDir)
 
+func GetInfoValue(key string) (string, error) {
+	query := `SELECT value FROM info WHERE key = ?`
+	result, err := Query(query, key)
+	if err != nil {
+		return "", err
+	}
+	defer result.Close()
+	if result.rows.Next() {
+		var value string
+		if err := result.rows.Scan(&value); err != nil {
+			return "", err
+		}
+		return value, nil
+	}
+	return "", nil
+}
+
+func AddInfoValue(key string, value string) error {
+	insertSQL := `INSERT INTO info (key, value) VALUES (?, ?)`
+	return Exec(insertSQL, key, value)
+}
+
+func UpdateInfoValue(key string, value string) error {
+	updateSQL := `UPDATE info SET value = ? WHERE key = ?`
+	return Exec(updateSQL, key, value)
+}
+
 func CheckInfoDB() error {
 	// 检查并创建表
 	if err := ensureInfoTableExists(); err != nil {
@@ -85,42 +112,24 @@ func ensureInfoTableExists() error {
 
 // ensureVersionInfo 确保版本信息存在
 func ensureVersionInfo() error {
-	query := `SELECT key, value FROM info WHERE key = ?`
-	result, err := Query(query, DBVersionKey)
-	if err != nil {
-		return err
-	}
-	defer result.Close()
-	if result.rows.Next() {
+	dbVersion, err := getCurrentDBVersion()
+	if err == nil && dbVersion > 0 {
 		return nil
 	}
-	result.Close()
-	// 版本信息不存在，插入默认值
-	insertSQL := `INSERT INTO info (key, value) VALUES (?, ?)`
-	return Exec(insertSQL, DBVersionKey, version.GetDbVersion())
+	return AddInfoValue(DBVersionKey, strconv.Itoa(version.GetDbVersion()))
 }
 
 // getCurrentDBVersion 获取当前数据库版本号
 func getCurrentDBVersion() (int, error) {
-	query := `SELECT value FROM info WHERE key = ?`
-	result, err := Query(query, DBVersionKey)
+	value, err := GetInfoValue(DBVersionKey)
+	if err != nil || value == "" {
+		return 0, err
+	}
+	v, err := strconv.Atoi(value)
 	if err != nil {
 		return 0, err
 	}
-	defer result.Close()
-
-	var currentVersion int
-	if result.rows.Next() {
-		var versionStr string
-		if err := result.rows.Scan(&versionStr); err != nil {
-			return 0, err
-		}
-		currentVersion, err = strconv.Atoi(versionStr)
-		if err != nil {
-			return 0, err
-		}
-	}
-	return currentVersion, nil
+	return v, nil
 }
 
 func CheckDBVersion() (bool, error) {
@@ -178,8 +187,8 @@ func UpdateTableStruct() error {
 			return err
 		}
 	}
-	updateSQL := `UPDATE info SET value = ? WHERE key = ?`
-	if err := Exec(updateSQL, strconv.Itoa(targetVersion), DBVersionKey); err != nil {
+	err = UpdateInfoValue(DBVersionKey, strconv.Itoa(version.GetDbVersion()))
+	if err != nil {
 		return err
 	}
 	return nil

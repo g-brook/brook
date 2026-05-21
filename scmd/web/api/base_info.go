@@ -41,19 +41,15 @@ func initDataBase(r *Request[InitInfo]) *Response {
 	return NewResponseSuccess(nil)
 }
 
-const (
-	userInfoKey string = "brook_user_info"
-)
-
 func login(req *Request[LoginInfo]) *Response {
-	info, err := db.Get[UserInfo](userInfoKey)
+	info, err := sql.GetUserByUserId(req.Body.Username)
 	if err != nil {
 		return NewResponseFail(errs.CodeSysErr, "Login in fail.")
 	}
 	if info == nil {
 		return NewResponseFail(errs.CodeSysErr, "Login in fail.")
 	}
-	if info.Username != req.Body.Username || info.Password != req.Body.Password {
+	if info.UserId != req.Body.Username || info.Password != stringx.Md5String(req.Body.Password) {
 		return NewResponseFail(errs.CodeSysErr, "Login in fail. Username or password is wrong.")
 	}
 	token := stringx.RandomString(32)
@@ -66,31 +62,40 @@ func login(req *Request[LoginInfo]) *Response {
 
 func getBaseInfo(*Request[any]) *Response {
 	bf := new(BaseInfo)
-	get, err := db.Get[UserInfo](userInfoKey)
-	bf.IsRunning = err == nil && get != nil
+	bf.IsRunning = initComplete()
 	bf.Version = version.GetBuildVersion()
 	bf.IsUpgrade, _ = sql.CheckDBVersion()
 	return NewResponseSuccess(bf)
 }
 
+func initComplete() bool {
+	get, err := sql.GetInfoValue("init_complete")
+	return err == nil && get == "success"
+}
+
 func initBrookServer(r *Request[InitInfo]) *Response {
-	info, err := db.Get[UserInfo](userInfoKey)
-	if info != nil {
+	complete := initComplete()
+	if complete {
 		return NewResponseFail(errs.CodeSysErr, "Failed to initialize Brook server: it has already been initialized.")
 	}
 	if r.Body.Password != r.Body.ConfirmPassword {
 		return NewResponseFail(errs.CodeSysErr, "Failed to initialize Brook server: password and confirm password are not the same.")
 	}
-	info = &UserInfo{
-		Username: r.Body.Username,
-		Password: r.Body.Password,
-	}
-	err = db.Put(userInfoKey, info)
+	err, _ := sql.AddUser(&sql.Users{
+		Password: stringx.Md5String(r.Body.Password),
+		UserId:   r.Body.Username,
+		IsAdmin:  true,
+		Icon:     "brook_default",
+	})
 	if err != nil {
 		return NewResponseFail(errs.CodeSysErr, "Initialize brook server fail")
 	}
-	log.Info("Initialize brook server success, and userName is: %s and password is: %s", info.Username, info.Password)
-	return NewResponseSuccess(info)
+	log.Info("Initialize brook server success, and userName is: %s", r.Body.Username)
+	err = sql.AddInfoValue("init_complete", "success")
+	if err != nil {
+		return NewResponseFail(errs.CodeSysErr, "Initialize brook server fail")
+	}
+	return NewResponseSuccess(nil)
 }
 
 func upgradeDb(*Request[any]) *Response {

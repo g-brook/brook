@@ -89,3 +89,17 @@ create table web_proxy_config
     cert_id      integer
 );
 
+create table users
+(
+    id       integer
+        constraint users_pk
+            primary key autoincrement,
+    user_id  text
+        constraint users_pk_2
+            unique,
+    password text,
+    icon     text,
+    is_admin bool
+);
+
+

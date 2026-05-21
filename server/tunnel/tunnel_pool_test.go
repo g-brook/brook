@@ -7,6 +7,8 @@ import (
 	"net"
 	"testing"
 	"time"
+
+	"github.com/gobwas/pool"
 )
 
 type fakeAddr string
@@ -68,25 +70,26 @@ func TestDefaultCheckHealth(t *testing.T) {
 }
 
 func TestTunnelPoolGetReturnsErrorOnRecoveredPanic(t *testing.T) {
-	pool := NewTunnelPool(func() error {
+	poolx := NewTunnelPool(func() error {
 		panic("boom")
 	}, 1)
 
-	_, err := pool.Get()
+	_, err := poolx.Get()
 	if err == nil {
 		t.Fatal("expected error from recovered panic")
 	}
 }
 
 func TestTunnelPoolGetRejectsUnhealthyChannel(t *testing.T) {
-	pool := NewTunnelPool(func() error {
+	poolx := NewTunnelPool(func() error {
 		poolChan := newFakeChannel()
 		_ = poolChan.Close()
-		return pool.Put(poolChan)
+		pool.Put(poolChan, 1)
+		return nil
 	}, 1)
-	pool.checkHealthFunc = DefaultCheckHealth
+	poolx.checkHealthFunc = DefaultCheckHealth
 
-	_, err := pool.Get()
+	_, err := poolx.Get()
 	if err == nil {
 		t.Fatal("expected unhealthy channel error")
 	}

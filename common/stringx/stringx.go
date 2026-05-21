@@ -17,6 +17,8 @@
 package stringx
 
 import (
+	"crypto/md5"
+	"encoding/hex"
 	"math/rand"
 	"time"
 )
@@ -33,4 +35,9 @@ func RandomString(length int) string {
 		password[i] = charset[rand.Intn(len(charset))]
 	}
 	return string(password)
+}
+
+func Md5String(value string) string {
+	sum := md5.Sum([]byte(value))
+	return hex.EncodeToString(sum[:])
 }

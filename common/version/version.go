@@ -22,9 +22,9 @@ import (
 
 const BuildVersion = "0.4.0"
 
-const Version = 3
+const Version = 4
 
-const DBVersion = 4
+const DBVersion = 5
 
 // GetBuildVersion application version.
 func GetBuildVersion() string {
