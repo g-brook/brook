@@ -17,6 +17,7 @@
 package remote
 
 import (
+	"errors"
 	"fmt"
 	"time"
 
@@ -69,8 +70,18 @@ func registerProcess(request *exchange.RegisterReqAndRsp, ch transport.Channel) 
 	return doRegister(request, ch)
 }
 
-func registerVisitor(request *exchange.RegisterReqAndRsp, ch transport.Channel) (any, error) {
-	return nil, nil
+func registerVisitor(request *exchange.VisitorRegister, ch transport.Channel) (any, error) {
+	if request.ProxyId == "" {
+		return nil, errors.New("proxy_id is empty")
+	}
+	if request.Token == "" {
+		return nil, errors.New("token is empty")
+	}
+	err := RegisterVisitor(request, ch)
+	if err != nil {
+		return nil, err
+	}
+	return request, nil
 }
 
 func doRegister(request exchange.TRegister, ch transport.Channel) (any, error) {

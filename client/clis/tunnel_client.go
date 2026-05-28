@@ -251,12 +251,26 @@ func (b *BaseTunnelClient) Close() {
 // GetRegisterReq returns a RegisterReqAndRsp struct with configuration data from the BaseTunnelClient
 // This method is used to prepare registration request parameters for the tunnel connection
 func (b *BaseTunnelClient) GetRegisterReq() *exchange.RegisterReqAndRsp {
-	return &exchange.RegisterReqAndRsp{
+	req := exchange.RegisterReqAndRsp{
 		TunnelPort: b.GetCfg().RemotePort, // Set the tunnel port from configuration
 		ProxyId:    b.GetCfg().ProxyId,    // Set the proxy identifier from configuration
 		TunnelType: b.GetCfg().TunnelType, // Set the tunnel type from configuration
 		HttpId:     b.GetCfg().HttpId,
 		Open:       true,
+		IsVisitor:  b.GetCfg().Visitor != nil,
+	}
+	if req.IsVisitor {
+		req.LocalPort = b.GetCfg().Visitor.LocalPort
+		req.Token = b.GetCfg().Visitor.Token
+	}
+	return &req
+}
+
+func (b *BaseTunnelClient) GetVisitorReq() *exchange.VisitorRegister {
+	return &exchange.VisitorRegister{
+		ProxyId:   b.GetCfg().ProxyId,
+		Token:     b.GetCfg().Visitor.Token,
+		LocalPort: b.GetCfg().Visitor.LocalPort,
 	}
 }
 
@@ -333,6 +347,15 @@ func (b *BaseTunnelClient) AsyncRegister(req exchange.InBound, readCallBack exch
 		req = b.GetRegisterReq()
 	}
 	log.Debug("register %v", req)
+	b.TcControl.Bucket.AddHandler(req.Cmd(), readCallBack)
+	return b.TcControl.Bucket.PushWitchRequest(req)
+}
+
+func (b *BaseTunnelClient) AsyncVisitorRegister(req exchange.InBound, readCallBack exchange.BucketRead) error {
+	if req == nil {
+		req = b.GetVisitorReq()
+	}
+	log.Debug("visitor register %v", req)
 	b.TcControl.Bucket.AddHandler(req.Cmd(), readCallBack)
 	return b.TcControl.Bucket.PushWitchRequest(req)
 }

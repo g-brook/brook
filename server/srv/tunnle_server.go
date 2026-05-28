@@ -20,7 +20,7 @@ import (
 	"github.com/g-brook/brook/common/modules"
 )
 
-var tunnelServerPlugin = modules.ModuleID("gnet_tunnel_server_plugin")
+var GenTunnelServerPlugin = modules.ModuleID("gnet_tunnel_server_plugin")
 
 type TServer interface {
 	modules.Module
@@ -42,7 +42,7 @@ func NewTServer2GnetServer() *TServer2GnetServer {
 
 func (T *TServer2GnetServer) Module() modules.ModuleInfo {
 	return modules.ModuleInfo{
-		ID:         tunnelServerPlugin,
+		ID:         GenTunnelServerPlugin,
 		ModuleType: modules.TServerModule,
 		New:        func() modules.Module { return NewTServer2GnetServer() },
 	}

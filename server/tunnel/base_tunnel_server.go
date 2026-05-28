@@ -66,6 +66,7 @@ type BaseTunnelServer struct {
 	runtime         time.Time
 	UpdateConfigFun UpdateConfigFunction
 	channelLock     sync.Mutex
+	module          modules.ModuleID
 }
 
 func (b *BaseTunnelServer) Id() string {
@@ -85,6 +86,10 @@ func (b *BaseTunnelServer) Name() string {
 	return b.Cfg.Id
 }
 
+func (b *BaseTunnelServer) GetConfig() *configs.ServerTunnelConfig {
+	return b.Cfg
+}
+
 func (b *BaseTunnelServer) Clients() int {
 	return b.TunnelChannel.Len()
 }
@@ -98,6 +103,10 @@ func (b *BaseTunnelServer) ObserveLatency(d time.Duration) {
 		return
 	}
 	b.trafficMetrics.ObserveLatency(d)
+}
+
+func (b *BaseTunnelServer) GetServer() srv.BootServer {
+	return b.Server
 }
 
 func (b *BaseTunnelServer) ClientsInfo() []transport.Channel {
@@ -142,7 +151,7 @@ func (b *BaseTunnelServer) Shutdown() {
 }
 
 // NewBaseTunnelServer Create a new instance of the underlying tunnel server
-func NewBaseTunnelServer(cfg *configs.ServerTunnelConfig) *BaseTunnelServer {
+func NewBaseTunnelServer(cfg *configs.ServerTunnelConfig, serverModule modules.ModuleID) *BaseTunnelServer {
 	return &BaseTunnelServer{
 		port:           cfg.Port,
 		Cfg:            cfg,
@@ -151,6 +160,7 @@ func NewBaseTunnelServer(cfg *configs.ServerTunnelConfig) *BaseTunnelServer {
 		openCh:         make(chan error),
 		handlers:       make(map[EventType]Event, 16),
 		closeCtx:       context.Background(),
+		module:         serverModule,
 	}
 }
 
@@ -164,7 +174,7 @@ func (b *BaseTunnelServer) Boot(_ srv.BootServer, _ srv.TraverseBy) error {
 // Start  the tunnel server
 func (b *BaseTunnelServer) Start(network lang.Network) error {
 	threading.GoSafe(func() {
-		tserverModel, err := modules.GetModuleByDescFirst(modules.TServerModule)
+		tserverModel, err := modules.GetModule(b.module)
 		if err != nil {
 			log.Error("Start Start tunnel server %s error: %v", b.Cfg.Id, err)
 			return

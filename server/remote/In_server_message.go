@@ -49,6 +49,8 @@ var OpenTunnelServerFun func(req *exchange.OpenTunnelReq, ch transport.Channel) 
 // ManagerTunnelServerFun handles heartbeat-driven tunnel management.
 var ManagerTunnelServerFun func(proxyId string, ch transport.Channel) error
 
+var RegisterVisitorFun func(req *exchange.VisitorRegister, ch transport.Channel) error
+
 // OpenTunnelServer dispatches an open-tunnel request to the configured handler.
 func OpenTunnelServer(req *exchange.OpenTunnelReq, ch transport.Channel) (*TunnelCfg, error) {
 	if OpenTunnelServerFun == nil {
@@ -56,6 +58,13 @@ func OpenTunnelServer(req *exchange.OpenTunnelReq, ch transport.Channel) (*Tunne
 		return nil, fmt.Errorf("not found open tunnel function")
 	}
 	return OpenTunnelServerFun(req, ch)
+}
+
+func RegisterVisitor(req *exchange.VisitorRegister, ch transport.Channel) error {
+	if RegisterVisitorFun == nil {
+		return fmt.Errorf("not found register visitor function")
+	}
+	return RegisterVisitorFun(req, ch)
 }
 
 // ManagerTunnelServer dispatches heartbeat tunnel updates to the configured handler.

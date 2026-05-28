@@ -25,8 +25,10 @@ import (
 	"github.com/g-brook/brook/common/exchange"
 	"github.com/g-brook/brook/common/hash"
 	"github.com/g-brook/brook/common/lang"
+	"github.com/g-brook/brook/common/log"
 	. "github.com/g-brook/brook/common/transport"
 	"github.com/g-brook/brook/server/remote"
+	"github.com/g-brook/brook/server/srv"
 	"github.com/g-brook/brook/server/tunnel"
 	"github.com/g-brook/brook/server/tunnel/http"
 	"github.com/g-brook/brook/server/tunnel/tcp"
@@ -38,6 +40,28 @@ func init() {
 	servers = hash.NewSyncMap[string, tunnel.TunnelServer]()
 	remote.OpenTunnelServerFun = OpenTunnelServer
 	remote.ManagerTunnelServerFun = ManagerTunnelServe
+	remote.RegisterVisitorFun = RegisterVisitor
+}
+
+func RegisterVisitor(req *exchange.VisitorRegister, ch Channel) error {
+	cfgNode := TunnelCfm.ConfigApi.GetConfig(req.ProxyId)
+	if cfgNode == nil {
+		return fmt.Errorf("visitor config not found proxy id %v", req.ProxyId)
+	}
+	cfgNode.openLock.Lock()
+	defer cfgNode.openLock.Unlock()
+	server, b := servers.Load(cfgNode.Config.Id)
+	if !b {
+		return fmt.Errorf("visitor server not start proxy id %v", req.ProxyId)
+	}
+	if server.GetConfig().Visitor.Token != req.Token {
+		return fmt.Errorf("visitor token not match %v", req.ProxyId)
+	}
+	visitorServer := server.GetServer().(*srv.VisitorServer)
+	if visitorServer != nil {
+		_ = visitorServer.AddLastChannel(ch)
+	}
+	return nil
 }
 
 // OpenTunnelServer open tcp tunnel server
@@ -83,24 +107,14 @@ func ManagerTunnelServe(proxyId string, manager Channel) error {
 }
 
 func running(config *configs.ServerTunnelConfig) (*tunnel.BaseTunnelServer, error) {
-	baseServer := tunnel.NewBaseTunnelServer(config)
+	isVisitor := config.ModelId == srv.VisitorServerPlugin
+	baseServer := tunnel.NewBaseTunnelServer(config, config.ModelId)
 	var server tunnel.TunnelServer
 	var netWork lang.Network
-	if config.Type == lang.Tcp {
-		server = tcp.NewTcpTunnelServer(baseServer)
-		netWork = lang.NetworkTcp
-	} else if config.Type == lang.Udp {
-		server = tcp.NewUdpTunnelServer(baseServer)
-		netWork = lang.NetworkUdp
-	} else if config.Type == lang.Https || config.Type == lang.Http {
-		tunnelServer, err := http.NewHttpTunnelServer(baseServer)
-		if err != nil {
-			return nil, fmt.Errorf("the server %v:%s init error", config.Type, config.Id)
-		}
-		server = tunnelServer
-		netWork = lang.NetworkTcp
+	if isVisitor {
+		netWork, server = newVisitorTunnel(config, baseServer)
 	} else {
-		return nil, fmt.Errorf("not support tunnel type %v", config.Type)
+		netWork, server = newNormalTunnel(config, baseServer)
 	}
 	//Start the server.
 	err := server.Start(netWork)
@@ -110,6 +124,38 @@ func running(config *configs.ServerTunnelConfig) (*tunnel.BaseTunnelServer, erro
 	}
 	servers.Store(config.Id, server)
 	return baseServer, nil
+}
+
+func newNormalTunnel(config *configs.ServerTunnelConfig, server *tunnel.BaseTunnelServer) (network lang.Network, tserver tunnel.TunnelServer) {
+	switch config.Type {
+	case lang.Http, lang.Https:
+		tunnelServer, err := http.NewHttpTunnelServer(server)
+		if err != nil {
+			err := fmt.Errorf("the server %v:%s init error", config.Type, config.Id)
+			log.Warn(err.Error())
+			return "", nil
+		}
+		tserver = tunnelServer
+		network = lang.NetworkTcp
+		break
+	case lang.Tcp:
+		tserver = tcp.NewTcpTunnelServer(server)
+		network = lang.NetworkTcp
+		break
+	case lang.Udp:
+		tserver = tcp.NewUdpTunnelServer(server)
+		network = lang.NetworkUdp
+		break
+	}
+	return
+}
+
+func newVisitorTunnel(config *configs.ServerTunnelConfig, server *tunnel.BaseTunnelServer) (network lang.Network, tserver tunnel.TunnelServer) {
+	switch config.Type {
+	case lang.Tcp:
+		return lang.NetworkTcp, tcp.NewVTcpTunnelServer(server)
+	}
+	return lang.NetworkUdp, nil
 }
 
 type PortPool struct {

@@ -112,20 +112,59 @@ func (m *MultipleTunnelClient) messageListener() {
 }
 
 func newTunnelClient(config *configs.ClientTunnelConfig, m *MultipleTunnelClient) (clis.TunnelClient, error) {
-	switch config.TunnelType {
-	case lang.Tcp:
-		return NewTcpTunnelClient(config, m)
-	case lang.Udp:
-		return NewUdpTunnelClient(config, m)
-	case lang.Http, lang.Https:
-		return NewHttpTunnelClient(config)
+	if config.IsVisitorLeft() {
+		switch config.TunnelType {
+		case lang.Tcp:
+			return NewVTcpTunnelClient(config, m)
+		case lang.Udp:
+			return NewUdpTunnelClient(config, m)
+		case lang.Http, lang.Https:
+			return NewHttpTunnelClient(config)
+		}
+	} else {
+		switch config.TunnelType {
+		case lang.Tcp:
+			return NewTcpTunnelClient(config, m)
+		case lang.Udp:
+			return NewUdpTunnelClient(config, m)
+		case lang.Http, lang.Https:
+			return NewHttpTunnelClient(config)
+		}
 	}
+
 	return nil, errors.New("unknown tunnel type")
 }
 
 // Open This function opens a TCP tunnel server for a given session.
 func (w *tunnelClientWrapper) Open(session *smux.Session) error {
 	// Create a new OpenTunnelReq struct with the proxy ID, tunnel type, and tunnel port.
+	// isVisitor left
+
+	if w.config.IsVisitorLeft() {
+		return w.openVisitor(session)
+	}
+	return w.openTunnel(session)
+}
+
+func (w *tunnelClientWrapper) openVisitor(session *smux.Session) error {
+	clis.ManagerTransport.PutConfig(w.config)
+	w.multiClient.sessions.Store(w.config.ProxyId, session)
+	log.Info("Begin Open %v visitor client:%v", w.config.TunnelType, w.config.ProxyId)
+	req := &exchange.WorkConnReq{
+		ProxyId: w.config.ProxyId,
+	}
+	request, err := exchange.NewRequest(req)
+	if err != nil {
+		log.Error("Create WorkConnReq error: %v", err)
+		return err
+	}
+	if err := clis.ManagerTransport.PushMessage(request); err != nil {
+		log.Error("Push WorkConnReq message error: %v", err)
+	}
+	return nil
+}
+
+func (w *tunnelClientWrapper) openTunnel(session *smux.Session) error {
 	req := &exchange.OpenTunnelReq{
 		ProxyId: w.config.ProxyId,
 		UnId:    clis.ManagerTransport.UnId,
@@ -202,5 +241,19 @@ func (w *tunnelClientWrapper) onlyOpenHttp(proxyId string) {
 		if err := clis.ManagerTransport.PushMessage(request); err != nil {
 			log.Error("Push WorkConnReq message error: %v", err)
 		}
+	}
+}
+
+func (w *tunnelClientWrapper) visitorClient(proxyId string) {
+	req := &exchange.WorkConnReq{
+		ProxyId: proxyId,
+	}
+	request, err := exchange.NewRequest(req)
+	if err != nil {
+		log.Error("Create visitor WorkConnReq error: %v", err)
+		return
+	}
+	if err := clis.ManagerTransport.PushMessage(request); err != nil {
+		log.Error("Push visitor WorkConnReq message error: %v", err)
 	}
 }

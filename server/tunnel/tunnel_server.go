@@ -19,9 +19,11 @@ package tunnel
 import (
 	"time"
 
+	"github.com/g-brook/brook/common/configs"
 	"github.com/g-brook/brook/common/exchange"
 	"github.com/g-brook/brook/common/lang"
 	"github.com/g-brook/brook/common/transport"
+	"github.com/g-brook/brook/server/srv"
 )
 
 // Save all tunnels channel. port: server.
@@ -93,4 +95,8 @@ type TunnelServer interface {
 	Shutdown()
 
 	ObserveLatency(d time.Duration)
+
+	GetServer() srv.BootServer
+
+	GetConfig() *configs.ServerTunnelConfig
 }

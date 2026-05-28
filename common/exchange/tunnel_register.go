@@ -59,6 +59,13 @@ type RegisterReqAndRsp struct {
 	ServerId string `json:"serverId"`
 
 	Open bool `json:"open"`
+
+	//visitor model.
+	IsVisitor bool `json:"is_visitor"`
+
+	Token string `json:"token"`
+
+	LocalPort int `json:"local_port"`
 }
 
 func (r *RegisterReqAndRsp) GetTunnelPort() int {

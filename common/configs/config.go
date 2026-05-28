@@ -19,17 +19,35 @@ package configs
 import (
 	"fmt"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/g-brook/brook/common/jsonx"
 	"github.com/g-brook/brook/common/lang"
+	"github.com/g-brook/brook/common/modules"
 )
 
 var DefServerPort = 8909
 var DefWebPort = 8000
 
+// NetPos Define visitor-only Net pos constants.
+// example: server(left)--*connect*--> client(right)
+type NetPos string
+
+const (
+	// NetLeft server mapper left
+	NetLeft NetPos = "LEFT"
+	// NetRight client mapper right.
+	NetRight NetPos = "RIGHT"
+)
+
+// NetIsLeft judge visitor net is left or right. it is left return true, otherwise  false.
+func NetIsLeft(pos NetPos) bool {
+	return strings.EqualFold(string(pos), string(NetLeft))
+}
+
 // ServerConfig
-// @Description: 配置文件存储.
+// @Description: define tunnel server configuration.
 type ServerConfig struct {
 	ServerPort int                   `json:"serverPort"`
 	TunnelPort int                   `json:"tunnelPort"`
@@ -60,6 +78,8 @@ type ServerTunnelConfig struct {
 	CertContent string            `json:"-"`
 	IsFileCert  bool              `json:"-"`
 	IpStrategy  string            `json:"-"`
+	Visitor     *VisitorConfig    `json:"visitor"`
+	ModelId     modules.ModuleID
 }
 
 type HttpRunnelProxy struct {
@@ -74,15 +94,20 @@ type ClientTunnelConfig struct {
 	ProxyId     string          `json:"proxyId"`
 	HttpId      string          `json:"httpId,omitempty"`
 	//default 1500
-	UdpSize    int `json:"udpSize,omitempty"`
-	RemotePort int `json:"-"`
-	MaxConn    int `json:"maxConn,omitempty"`
+	UdpSize    int            `json:"udpSize,omitempty"`
+	RemotePort int            `json:"-"`
+	MaxConn    int            `json:"maxConn,omitempty"`
+	Visitor    *VisitorConfig `json:"visitor"`
 }
-type ClientVisitorConfig struct {
-	Id          string `json:"id"`
-	Token       string `json:"token"`
-	Destination string `json:"destination"`
-	LocalPort   int    `json:"localPort"`
+
+func (t *ClientTunnelConfig) IsVisitorLeft() bool {
+	return t.Visitor != nil && NetIsLeft(t.Visitor.Pos)
+}
+
+type VisitorConfig struct {
+	Token     string `json:"token"`
+	LocalPort int    `json:"localPort"`
+	Pos       NetPos `json:"pos"`
 }
 
 // GetServerConfig
@@ -124,12 +149,11 @@ func IsExist(cfgPath string) bool {
 // ClientConfig
 // @Description: Description.
 type ClientConfig struct {
-	ServerPort  int                    `json:"serverPort"`
-	ServerHost  string                 `json:"serverHost"`
-	ManagerPort int                    `json:"managerPort"`
-	Token       string                 `json:"token"`
-	PingTime    time.Duration          `json:"pingTime"`
-	Tunnels     []*ClientTunnelConfig  `json:"tunnels"`
-	Visitors    []*ClientVisitorConfig `json:"visitors"`
-	Logger      *LoggerConfig          `json:"logger,omitempty"`
+	ServerPort  int                   `json:"serverPort"`
+	ServerHost  string                `json:"serverHost"`
+	ManagerPort int                   `json:"managerPort"`
+	Token       string                `json:"token"`
+	PingTime    time.Duration         `json:"pingTime"`
+	Tunnels     []*ClientTunnelConfig `json:"tunnels"`
+	Logger      *LoggerConfig         `json:"logger,omitempty"`
 }

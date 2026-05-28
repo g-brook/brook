@@ -69,6 +69,8 @@ const (
 	ClientWorkerConnReq Cmd = 8
 
 	RegisterVisitor = 9
+
+	FindVisitor = 10
 )
 
 // RspSuccess RspCode.

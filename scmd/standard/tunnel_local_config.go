@@ -25,6 +25,7 @@ import (
 	"github.com/g-brook/brook/common/log"
 	"github.com/g-brook/brook/common/modules"
 	"github.com/g-brook/brook/scmd/web/sql"
+	"github.com/g-brook/brook/server/srv"
 	"github.com/g-brook/brook/server/tunnel/base"
 )
 
@@ -59,6 +60,13 @@ func (receiver *LocalTunnelConfig) Module() modules.ModuleInfo {
 //   - *sf.ServerTunnelConfig: pointer to the server tunnel configuration associated with the proxy ID
 func (receiver *LocalTunnelConfig) GetConfig(proxyId string) *base.ConfigNode {
 	load, _ := receiver.configs.Load(proxyId) // Load retrieves the value for a key from the sync.Map
+	if load != nil {
+		if load.Config.Visitor == nil {
+			load.Config.ModelId = srv.GenTunnelServerPlugin
+		} else {
+			load.Config.ModelId = srv.VisitorServerPlugin
+		}
+	}
 	return load
 }
 
@@ -135,6 +143,13 @@ func format(item *sql.ProxyConfig) *sf.ServerTunnelConfig {
 	st.Destination = item.Destination.String
 	st.IpStrategy = item.IpStrategies.String
 	protocol := base.TransformProtocol(item.Protocol)
+	vt, _ := sql.GetVisitorConfig(item.Idx)
+	if vt != nil {
+		st.Visitor = &sf.VisitorConfig{
+			Token:     vt.Token,
+			LocalPort: vt.LocalPort,
+		}
+	}
 	if protocol == "" {
 		log.Error("protocol is not support: %s", item.Protocol)
 	} else {

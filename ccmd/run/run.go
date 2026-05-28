@@ -67,6 +67,7 @@ func rootRun(cmd *cobra.Command, args []string) {
 		log.Error("configs is null, please use -c or --configs to set configs file")
 		os.Exit(1)
 	}
+	log.Info("config file path:%s", cmdValue.ConfigPath)
 	exist := configs.IsExist(cmdValue.ConfigPath)
 	if exist {
 		if err := configs.WriterConfig(cmdValue.ConfigPath, config); err != nil {
@@ -125,6 +126,11 @@ func verilyBaseConfig(c *configs.ClientConfig) {
 		}
 		if it.TunnelType == "" {
 			panic("Tunnels TunnelType（tcp、udp、http(s)） is null, system exit")
+		}
+		if it.Visitor != nil {
+			if it.Visitor.Pos == "" {
+				panic("visitor Pos is null, system exit")
+			}
 		}
 	}
 }
