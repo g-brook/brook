@@ -18,7 +18,6 @@ package http
 
 import (
 	"errors"
-	"fmt"
 	"io"
 	"net"
 	"runtime"
@@ -70,7 +69,6 @@ func (wc *WebsocketConnection) Close() error {
 }
 
 func (wc *WebsocketConnection) Write(b []byte) (n int, err error) {
-	fmt.Printf("WebsocketConnection buf 首地址: %p\n", &b[0])
 	bytes := []byte(wc.path)
 	attr := make([]byte, len(bytes)+1)
 	attr[0] = wc.payloadType
