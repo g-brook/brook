@@ -411,6 +411,7 @@ export default {
         noProxyTip: "無代理配置。點選「新增列」新增",
         proxyIdTip: "供用戶端連線使用",
         certInfoEmpty: "暂无憑證可供選擇，請前往我的設定新增",
+        routeConflictTip: "路由衝突規則：不同的明確網域允許使用相同路徑；相同網域或被萬用網域覆蓋時，重疊路徑會判定為衝突，例如 /* 與 /webDev。",
         protocols: {
             http: {
                 title: "HTTP",

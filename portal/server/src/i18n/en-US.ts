@@ -411,6 +411,7 @@ export default {
         noProxyTip: "No proxy configurations. Click 'Add Row' to add",
         proxyIdTip: "Used for client connection",
         certInfoEmpty: "No certificates available for selection, please add in My Settings",
+        routeConflictTip: "Route conflict rule: different explicit domains may use the same path; overlapping paths are treated as conflicts under the same domain or when covered by a wildcard domain, for example /* and /webDev.",
         protocols: {
             http: {
                 title: "HTTP",

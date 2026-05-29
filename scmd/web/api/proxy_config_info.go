@@ -19,9 +19,11 @@ package api
 import (
 	sql2 "database/sql"
 	"encoding/json"
+	"fmt"
 	"math/rand"
 
 	"github.com/g-brook/brook/common/configs"
+	"github.com/g-brook/brook/common/httpx"
 	"github.com/g-brook/brook/common/lang"
 	"github.com/g-brook/brook/common/log"
 	"github.com/g-brook/brook/scmd/web/errs"
@@ -115,10 +117,17 @@ func genClientConfig(*Request[any]) *Response {
 			}
 			if cfg.Protocol == "HTTP" || cfg.Protocol == "HTTPS" {
 				webCfg, ok := getWebConfig(cfg.Idx)
-				if ok {
+				if ok && len(webCfg.Proxy) > 0 {
 					for _, proxyInfo := range webCfg.Proxy {
-						tcfg.HttpId = proxyInfo.Id
+						tunnelCfgs = append(tunnelCfgs, &configs.ClientTunnelConfig{
+							TunnelType:  tcfg.TunnelType,
+							Destination: tcfg.Destination,
+							ProxyId:     tcfg.ProxyId,
+							HttpId:      proxyInfo.Id,
+							UdpSize:     tcfg.UdpSize,
+						})
 					}
+					continue
 				}
 			}
 			tunnelCfgs = append(tunnelCfgs, tcfg)
@@ -193,6 +202,31 @@ func getWebConfig(refProxyId int) (*WebConfigInfo, bool) {
 	return wf, true
 }
 
+func validateWebRouteConflicts(body *WebConfigInfo) string {
+	for i := 0; i < len(body.Proxy); i++ {
+		left := body.Proxy[i]
+		for j := i + 1; j < len(body.Proxy); j++ {
+			right := body.Proxy[j]
+			if left.Id == right.Id {
+				continue
+			}
+			conflict, ok := httpx.FindRouteConflict(left.Domain, left.Paths, right.Domain, right.Paths)
+			if ok {
+				return fmt.Sprintf(
+					"route conflict: httpId=%s domain=%s path=%s overlaps httpId=%s domain=%s path=%s",
+					left.Id,
+					httpx.DisplayRouteValue(left.Domain, conflict.Domain),
+					conflict.LeftPath,
+					right.Id,
+					httpx.DisplayRouteValue(right.Domain, conflict.Domain),
+					conflict.RightPath,
+				)
+			}
+		}
+	}
+	return ""
+}
+
 func addWebConfigs(req *Request[WebConfigInfo]) *Response {
 	body := req.Body
 	if body.RefProxyId <= 0 {
@@ -200,6 +234,9 @@ func addWebConfigs(req *Request[WebConfigInfo]) *Response {
 	}
 	if body.Proxy == nil || len(body.Proxy) == 0 {
 		return NewResponseFail(errs.CodeSysErr, "Http is empty")
+	}
+	if conflict := validateWebRouteConflicts(&body); conflict != "" {
+		return NewResponseFail(errs.CodeSysErr, conflict)
 	}
 	config := sql.GetWebProxyConfig(body.RefProxyId)
 	var err error

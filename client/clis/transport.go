@@ -93,7 +93,9 @@ func (t *Transport) openTunnel() {
 	if t.client.isSmux() && t.config.Tunnels != nil {
 		for _, cfg := range t.config.Tunnels {
 			if err := t.client.OpenTunnel(cfg); err != nil {
-				log.Warn("Connection to server error:%s %v", cfg.TunnelType, err)
+				log.Warn("Connection to server error:%s %v", cfg.ProxyId, err)
+			} else {
+				log.Info("Connection to server %s success", cfg.ProxyId)
 			}
 		}
 	}

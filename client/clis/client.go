@@ -300,7 +300,8 @@ func (c *Client) OpenTunnel(config *configs.ClientTunnelConfig) error {
 	err := client.Open(c.session)
 	if err != nil {
 		log.Error("Open tunnel error, close client:%v", config.TunnelType)
-		c.cct.Close()
+		//c.cct.Close()
+		return err
 	}
 	c.tunnelClient = client
 	return err

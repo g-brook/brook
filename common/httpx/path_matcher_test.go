@@ -23,7 +23,7 @@ import (
 )
 
 func TestNewPathMatcher(t *testing.T) {
-	matcher := httpx.NewPathMatcher()
+	matcher := httpx.NewPathMatcher(nil)
 	if matcher == nil {
 		t.Errorf("Expected non-nil PathMatcher")
 		return
@@ -34,7 +34,7 @@ func TestNewPathMatcher(t *testing.T) {
 }
 
 func TestAddAndGetPathMatcher(t *testing.T) {
-	matcher := httpx.NewPathMatcher()
+	matcher := httpx.NewPathMatcher(nil)
 	testCases := []struct {
 		path    string
 		handler interface{}

@@ -180,6 +180,7 @@ func (sever *StdServer) streamAssignment() {
 				}
 				stream, err := session.AcceptStream()
 				if err != nil {
+					sessionClose(session)
 					log.Error("session is close.PORT:%v, %v", conn.LocalAddr(), err.Error())
 					_ = conn.Close()
 					return
@@ -198,7 +199,7 @@ func (sever *StdServer) streamAssignment() {
 				threading.GoSafe(func() {
 					sever.readLoopStream(channel)
 				})
-				addHealthyCheckStream(channel)
+				addHealthyCheckStream(session, channel)
 			}
 
 		})

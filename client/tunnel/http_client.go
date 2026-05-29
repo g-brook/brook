@@ -148,7 +148,9 @@ func (b *HttpBridge) toRunning() {
 				_, err = b.Write(errorResponse)
 				return
 			}
-			defer response.Body.Close()
+			defer func(Body io.ReadCloser) {
+				_ = Body.Close()
+			}(response.Body)
 			if b.isWs && b.hp != nil {
 				if response.StatusCode == http.StatusSwitchingProtocols {
 					b.hp()

@@ -44,6 +44,8 @@ import (
 type TunnelHttpServer struct {
 	*tunnel.BaseTunnelServer
 
+	router *Router
+
 	proxyToConn *hash.SyncMap[string, *hash.SyncMap[string, *Tracker]]
 
 	registerLock sync.Mutex
@@ -72,41 +74,37 @@ func NewHttpTunnelServer(server *tunnel.BaseTunnelServer) (*TunnelHttpServer, er
 	}
 	tunnelServer := &TunnelHttpServer{
 		BaseTunnelServer: server,
+		router:           NewRouter(),
 		proxyToConn:      hash.NewSyncMap[string, *hash.SyncMap[string, *Tracker]](),
 	}
 	server.DoStart = tunnelServer.startAfter
 	server.UpdateConfigFun = func(cfg *configs.ServerTunnelConfig) {
 		log.Info("http tunnel server config updated")
-		if err := formatCfg(cfg, tunnelServer); err != nil {
-			log.Error("http tunnel server config update failed: %v", err)
-		}
+		formatCfg(cfg, tunnelServer)
 	}
 	server.AddEvent(tunnel.Unregister, tunnelServer.unRegisterConn)
-	if err := formatCfg(server.Cfg, tunnelServer); err != nil {
-		return nil, err
-	}
+	server.UpdateConfig(server.Cfg)
 	return tunnelServer, nil
 }
 
 // addRoute is a function that adds route information to the HttpTunnelServer. It
-func formatCfg(cfg *configs.ServerTunnelConfig, this *TunnelHttpServer) error {
-	RouteClean()
+func formatCfg(cfg *configs.ServerTunnelConfig, this *TunnelHttpServer) {
+	if this.router == nil {
+		this.router = NewRouter()
+	}
+	this.router.Clean()
 	for _, httpJson := range cfg.Http {
-		AddRouteInfo(httpJson.Id, httpJson.Domain, httpJson.Paths, this.getProxyConnection)
+		this.router.AddRouteInfo(httpJson.Id, httpJson.Domain, httpJson.Paths, this.getProxyConnection)
 		if _, ok := this.proxyToConn.Load(httpJson.Id); !ok {
 			this.proxyToConn.Store(httpJson.Id, hash.NewSyncMap[string, *Tracker]())
 		}
 	}
-	this.isHttps = false
-	this.tlsConfig = nil
 	if cfg.Type == lang.Https {
-		if err := loadTls(cfg, this); err != nil {
-			log.Error("loadTls error. %v", err)
-			return err
+		if loadTls(cfg, this) != nil {
+			panic("loadTls error.")
 		}
 		this.isHttps = true
 	}
-	return nil
 }
 
 func loadTls(cfg *configs.ServerTunnelConfig, this *TunnelHttpServer) error {
@@ -121,11 +119,7 @@ func loadTls(cfg *configs.ServerTunnelConfig, this *TunnelHttpServer) error {
 			log.Error("certFile or KeyFile is not exist")
 			return errors.New("certFile or KeyFile is not exist")
 		}
-		pair, err := tls.LoadX509KeyPair(cf, kf)
-		if err != nil {
-			log.Error("load x509 key pair error: %v", err)
-			return err
-		}
+		pair, _ := tls.LoadX509KeyPair(cf, kf)
 		this.tlsConfig = &tls.Config{
 			Certificates: []tls.Certificate{pair},
 		}
@@ -201,7 +195,7 @@ func (htl *TunnelHttpServer) getProxyConnection(httpId string) (workConn net.Con
 		if channel != nil {
 			selectKeys = append(selectKeys, key)
 		} else {
-			htl.proxyToConn.Delete(key)
+			channelIds.Delete(key)
 		}
 		return true
 	})
@@ -309,16 +303,14 @@ func (htl *TunnelHttpServer) startAfter() error {
 
 // getRoute is a method of HttpTunnelServer, which is used to get the route information based on the request path.
 func (htl *TunnelHttpServer) getRoute(req *http.Request) (*RouteInfo, error) {
-	host := req.Host
-	hostOnly := host
-	if parsedHost, _, err := net.SplitHostPort(host); err == nil {
-		hostOnly = parsedHost
-	} else if strings.HasPrefix(host, "[") && strings.Contains(host, "]") {
-		hostOnly = strings.TrimPrefix(strings.Split(host, "]")[0], "[")
+	if htl.router == nil {
+		return nil, errors.New("route info not found: router is nil")
 	}
-	info := GetRouteInfo(hostOnly, req.URL.Path)
+	host := req.Host
+	hosts := strings.Split(host, ":")
+	info := htl.router.GetRouteInfo(hosts[0], req.URL.Path)
 	if info == nil {
-		return nil, errors.New("route info not found:" + hostOnly + ":" + req.URL.Path)
+		return nil, errors.New("route info not found:" + hosts[0] + ":" + req.URL.Path)
 	}
 	return info, nil
 }
@@ -361,8 +353,7 @@ func (htl *TunnelHttpServer) unRegisterConn(ch Channel) {
 	httpId, ok := ch.GetAttr(defin.HttpIdKey)
 	if ok {
 		log.Debug("unRegister http tunnel, httpId: %v,channelId:%v", httpId, ch.GetId())
-		key := httpId.(string)
-		channels, ok := htl.proxyToConn.Load(key)
+		channels, ok := htl.proxyToConn.Load(httpId.(string))
 		if ok {
 			channels.Delete(ch.GetId())
 		}
