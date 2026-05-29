@@ -33,7 +33,7 @@ const rightRef = ref(null)
 const initData = async () => {
   const response = await baseInfo.getServerInfo({})
   list.value = response.data || []
-  if (response.data.length > 0) {
+  if (list.value.length > 0) {
     showHandler(list.value[0])
   }
 }

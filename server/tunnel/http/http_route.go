@@ -24,64 +24,70 @@ import (
 	"github.com/g-brook/brook/common/httpx"
 )
 
-var routes []*RouteInfo
-
-var lock sync.RWMutex
-
-// ProxyConnectionFunction is a function that returns a net.Conn
+// ProxyConnectionFunction is a function that returns a net.Conn.
 type ProxyConnectionFunction func(httpId string) (workConn net.Conn, err error)
 
-// RouteFunction is a function that returns a RouteInfo
+// RouteFunction is a function that returns a RouteInfo.
 type RouteFunction func(request *http.Request) (*RouteInfo, error)
 
-// RouteInfo is a struct that holds information about a route
+// RouteInfo holds route matching and backend connection metadata.
 type RouteInfo struct {
-	httpId string
-
-	matcher *httpx.PathMatcher
-
-	domain string
-
+	httpId             string
+	matcher            *httpx.PathMatcher
+	domain             string
 	getProxyConnection ProxyConnectionFunction
 }
 
-// AddRouteInfo adds a route to the routes slice
-func AddRouteInfo(httpId string, domain string, paths []string, fun ProxyConnectionFunction) {
-	lock.Lock()
-	defer lock.Unlock()
-	info := &RouteInfo{
-		httpId:             httpId,
-		getProxyConnection: fun,
-		domain:             domain,
+// Router stores routes for a single HTTP tunnel server instance.
+type Router struct {
+	lock   sync.RWMutex
+	routes []*RouteInfo
+}
+
+// NewRouter creates an isolated router for one server instance.
+func NewRouter() *Router {
+	return &Router{routes: make([]*RouteInfo, 0)}
+}
+
+// AddRouteInfo adds a route to this router.
+func (r *Router) AddRouteInfo(httpId string, domain string, paths []string, fun ProxyConnectionFunction) {
+	if r == nil {
+		return
 	}
+	r.lock.Lock()
+	defer r.lock.Unlock()
+	info := &RouteInfo{httpId: httpId, getProxyConnection: fun, domain: domain}
 	info.matcher = httpx.NewPathMatcher(info)
 	for _, path := range paths {
 		info.matcher.AddPathMatcher(path, info)
 	}
-	routes = append(routes, info)
+	r.routes = append(r.routes, info)
 }
 
-func RouteClean() {
-	lock.Lock()
-	defer lock.Unlock()
-	routes = routes[:0]
+// Clean removes all routes from this router.
+func (r *Router) Clean() {
+	if r == nil {
+		return
+	}
+	r.lock.Lock()
+	defer r.lock.Unlock()
+	r.routes = r.routes[:0]
 }
 
-// GetRouteInfo returns the RouteInfo for a given path
-func GetRouteInfo(domain string, path string) *RouteInfo {
-	lock.RLock()
-	defer lock.RUnlock()
-	var infos []*RouteInfo
-	for _, info := range routes {
+// GetRouteInfo returns the first matching route from this router.
+func (r *Router) GetRouteInfo(domain string, path string) *RouteInfo {
+	if r == nil {
+		return nil
+	}
+	r.lock.RLock()
+	defer r.lock.RUnlock()
+	for _, info := range r.routes {
 		if !httpx.MatchDomain(info.domain, domain) {
 			continue
 		}
 		if info.matcher.Match(path).Matched {
-			infos = append(infos, info)
+			return info
 		}
-	}
-	if infos != nil {
-		return infos[0]
 	}
 	return nil
 }

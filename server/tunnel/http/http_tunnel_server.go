@@ -44,6 +44,8 @@ import (
 type TunnelHttpServer struct {
 	*tunnel.BaseTunnelServer
 
+	router *Router
+
 	proxyToConn *hash.SyncMap[string, *hash.SyncMap[string, *Tracker]]
 
 	registerLock sync.Mutex
@@ -72,6 +74,7 @@ func NewHttpTunnelServer(server *tunnel.BaseTunnelServer) (*TunnelHttpServer, er
 	}
 	tunnelServer := &TunnelHttpServer{
 		BaseTunnelServer: server,
+		router:           NewRouter(),
 		proxyToConn:      hash.NewSyncMap[string, *hash.SyncMap[string, *Tracker]](),
 	}
 	server.DoStart = tunnelServer.startAfter
@@ -86,9 +89,12 @@ func NewHttpTunnelServer(server *tunnel.BaseTunnelServer) (*TunnelHttpServer, er
 
 // addRoute is a function that adds route information to the HttpTunnelServer. It
 func formatCfg(cfg *configs.ServerTunnelConfig, this *TunnelHttpServer) {
-	RouteClean()
+	if this.router == nil {
+		this.router = NewRouter()
+	}
+	this.router.Clean()
 	for _, httpJson := range cfg.Http {
-		AddRouteInfo(httpJson.Id, httpJson.Domain, httpJson.Paths, this.getProxyConnection)
+		this.router.AddRouteInfo(httpJson.Id, httpJson.Domain, httpJson.Paths, this.getProxyConnection)
 		if _, ok := this.proxyToConn.Load(httpJson.Id); !ok {
 			this.proxyToConn.Store(httpJson.Id, hash.NewSyncMap[string, *Tracker]())
 		}
@@ -189,7 +195,7 @@ func (htl *TunnelHttpServer) getProxyConnection(httpId string) (workConn net.Con
 		if channel != nil {
 			selectKeys = append(selectKeys, key)
 		} else {
-			htl.proxyToConn.Delete(key)
+			channelIds.Delete(key)
 		}
 		return true
 	})
@@ -297,9 +303,12 @@ func (htl *TunnelHttpServer) startAfter() error {
 
 // getRoute is a method of HttpTunnelServer, which is used to get the route information based on the request path.
 func (htl *TunnelHttpServer) getRoute(req *http.Request) (*RouteInfo, error) {
+	if htl.router == nil {
+		return nil, errors.New("route info not found: router is nil")
+	}
 	host := req.Host
 	hosts := strings.Split(host, ":")
-	info := GetRouteInfo(hosts[0], req.URL.Path)
+	info := htl.router.GetRouteInfo(hosts[0], req.URL.Path)
 	if info == nil {
 		return nil, errors.New("route info not found:" + hosts[0] + ":" + req.URL.Path)
 	}
@@ -344,8 +353,7 @@ func (htl *TunnelHttpServer) unRegisterConn(ch Channel) {
 	httpId, ok := ch.GetAttr(defin.HttpIdKey)
 	if ok {
 		log.Debug("unRegister http tunnel, httpId: %v,channelId:%v", httpId, ch.GetId())
-		key := httpId.(string)
-		channels, ok := htl.proxyToConn.Load(key)
+		channels, ok := htl.proxyToConn.Load(httpId.(string))
 		if ok {
 			channels.Delete(ch.GetId())
 		}

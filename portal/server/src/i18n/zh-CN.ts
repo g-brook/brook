@@ -411,6 +411,7 @@ export default {
         noProxyTip: "无代理配置。点击“添加行”添加",
         proxyIdTip: "供客户端连接使用",
         certInfoEmpty: "暂无证书可供选择，请前往我的设置添加",
+        routeConflictTip: "路由冲突规则：不同的显式域名允许使用相同路径；相同域名或被通配域名覆盖时，重叠路径会判定为冲突，例如 /* 与 /webDev。",
         protocols: {
             http: {
                 title: "HTTP",

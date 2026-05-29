@@ -63,7 +63,7 @@ func getServerInfo(req *Request[QueryServerInfo]) *Response {
 	for _, item := range servers {
 		newItem := sql.GetProxyConfigByProxyId(item.Id())
 		if newItem == nil {
-			return NewResponseSuccess(nil)
+			continue
 		}
 		v = append(v, &ServerInfo{
 			Name:        newItem.Name,
