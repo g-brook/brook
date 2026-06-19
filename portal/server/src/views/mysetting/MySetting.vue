@@ -110,11 +110,11 @@ const {t, locale} = useI18n()
 </script>
 
 <template>
-  <div class="overflow-hidden">
+  <div class="brook-page">
 
-    <div class="max-w-6xl mx-auto p-1 space-y-4 fade-in">
+    <div class="brook-page-stack fade-in">
       <!-- Token 管理 - 参考 ConfigForm 风格 -->
-      <div class="bg-base-200/40 rounded-3xl p-6 border border-base-content/5 space-y-6 shadow-sm mx-1">
+      <div class="brook-section-muted mx-1 space-y-6">
         <div class="flex items-center justify-between">
           <div class="flex items-center gap-3">
             <div class="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary">

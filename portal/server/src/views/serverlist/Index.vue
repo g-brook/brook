@@ -63,7 +63,7 @@ const { t } = useI18n()
     <div class="w-80 h-full">
       <div class="list bg-base-100 rounded-box shadow-md h-full overflow-hidden">
         <div
-            class="card mx-3 my-1  card-xs shadow-sm hover:scale-105 hover:shadow-xl transition-all duration-300 group cursor-pointer"
+            class="brook-card brook-card-interactive mx-3 my-1 card-xs group"
             v-for="(server, index) in list" :key="index" @click="showHandler(server)"
             :class="server.proxyId==selectProxyId ?'bg-success text-base-100':'border-1 border-base-300'">
           <div class="card-body">

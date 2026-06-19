@@ -86,16 +86,16 @@ const handleSelect = (item: VisitorItem) => {
 </script>
 
 <template>
-  <div class="overflow-hidden">
-    <div class="flex sticky top-0 items-center h-14 justify-between gap-4 mb-3 px-5 py-2 rounded-3xl bg-base-100/80 backdrop-blur-md z-30 border border-base-content/5 shadow-sm mx-1">
+  <div class="brook-page">
+    <div class="brook-toolbar">
       <div class="flex items-center gap-4">
-        <div class="flex items-center gap-1.5">
-          <div class="w-1.5 h-1.5 rounded-full bg-primary opacity-40"></div>
+        <div class="brook-stat">
+          <div class="brook-stat-dot bg-primary"></div>
           <span class="text-xs font-black uppercase opacity-50 tracking-tighter">Visitors</span>
           <span class="text-sm font-black tracking-tighter">{{ providerVisitors.length }}</span>
         </div>
-        <div class="flex items-center gap-1.5">
-          <div class="w-1.5 h-1.5 rounded-full bg-success opacity-40"></div>
+        <div class="brook-stat">
+          <div class="brook-stat-dot bg-success"></div>
           <span class="text-xs font-black uppercase opacity-50 tracking-tighter">Online</span>
           <span class="text-sm font-black tracking-tighter text-success">{{ onlineCount }}</span>
         </div>
@@ -108,7 +108,7 @@ const handleSelect = (item: VisitorItem) => {
           <option value="offline">离线</option>
           <option value="error">异常</option>
         </select>
-        <button class="btn btn-circle btn-xs h-8 w-8 btn-ghost hover:rotate-180 transition-transform duration-500" :class="{ loading }">
+        <button class="btn btn-circle btn-xs btn-ghost brook-action-icon" :class="{ loading }">
           <Icon icon="brook-refresh" style="font-size: 14px;" />
         </button>
       </div>
@@ -123,7 +123,7 @@ const handleSelect = (item: VisitorItem) => {
       <article
         v-for="item in filtered"
         :key="item.id"
-        class="card rounded-3xl overflow-hidden bg-base-100 border border-base-content/5 shadow-sm hover:shadow-md hover:scale-[1.015] transition-all duration-200 cursor-pointer"
+        class="brook-card brook-card-interactive overflow-hidden"
         @click="handleSelect(item)"
       >
         <div
@@ -184,7 +184,7 @@ const handleSelect = (item: VisitorItem) => {
         </div>
       </article>
 
-      <article v-if="selectedVisitor" class="col-span-full card rounded-3xl bg-base-100 border border-base-content/5 shadow-sm">
+      <article v-if="selectedVisitor" class="col-span-full brook-card">
         <div class="px-4 py-3 border-b border-base-content/5 flex items-center justify-between">
           <div class="flex items-center gap-2">
             <Icon icon="brook-Diagram-" style="font-size: 14px;" class="opacity-40" />

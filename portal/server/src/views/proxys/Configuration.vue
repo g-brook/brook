@@ -23,6 +23,7 @@ import Modal from '@/components/modal';
 import ConfigFormComponent from './ConfigForm.vue';
 import config from '@/service/config';
 import {useI18n} from '@/components/lang/useI18n';
+import FormPageShell from '@/components/page/FormPageShell.vue';
 import WebConfiguration from "./WebConfiguration.vue";
 import Message from '@/components/message';
 import DownloadConfig from "./DownloadConfig.vue";
@@ -69,14 +70,20 @@ const strategyDrawerRef = ref<{ open: () => void } | null>(null);
 const selectedStrategy = ref<IpStrategy | null>(null);
 const selectedStrategyRules = ref<IpRule[]>([]);
 const strategyRulesLoading = ref(false);
-const formMode = ref<'list' | 'add' | 'edit'>('list');
+const formMode = ref<'list' | 'add' | 'edit' | 'web'>('list');
 const editingConfig = ref<ConfigItem | null>(null);
-const formApi = ref<{ handleSubmit: () => Promise<boolean> } | null>(null);
+const formApi = ref<{ handleSubmit: () => Promise<any> } | null>(null);
+const webConfigPageRef = ref<{ saveProxyToRemote: (refProxyId?: number, options?: { silent?: boolean }) => Promise<boolean> } | null>(null);
 const formPageKey = ref(0);
 const isFormPage = computed(() => formMode.value !== 'list');
-const formPageTitle = computed(() => formMode.value === 'edit'
-    ? t('configuration.editTunnelConfig')
-    : t('configuration.addTunnelConfig'));
+const formPageTitle = computed(() => {
+  if (formMode.value === 'web') {
+    return t('configuration.webInfoConfig');
+  }
+  return formMode.value === 'edit'
+      ? t('configuration.editTunnelConfig')
+      : t('configuration.addTunnelConfig');
+});
 
 const getConfigs = async () => {
   try {
@@ -159,6 +166,20 @@ const protocolIcons: Record<string, { icon: string, class: string }> = {
   'UDP': { icon: 'brook-a-01_UDP-2', class: 'badge-secondary' },
 };
 
+const isWebProtocol = (protocol?: string) => protocol === 'HTTP' || protocol === 'HTTPS';
+
+const findSavedConfig = (saved: any) => {
+  if (!saved || typeof saved === 'boolean') {
+    return null;
+  }
+  return configs.value.find(item => {
+    if (saved.id && item.id === saved.id) {
+      return true;
+    }
+    return item.proxyId === saved.proxyId;
+  }) || null;
+};
+
 // 组件挂载时获取数据
 onMounted(() => {
   getConfigs();
@@ -213,9 +234,11 @@ const handleBackToList = () => {
   formMode.value = 'list';
   editingConfig.value = null;
   formApi.value = null;
+  webConfigPageRef.value = null;
+  webItem.value = null;
 };
 
-const registerFormApi = (api: { handleSubmit: () => Promise<boolean> }) => {
+const registerFormApi = (api: { handleSubmit: () => Promise<any> }) => {
   formApi.value = api;
 };
 
@@ -224,14 +247,37 @@ const handleFormPageSubmit = async () => {
     return;
   }
   try {
-    const formData = await formApi.value.handleSubmit();
-    if (formData) {
+    const savedConfig = await formApi.value.handleSubmit();
+    if (savedConfig) {
+      await getConfigs();
+      message.info(t("common.success"));
+      const targetConfig = findSavedConfig(savedConfig);
+      if (targetConfig && isWebProtocol(targetConfig.protocol)) {
+        webItem.value = targetConfig;
+        formMode.value = 'web';
+        formPageKey.value += 1;
+        return;
+      }
+      handleBackToList();
+    }
+  } catch (error) {
+    console.error('Failed to submit form:', error);
+  }
+};
+
+const handleWebPageSubmit = async () => {
+  if (!webItem.value || !webConfigPageRef.value) {
+    return;
+  }
+  try {
+    const saved = await webConfigPageRef.value.saveProxyToRemote(webItem.value.id, {silent: true});
+    if (saved) {
       await getConfigs();
       message.info(t("common.success"));
       handleBackToList();
     }
   } catch (error) {
-    console.error('Failed to submit form:', error);
+    console.error('Failed to submit web configuration:', error);
   }
 };
 
@@ -263,13 +309,13 @@ const handleCopyProxyId = async (proxyId: string) => {
 </script>
 
 <template>
-  <div class="overflow-hidden">
+  <div class="brook-page">
     <Drawer ref="strategyDrawerRef"
             :title="selectedStrategy ? `${t('menu.security.strategy.title')} - ${selectedStrategy.name}` : t('menu.security.strategy.title')"
             icon="brook-security"
             width="50%">
       <div class="p-6 flex flex-col gap-6">
-        <div v-if="selectedStrategy" class="bg-base-200/40 rounded-3xl p-5 border border-base-content/5">
+        <div v-if="selectedStrategy" class="brook-section-muted">
           <div class="grid grid-cols-2 gap-4">
             <div class="flex flex-col gap-1">
               <span class="text-[11px] font-black opacity-40 uppercase tracking-[0.15em]">{{ t('menu.security.strategy.name') }}</span>
@@ -294,7 +340,7 @@ const handleCopyProxyId = async (proxyId: string) => {
           </div>
         </div>
 
-        <div class="flex-1 overflow-hidden flex flex-col rounded-3xl border border-base-content/5 bg-base-100 shadow-sm">
+        <div class="flex-1 overflow-hidden flex flex-col brook-table-wrap">
           <div class="px-5 py-3 border-b border-base-content/5 flex items-center justify-between">
             <div class="flex items-center gap-2">
               <Icon icon="brook-web" style="font-size: 16px;" class="opacity-40" />
@@ -342,13 +388,40 @@ const handleCopyProxyId = async (proxyId: string) => {
       <DownloadConfig/>
     </Drawer>
 
-    <div v-if="isFormPage" class="relative min-h-[calc(100vh-4rem)] px-4 py-5">
-      <button class="absolute left-2 top-1 inline-flex items-center gap-1.5 text-sm font-medium text-base-content/35 transition-colors hover:text-base-content/65" @click="handleBackToList">
-        <Icon icon="brook-Left-" style="font-size: 14px;" />
-        {{ t('common.back') }}
-      </button>
+    <FormPageShell
+        v-if="isFormPage"
+        :title="formPageTitle"
+        :cancelText="t('common.cancel')"
+        :saveText="t('common.save')"
+        @back="handleBackToList"
+        @cancel="handleBackToList"
+        @save="formMode === 'web' ? handleWebPageSubmit() : handleFormPageSubmit()">
+      <template v-if="formMode === 'web' && webItem">
+        <div class="mb-8">
+          <div class="flex items-center gap-3">
+            <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-info/10 text-info">
+              <Icon icon="brook-web" style="font-size: 18px;" />
+            </div>
+            <div>
+              <h2 class="text-2xl font-semibold tracking-tight text-base-content/90">{{ t('configuration.webInfoConfig') }}</h2>
+              <p class="mt-1 text-sm font-medium text-base-content/45">
+                {{ webItem.proxyId }} · {{ webItem.protocol }}
+              </p>
+            </div>
+          </div>
+        </div>
 
-      <div class="mx-auto w-full max-w-[850px] pt-14">
+        <WebConfiguration
+            :key="`${webItem.id}-${webItem.protocol}-${formPageKey}`"
+            ref="webConfigPageRef"
+            inline
+            managed
+            :refProxyId="webItem.id"
+            :protocol="webItem.protocol"
+        />
+      </template>
+
+      <template v-else>
         <div class="mb-10">
           <h2 class="text-2xl font-semibold tracking-tight text-base-content/90">{{ formPageTitle }}</h2>
           <p class="mt-3 text-sm font-medium text-base-content/45">
@@ -363,34 +436,28 @@ const handleCopyProxyId = async (proxyId: string) => {
             :isEdit="formMode === 'edit'"
             :onRegister="registerFormApi"
         />
-
-        <div class="mt-3 flex justify-end">
-          <button class="btn btn-primary btn-sm min-h-0 h-9 rounded-xl px-4 text-sm font-semibold shadow-none" @click="handleFormPageSubmit">
-            {{ t('common.save') }}
-          </button>
-        </div>
-      </div>
-    </div>
+      </template>
+    </FormPageShell>
 
     <template v-else>
     <!-- 极简页头：整合统计与操作 -->
-    <div class="flex sticky top-0 items-center h-14 justify-between gap-4 mb-3 px-5 py-2 rounded-xl bg-base-100/80 backdrop-blur-md z-30 border border-base-content/5 shadow-sm mx-1">
+    <div class="brook-toolbar">
       <div class="flex items-center gap-6">
         <!-- 垂直分割线 -->
         <!-- 整合后的微缩统计 -->
         <div class="flex items-center gap-4">
-          <div class="flex items-center gap-1.5 group cursor-help" :title="t('configuration.totalConfigsTitle')">
-            <div class="w-1.5 h-1.5 rounded-full bg-primary opacity-40"></div>
+          <div class="brook-stat group cursor-help" :title="t('configuration.totalConfigsTitle')">
+            <div class="brook-stat-dot bg-primary"></div>
             <span class="text-xs font-black uppercase opacity-50 tracking-tighter">{{ t('common.total') || 'Total' }}</span>
             <span class="text-sm font-black tracking-tighter">{{ totalConfigs }}</span>
           </div>
-          <div class="flex items-center gap-1.5 group cursor-help" :title="t('configuration.enabledConfigsTitle')">
-            <div class="w-1.5 h-1.5 rounded-full bg-success opacity-40"></div>
+          <div class="brook-stat group cursor-help" :title="t('configuration.enabledConfigsTitle')">
+            <div class="brook-stat-dot bg-success"></div>
             <span class="text-xs font-black uppercase opacity-50 tracking-tighter">{{ t('configuration.enabled') || 'Enabled' }}</span>
             <span class="text-sm font-black tracking-tighter text-success">{{ enabledConfigs }}</span>
           </div>
-          <div class="flex items-center gap-1.5 group cursor-help" :title="t('configuration.runningConfigsTitle')">
-            <div class="w-1.5 h-1.5 rounded-full bg-info opacity-40"></div>
+          <div class="brook-stat group cursor-help" :title="t('configuration.runningConfigsTitle')">
+            <div class="brook-stat-dot bg-info"></div>
             <span class="text-xs font-black uppercase opacity-50 tracking-tighter">{{ t('common.running') || 'Running' }}</span>
             <span class="text-sm font-black tracking-tighter text-info">{{ runningConfigs }}</span>
           </div>
@@ -402,19 +469,19 @@ const handleCopyProxyId = async (proxyId: string) => {
           <Icon icon="brook-empty" style="font-size: 12px;"/>
           {{ t('configuration.template') }}
         </button>
-        <button class="btn btn-primary btn-xs h-8 gap-1.5 font-bold px-3 shadow-md shadow-primary/20 text-xs uppercase tracking-widest" @click="handleAdd">
+        <button class="btn btn-primary btn-xs brook-action-primary" @click="handleAdd">
           <Icon icon="brook-add" style="font-size: 12px;"/>
           {{ t('common.add') }}
         </button>
         <div class="divider divider-horizontal mx-0.5 w-px h-4 self-center opacity-10"></div>
-        <button class="btn btn-circle btn-xs h-8 w-8 btn-ghost hover:rotate-180 transition-transform duration-500" @click="getConfigs">
+        <button class="btn btn-circle btn-xs btn-ghost brook-action-icon" @click="getConfigs">
           <Icon icon="brook-refresh" style="font-size: 14px;"/>
         </button>
       </div>
     </div>
 
     <!-- 配置表格 - 优化列宽与视觉样式 -->
-    <div class="overflow-x-auto rounded-3xl border border-base-content/5 bg-base-100 shadow-sm mx-1">
+    <div class="brook-table-wrap mx-1">
       <table class="table table-md">
         <!-- head -->
         <thead class="bg-base-200/50">
@@ -570,11 +637,6 @@ const handleCopyProxyId = async (proxyId: string) => {
 </template>
 
 <style scoped>
-/* 表格行悬停效果 */
-.table tbody tr:hover {
-  background-color: hsl(var(--b2));
-}
-
 /* 操作按钮悬停效果 */
 .btn:hover {
   transform: translateY(-1px);
@@ -584,19 +646,5 @@ const handleCopyProxyId = async (proxyId: string) => {
 /* 状态切换动画 */
 .toggle {
   transition: all 0.3s ease;
-}
-
-/* 强化表头磁吸效果 */
-.table thead {
-  position: sticky !important;
-  top: 0 !important;
-  z-index: 20 !important;
-  background-color: hsl(var(--b1)) !important;
-}
-
-.table thead th {
-  background-color: hsl(var(--b1)) !important;
-  position: relative !important;
-  border-bottom: 1px solid hsl(var(--bc) / 0.1) !important;
 }
 </style>

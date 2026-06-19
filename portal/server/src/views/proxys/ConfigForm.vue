@@ -61,7 +61,7 @@ const props = defineProps<{
   isEdit?: boolean;
   embedded?: boolean;
   initialData?: Partial<ConfigForm>;
-  onRegister?: (api: { handleSubmit: () => Promise<boolean> }) => void;
+  onRegister?: (api: { handleSubmit: () => Promise<ConfigForm | boolean> }) => void;
 }>();
 
 // 事件定义
@@ -71,10 +71,38 @@ defineEmits<{
 }>();
 // 协议类型选项
 const protocolTypes = [
-  {value: 'HTTP', label: 'HTTP', icon: 'brook-web', color: 'text-blue-500'},
-  {value: 'HTTPS', label: 'HTTPS', icon: 'brook-https', color: 'text-green-500'},
-  {value: 'TCP', label: 'TCP', icon: 'brook-technology_usb-cable', color: 'text-orange-500'},
-  {value: 'UDP', label: 'UDP', icon: 'brook-a-01_UDP-2', color: 'text-purple-500'},
+  {
+    value: 'HTTP',
+    label: 'HTTP',
+    icon: 'brook-web',
+    selectedClass: 'bg-blue-500 text-white border-blue-500 shadow-blue-500/20',
+    iconClass: 'bg-white/20 text-white',
+    textClass: 'text-white',
+  },
+  {
+    value: 'HTTPS',
+    label: 'HTTPS',
+    icon: 'brook-https',
+    selectedClass: 'bg-emerald-500 text-white border-emerald-500 shadow-emerald-500/20',
+    iconClass: 'bg-white/20 text-white',
+    textClass: 'text-white',
+  },
+  {
+    value: 'TCP',
+    label: 'TCP',
+    icon: 'brook-technology_usb-cable',
+    selectedClass: 'bg-orange-500 text-white border-orange-500 shadow-orange-500/20',
+    iconClass: 'bg-white/20 text-white',
+    textClass: 'text-white',
+  },
+  {
+    value: 'UDP',
+    label: 'UDP',
+    icon: 'brook-a-01_UDP-2',
+    selectedClass: 'bg-violet-500 text-white border-violet-500 shadow-violet-500/20',
+    iconClass: 'bg-white/20 text-white',
+    textClass: 'text-white',
+  },
 ];
 
 // 响应式数据
@@ -212,7 +240,7 @@ const handleSubmit = async () => {
       res = await config.updateProxyConfig(form)
     }
     if (res.success()) {
-      return Promise.resolve(true);
+      return Promise.resolve({...form});
     } else {
       return Promise.reject(false);
     }
@@ -356,15 +384,16 @@ onMounted(() => {
                 v-for="type in protocolTypes"
                 :key="type.value"
                 :class="[
-                  'flex h-9 cursor-pointer items-center justify-center rounded-lg text-sm font-semibold transition-colors',
+                  'flex h-9 cursor-pointer items-center justify-center gap-1.5 rounded-lg border text-sm font-semibold shadow-sm transition-all',
                   form.protocol === type.value
-                    ? 'bg-base-300/80 text-base-content shadow-sm'
+                    ? type.selectedClass
                     : errors.protocol
-                      ? 'text-error/70 hover:bg-base-200/60'
-                      : 'text-base-content/55 hover:bg-base-200/60'
+                      ? 'border-error/50 text-error/70 hover:bg-base-200/60'
+                      : 'border-transparent text-base-content/55 hover:bg-base-200/60'
                 ]"
             >
               <input type="radio" name="types" v-model="form.protocol" :value="type.value" class="hidden" @change="clearFieldError('protocol')"/>
+              <Icon :icon="type.icon" style="font-size: 14px;" />
               {{ type.label }}
             </label>
           </div>
@@ -506,7 +535,7 @@ onMounted(() => {
                 :class="[
                   'relative flex flex-col items-center justify-center gap-1.5 py-3 px-2 rounded-2xl cursor-pointer transition-[background-color,border-color,color,transform,box-shadow] duration-200 border overflow-hidden group will-change-transform',
                   form.protocol === type.value
-                    ? 'bg-primary text-primary-content border-primary shadow-md scale-[1.02]'
+                    ? `${type.selectedClass} shadow-md scale-[1.02]`
                     : errors.protocol
                       ? 'bg-base-200/50 border-error/70 hover:bg-base-200/80 ring-1 ring-error/25'
                       : 'bg-base-100/20 border-base-content/10 hover:bg-base-200/60 hover:border-base-content/15'
@@ -517,14 +546,14 @@ onMounted(() => {
               <div
                   :class="[
                     'flex items-center justify-center w-9 h-9 rounded-xl transition-colors duration-200',
-                    form.protocol === type.value ? 'bg-white/20 text-white' : 'bg-base-200/70 text-base-content/40'
+                    form.protocol === type.value ? type.iconClass : 'bg-base-200/70 text-base-content/40'
                   ]"
               >
                 <Icon :icon="type.icon" style="font-size: 18px;"/>
               </div>
 
               <!-- 文字内容 -->
-              <span :class="['font-black text-[14px] tracking-widest uppercase', form.protocol === type.value ? 'text-white' : 'text-base-content/60']">
+              <span :class="['font-black text-[14px] tracking-widest uppercase', form.protocol === type.value ? type.textClass : 'text-base-content/60']">
                 {{ type.label }}
               </span>
 
@@ -773,14 +802,16 @@ onMounted(() => {
 
 <style scoped>
 .field-error {
-  top: 0;
-  transform: translate3d(0, calc(-100% - 8px), 0);
-  max-width: min(88%, 22rem);
+  position: static;
+  display: block;
+  max-width: 100%;
+  margin-top: 6px;
   padding: 2px 10px;
   border-radius: 9999px;
   background: rgba(239, 68, 68, 0.08);
   border: 1px solid rgba(239, 68, 68, 0.28);
-  white-space: nowrap;
+  width: fit-content;
+  white-space: normal;
   overflow: hidden;
   text-overflow: ellipsis;
   box-shadow: 0 6px 18px -14px rgba(239, 68, 68, 0.55);
@@ -795,7 +826,7 @@ onMounted(() => {
 .field-error-enter-from,
 .field-error-leave-to {
   opacity: 0;
-  transform: translate3d(0, calc(-100% - 3px), 0);
+  transform: translate3d(0, -3px, 0);
 }
 
 .field-shell {

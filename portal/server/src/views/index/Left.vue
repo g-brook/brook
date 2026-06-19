@@ -114,7 +114,7 @@ const toggleSidebar = () => {
 <template>
   <!-- 左侧导航栏 -->
   <aside :class="[
-        'transition-all duration-300 ease-in-out h-full ',
+        'daisy-page-font transition-all duration-300 ease-in-out h-full ',
         isCollapsed ? 'w-16' : 'w-70'
     ]">
     <div :class="[

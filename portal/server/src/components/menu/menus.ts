@@ -52,14 +52,6 @@ const menus: Menu[] = [
         () => import('@/views/serverlist/Index.vue'),
     ),
     new Menu(
-        'menu.onlineServer.title',
-        'menu.onlineServer.description',
-        'brook-Diagram-',
-        false,
-        [],
-        () => import('@/views/visitors/Index.vue'),
-    ),
-    new Menu(
         'menu.tunnelConfiguration.manager',
         'menu.tunnelConfiguration.description',
         'brook-communication-_clo',

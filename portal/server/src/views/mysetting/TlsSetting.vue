@@ -68,7 +68,7 @@ onMounted(() => {
   </Drawer>
 
   <!-- TLS 管理 - 参考 Configuration.vue 风格 -->
-  <div :key="`tls-panel-${locale}`" class="bg-base-200/40 rounded-3xl p-6 border border-base-content/5 space-y-6 shadow-sm">
+  <div :key="`tls-panel-${locale}`" class="brook-section-muted space-y-6">
     <div class="flex items-center justify-between">
       <div class="flex items-center gap-3">
         <div class="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
@@ -80,19 +80,19 @@ onMounted(() => {
         </div>
       </div>
       <div class="flex items-center gap-2">
-        <button class="btn btn-primary btn-xs h-8 gap-1.5 font-bold px-3 shadow-md shadow-primary/20 text-xs uppercase tracking-widest" @click="openAddCert">
+        <button class="btn btn-primary btn-xs brook-action-primary" @click="openAddCert">
           <Icon icon="brook-add" style="font-size: 12px;"/>
           {{ t('mysetting.tls.actions.create') }}
         </button>
         <div class="divider divider-horizontal mx-0.5 w-px h-4 self-center opacity-10"></div>
-        <button class="btn btn-circle btn-xs h-8 w-8 btn-ghost hover:rotate-180 transition-transform duration-500" @click="getAll">
+        <button class="btn btn-circle btn-xs btn-ghost brook-action-icon" @click="getAll">
           <Icon icon="brook-refresh" style="font-size: 14px;"/>
         </button>
       </div>
     </div>
 
     <!-- 证书表格 -->
-    <div class="overflow-x-auto rounded-3xl border border-base-content/5 bg-base-100 shadow-sm">
+    <div class="brook-table-wrap">
       <table class="table table-md">
         <thead class="bg-base-200/50">
           <tr>

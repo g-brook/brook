@@ -15,7 +15,7 @@
   -->
 
 <script setup lang="ts">
-import {onMounted, ref} from "vue";
+import {computed, onMounted, ref} from "vue";
 import {useI18n} from '@/components/lang/useI18n';
 import Icon from '@/components/icon/Index.vue';
 import config from '@/service/config';
@@ -35,7 +35,17 @@ const props = defineProps({
     type: String,
     default: ""
   },
+  inline: {
+    type: Boolean,
+    default: false
+  },
+  managed: {
+    type: Boolean,
+    default: false
+  },
 })
+
+const isHttps = computed(() => props.protocol === 'HTTPS');
 
 const properties = ref<{
   keyFile: string,
@@ -59,6 +69,14 @@ interface ProxyItem {
 }
 
 const proxyList = ref<ProxyItem[]>([]);
+
+const createDefaultProxy = (): ProxyItem => ({
+  id: "default",
+  domain: "*",
+  paths: ["/*"],
+  isEditing: false,
+  isNew: false
+});
 
 // 添加新行
 const addNewRow = () => {
@@ -126,7 +144,7 @@ const cancelEdit = (proxy, index) => {
 // 保存代理
 const saveProxy = (proxy) => {
   // 验证表单
-  if (!proxy.id || !proxy.domain || proxy.paths?.length === 0) {
+  if (!isProxyComplete(proxy)) {
     message.warning(t('configuration.proxyFormIncomplete'));
     return;
   }
@@ -139,31 +157,56 @@ const saveProxy = (proxy) => {
   }
 };
 
-const saveProxyToRemote = () => {
+const isProxyComplete = (proxy) => {
+  return !!proxy.id && !!proxy.domain && proxy.paths?.length > 0 && proxy.paths.every(path => !!path);
+};
+
+const validateProxyList = () => {
   if (proxyList.value?.length === 0) {
     message.warning(t('configuration.atLeastOneProxy'));
-    return;
+    return false;
   }
-  config.addWebConfigs({
-    refProxyId: props.refProxyId,
+  const invalid = proxyList.value.some(proxy => !isProxyComplete(proxy));
+  if (invalid) {
+    message.warning(t('configuration.proxyFormIncomplete'));
+    return false;
+  }
+  return true;
+};
+
+const saveProxyToRemote = async (refProxyId = props.refProxyId, options: { silent?: boolean } = {}) => {
+  if (!validateProxyList()) {
+    return false;
+  }
+  const res = await config.addWebConfigs({
+    refProxyId,
     certFile: properties.value.certFile,
     keyFile: properties.value.keyFile,
     certId: properties.value.certId,
     proxy: proxyList.value
-  }).then((res) => {
-    if (res.success()) {
+  });
+  if (res.success()) {
+    if (!options.silent) {
       message.success(t('success.dataSaved'));
-    } else {
-      message.error(t('errors.operationFailed'));
     }
-  })
+    return true;
+  }
+  if (!options.silent) {
+      message.error(t('errors.operationFailed'));
+  }
+  return false;
 };
+
 const getWebConfigs = () => {
+  if (!props.refProxyId) {
+    proxyList.value = [createDefaultProxy()];
+    return;
+  }
   config.getWebConfigs({
     refProxyId: props.refProxyId,
   }).then((res) => {
     var rt = res.data;
-    proxyList.value = rt.proxy || [];
+    proxyList.value = rt.proxy?.length ? rt.proxy : [createDefaultProxy()];
     properties.value.certFile = rt.certFile || "";
     properties.value.keyFile = rt.keyFile || "";
     properties.value.certId = rt.certId || 0;
@@ -184,14 +227,19 @@ onMounted(() => {
   getWebConfigs()
   getCertificates()
 })
+
+defineExpose({
+  saveProxyToRemote
+});
 </script>
 
 <template>
-  <div class="container mx-auto p-4">
+  <div :class="props.inline ? 'w-full space-y-4' : 'container mx-auto p-4'">
     <!-- HTTPS配置区域 -->
-    <div class="card bg-base-100 shadow-sm hover:shadow-md transition-shadow duration-300 mb-6"
+    <div v-if="isHttps"
+         :class="props.inline ? 'rounded-2xl border border-base-content/10 bg-base-100 p-4' : 'card bg-base-100 shadow-sm hover:shadow-md transition-shadow duration-300 mb-6'"
     >
-      <div class="card-body p-4">
+      <div :class="props.inline ? 'p-0' : 'card-body p-4'">
         <h2 class="card-title text-sm mb-2">{{ t('configuration.httpsCertConfig') }}</h2>
         <div class="form-control">
           <label class="label">
@@ -215,12 +263,12 @@ onMounted(() => {
     </div>
 
     <!-- 代理配置列表 -->
-    <div class="card w-full bg-base-100 shadow-sm hover:shadow-md transition-shadow duration-300">
-      <div class="card-body p-4">
+    <div :class="props.inline ? 'rounded-2xl border border-base-content/10 bg-base-100 p-4' : 'card w-full bg-base-100 shadow-sm hover:shadow-md transition-shadow duration-300'">
+      <div :class="props.inline ? 'p-0' : 'card-body p-4'">
         <div class="flex justify-between gap-2 items-center mb-1">
           <h2 class="card-title text-sm">{{ t('configuration.proxyList') }}</h2>
-          <div class="flex gap-2">
-            <button @click="saveProxyToRemote"
+          <div v-if="!props.managed" class="flex gap-2">
+            <button type="button" @click="saveProxyToRemote()"
                     class="btn btn-primary btn-sm gap-1 transition-transform duration-200 hover:scale-105">
               <Icon icon="brook-add" style="font-size: 14px;"/>
               {{ t('configuration.saveConfig') }}
@@ -237,7 +285,7 @@ onMounted(() => {
               <th>{{ t('configuration.paths') }}</th>
               <th class="w-48 rounded-tr-lg">
                 {{ t('configuration.actions') }}
-                <button @click="addNewRow" class="btn btn-outline btn-xs">
+                <button type="button" @click="addNewRow" class="btn btn-outline btn-xs">
                   <Icon icon="brook-add" style="font-size: 12px;"/>
                   {{ t('configuration.addRow') }}
                 </button>
@@ -262,11 +310,11 @@ onMounted(() => {
                     <div v-for="(path, pathIndex) in proxy.paths" :key="pathIndex" class="flex gap-2 items-center">
                       <input type="text" v-model="proxy.paths[pathIndex]" :placeholder="t('configuration.egPath')"
                              class="input input-bordered input-sm flex-1 focus:ring focus:ring-primary/20 transition-all duration-200"/>
-                      <button @click="removePath(proxy, pathIndex)" class="btn btn-ghost btn-circle btn-sm">
+                      <button type="button" @click="removePath(proxy, pathIndex)" class="btn btn-ghost btn-circle btn-sm">
                         <Icon icon="brook-delete" style="font-size: 12px;"/>
                       </button>
                     </div>
-                    <button @click="addPath(proxy)"
+                    <button type="button" @click="addPath(proxy)"
                             class="btn btn-outline btn-sm gap-1 self-start mt-1 hover:bg-primary/10 transition-colors duration-200">
                       <Icon icon="brook-add" style="font-size: 12px;"/>
                       {{ t('configuration.addPath') }}
@@ -275,10 +323,10 @@ onMounted(() => {
                 </td>
                 <td>
                   <div class="flex gap-2">
-                    <button @click="saveProxy(proxy)" class="btn btn-sm btn-soft">
+                    <button type="button" @click="saveProxy(proxy)" class="btn btn-sm btn-soft">
                       {{ t('common.confirm') }}
                     </button>
-                    <button @click="cancelEdit(proxy, index)" class="btn btn-sm btn-soft">
+                    <button type="button" @click="cancelEdit(proxy, index)" class="btn btn-sm btn-soft">
                       {{ t('common.cancel') }}
                     </button>
                   </div>
@@ -299,11 +347,11 @@ onMounted(() => {
                 </td>
                 <td>
                   <div class="flex flex-row">
-                    <button @click="editProxy(proxy)" class="btn  btn-sm btn-ghost">
+                    <button type="button" @click="editProxy(proxy)" class="btn  btn-sm btn-ghost">
                       <Icon icon="brook-setting" style="font-size: 12px;"/>
                       {{ t('common.edit') }}
                     </button>
-                    <button @click="deleteProxy(index)" class="btn  btn-sm btn-ghost">
+                    <button type="button" @click="deleteProxy(index)" class="btn  btn-sm btn-ghost">
                       <Icon icon="brook-delete" style="font-size: 12px;"/>
                       {{ t('common.delete') }}
                     </button>

@@ -78,6 +78,11 @@ body {
   font-variation-settings: normal;
 }
 
+.daisy-page-font,
+.daisy-page-font *:not(.iconfont) {
+  font-family: ui-sans-serif, system-ui, -apple-system, "system-ui", "Segoe UI", Roboto, "Helvetica Neue", Vazirmatn, Arial, "Noto Sans", sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+}
+
 /* 全局覆盖 daisyUI input 样式 */
 /*.input {*/
 /*  box-shadow: none !important; !* 去掉双线/阴影 *!*/
@@ -156,4 +161,111 @@ body {
 .input:focus,
 .textarea:focus {
     animation: gentlePulse 0.3s ease;
+}
+
+/* Brook UI surface system */
+@layer components {
+  .brook-page {
+    @apply overflow-hidden;
+  }
+
+  .brook-page-stack {
+    @apply mx-auto max-w-6xl space-y-4 p-1;
+  }
+
+  .brook-toolbar {
+    @apply sticky top-0 z-30 mx-1 mb-3 flex h-14 items-center justify-between gap-4 rounded-xl border border-base-content/5 bg-base-100/80 px-5 py-2 shadow-sm backdrop-blur-md;
+  }
+
+  .brook-toolbar-group {
+    @apply flex items-center gap-4;
+  }
+
+  .brook-toolbar-actions {
+    @apply flex items-center gap-1.5;
+  }
+
+  .brook-stat {
+    @apply flex items-center gap-1.5 text-xs font-semibold uppercase tracking-tight text-base-content/50;
+  }
+
+  .brook-stat strong {
+    @apply text-sm font-semibold normal-case tracking-tight text-base-content;
+  }
+
+  .brook-stat-dot {
+    @apply h-1.5 w-1.5 rounded-full opacity-40;
+  }
+
+  .brook-section {
+    @apply rounded-2xl border border-base-content/10 bg-base-100 p-5 shadow-[0_1px_2px_rgba(15,23,42,0.04)];
+  }
+
+  .brook-section-muted {
+    @apply rounded-2xl border border-base-content/5 bg-base-200/40 p-5 shadow-sm;
+  }
+
+  .brook-section-header {
+    @apply flex items-center justify-between gap-4;
+  }
+
+  .brook-section-title {
+    @apply text-sm font-semibold tracking-tight text-base-content/80;
+  }
+
+  .brook-section-desc {
+    @apply mt-0.5 text-xs font-medium text-base-content/45;
+  }
+
+  .brook-table-wrap {
+    @apply overflow-x-auto rounded-2xl border border-base-content/10 bg-base-100 shadow-[0_1px_2px_rgba(15,23,42,0.04)];
+  }
+
+  .brook-table-wrap .table thead {
+    @apply sticky top-0 z-20 bg-base-100;
+  }
+
+  .brook-table-wrap .table thead th {
+    @apply border-b border-base-content/10 bg-base-100 text-[12px] font-semibold uppercase tracking-[0.12em] text-base-content/55;
+  }
+
+  .brook-table-wrap .table tbody tr {
+    @apply transition-colors;
+  }
+
+  .brook-table-wrap .table tbody tr:hover {
+    @apply bg-base-200/45;
+  }
+
+  .brook-card {
+    @apply rounded-2xl border border-base-content/10 bg-base-100 shadow-[0_1px_2px_rgba(15,23,42,0.04)] transition-[box-shadow,transform,border-color] duration-200;
+  }
+
+  .brook-card-interactive {
+    @apply cursor-pointer hover:-translate-y-0.5 hover:border-primary/20 hover:shadow-md;
+  }
+
+  .brook-empty {
+    @apply flex flex-col items-center justify-center py-16 text-center;
+  }
+
+  .brook-empty-icon {
+    @apply mb-5 flex h-16 w-16 rotate-6 items-center justify-center rounded-2xl bg-base-200 text-primary/25 transition-transform duration-300;
+  }
+
+  .brook-empty-title {
+    @apply mb-2 text-base font-semibold tracking-tight text-base-content/75;
+  }
+
+  .brook-empty-desc {
+    @apply mx-auto mb-7 max-w-xs text-xs font-medium leading-relaxed text-base-content/40;
+  }
+
+  .brook-action-primary {
+    @apply h-8 gap-1.5 px-3 text-xs font-semibold uppercase tracking-widest shadow-md shadow-primary/15;
+  }
+
+  .brook-action-icon {
+    @apply h-8 w-8 transition-transform duration-500 hover:rotate-180;
+  }
 }

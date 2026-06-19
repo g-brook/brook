@@ -19,6 +19,7 @@ import Icon from '@/components/icon/Index.vue';
 import {getGlobalTheme} from '@/components/theme/useTheme';
 import {useI18n} from '@/components/lang/useI18n';
 import LanguageSwitcher from '@/components/lang/LanguageSwitcher.vue'
+import {onMounted, onUnmounted, ref} from 'vue';
 
 defineProps<{
     selected: any
@@ -33,17 +34,44 @@ const { isDark, toggleTheme } = getGlobalTheme();
 
 // 国际化
 const { t } = useI18n();
+const isProxyFormPage = ref(false);
 
 const handleGithubClick = () => {
     window.open('https://github.com/g-brook/brook', '_blank');
 }
 
+const handleProxyFormPage = (event: Event) => {
+    isProxyFormPage.value = Boolean((event as CustomEvent<boolean>).detail);
+}
+
+const handleProxyFormBack = () => {
+    window.dispatchEvent(new CustomEvent('brook:proxy-form-back'));
+}
+
+onMounted(() => {
+    window.addEventListener('brook:proxy-form-page', handleProxyFormPage);
+});
+
+onUnmounted(() => {
+    window.removeEventListener('brook:proxy-form-page', handleProxyFormPage);
+});
+
 </script>
 
 <template>
     <div class="flex flex-col m-2 ml-0 rounded-2xl overflow-hidden h-full bg-base-100">
-        <div class="px-3 pt-1 pb-1 bg-gradient-to-bl from-primary/10 from-10% to-base-300/10 to-40% rounded-t-2xl bg-base-200/30">
+        <div class="daisy-page-font px-3 pt-1 pb-1 bg-gradient-to-bl from-primary/10 from-10% to-base-300/10 to-40% rounded-t-2xl bg-base-200/30">
             <div v-if="selected" class="flex items-center">
+                <template v-if="isProxyFormPage">
+                    <button class="btn btn-ghost btn-sm h-9 min-h-0 gap-1.5 rounded-xl px-2 text-base-content/55 hover:text-base-content"
+                            @click="handleProxyFormBack">
+                        <Icon icon="brook-Left-" style="font-size: 14px;" />
+                        <span class="text-sm font-medium">{{ t('common.back') }}</span>
+                    </button>
+                    <div class="flex-1"></div>
+                </template>
+
+                <template v-else>
                 <!-- 图标 -->
                 <div class="flex-shrink-0">
                     <div class="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center">
@@ -56,6 +84,7 @@ const handleGithubClick = () => {
                     <h1 class="font-thin [&:first-line]:font-black text-base-content mb-1.5">{{ t(title) }}</h1>
                     <p class="text-xs text-base-content/60">{{ t(describe) }}</p>
                 </div>
+                </template>
 
 
                 <!-- 操作按钮区域 -->
