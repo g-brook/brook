@@ -45,6 +45,12 @@ interface ConfigItem {
   clients: number;
   destination: string;
   strategyId: number | null;
+  visitor?: {
+    id?: number;
+    proxyId?: number;
+    token: string;
+    localPort: number;
+  } | null;
 }
 
 const {t} = useI18n();
@@ -63,6 +69,14 @@ const strategyDrawerRef = ref<{ open: () => void } | null>(null);
 const selectedStrategy = ref<IpStrategy | null>(null);
 const selectedStrategyRules = ref<IpRule[]>([]);
 const strategyRulesLoading = ref(false);
+const formMode = ref<'list' | 'add' | 'edit'>('list');
+const editingConfig = ref<ConfigItem | null>(null);
+const formApi = ref<{ handleSubmit: () => Promise<boolean> } | null>(null);
+const formPageKey = ref(0);
+const isFormPage = computed(() => formMode.value !== 'list');
+const formPageTitle = computed(() => formMode.value === 'edit'
+    ? t('configuration.editTunnelConfig')
+    : t('configuration.addTunnelConfig'));
 
 const getConfigs = async () => {
   try {
@@ -160,34 +174,10 @@ const openWebConfig = (item: ConfigItem) => {
 }
 
 const handleAdd = () => {
-  let formApi: { handleSubmit: () => Promise<boolean> } | null = null;
-  let modalId = '';
-  modalId = Modal.open(ConfigForm, {
-    title: t('configuration.addTunnelConfig'),
-    size: 'auto',
-    closable: true,
-    maskClosable: true,
-    showFooter: true,
-    props: {
-      onRegister: (api) => {
-        formApi = api;
-      },
-    },
-    onConfirm: async () => {
-      if (formApi) {
-        try {
-          const formData = await formApi.handleSubmit();
-          if (formData) {
-            await getConfigs();
-            message.info(t("common.success"));
-            Modal.close(modalId);
-          }
-        } catch (error) {
-          console.error('Failed to submit form:', error);
-        }
-      }
-    },
-  });
+  formApi.value = null;
+  editingConfig.value = null;
+  formMode.value = 'add';
+  formPageKey.value += 1;
 };
 
 
@@ -209,37 +199,40 @@ const handleDelete = (id: number) => {
   });
 };
 
-const handleUpdate = (cfg) => {
-  let formApi: { handleSubmit: () => Promise<boolean> } | null = null;
-  let modalId = '';
-  modalId = Modal.open(ConfigForm, {
-    title: t('configuration.editTunnelConfig'),
-    size: 'auto',
-    closable: true,
-    maskClosable: false,
-    showFooter: true,
-    props: {
-      onRegister: (api) => {
-        formApi = api;
-      },
-      initialData: cfg,
-      isEdit: true,
-    },
-    onConfirm: async () => {
-      if (formApi) {
-        try {
-          const formData = await formApi.handleSubmit();
-          if (formData) {
-            await getConfigs();
-            message.info(t("common.success"));
-            Modal.close(modalId);
-          }
-        } catch (error) {
-          console.error('Failed to submit form:', error);
-        }
-      }
-    },
-  });
+const handleUpdate = (cfg: ConfigItem) => {
+  formApi.value = null;
+  editingConfig.value = {
+    ...cfg,
+    visitor: cfg.visitor ? {...cfg.visitor} : null,
+  };
+  formMode.value = 'edit';
+  formPageKey.value += 1;
+};
+
+const handleBackToList = () => {
+  formMode.value = 'list';
+  editingConfig.value = null;
+  formApi.value = null;
+};
+
+const registerFormApi = (api: { handleSubmit: () => Promise<boolean> }) => {
+  formApi.value = api;
+};
+
+const handleFormPageSubmit = async () => {
+  if (!formApi.value) {
+    return;
+  }
+  try {
+    const formData = await formApi.value.handleSubmit();
+    if (formData) {
+      await getConfigs();
+      message.info(t("common.success"));
+      handleBackToList();
+    }
+  } catch (error) {
+    console.error('Failed to submit form:', error);
+  }
 };
 
 const handleToggleStatus = async (id: number, state: boolean) => {
@@ -348,6 +341,38 @@ const handleCopyProxyId = async (proxyId: string) => {
     <Drawer ref="downloadDrawerRef" :title="t('configuration.template')" icon="brook-empty" width="50%">
       <DownloadConfig/>
     </Drawer>
+
+    <div v-if="isFormPage" class="relative min-h-[calc(100vh-4rem)] px-4 py-5">
+      <button class="absolute left-2 top-1 inline-flex items-center gap-1.5 text-sm font-medium text-base-content/35 transition-colors hover:text-base-content/65" @click="handleBackToList">
+        <Icon icon="brook-Left-" style="font-size: 14px;" />
+        {{ t('common.back') }}
+      </button>
+
+      <div class="mx-auto w-full max-w-[850px] pt-14">
+        <div class="mb-10">
+          <h2 class="text-2xl font-semibold tracking-tight text-base-content/90">{{ formPageTitle }}</h2>
+          <p class="mt-3 text-sm font-medium text-base-content/45">
+            {{ formMode === 'edit' ? editingConfig?.proxyId : t('configuration.proxyIdTip') }}
+          </p>
+        </div>
+
+        <ConfigForm
+            :key="formPageKey"
+            embedded
+            :initialData="editingConfig || undefined"
+            :isEdit="formMode === 'edit'"
+            :onRegister="registerFormApi"
+        />
+
+        <div class="mt-3 flex justify-end">
+          <button class="btn btn-primary btn-sm min-h-0 h-9 rounded-xl px-4 text-sm font-semibold shadow-none" @click="handleFormPageSubmit">
+            {{ t('common.save') }}
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <template v-else>
     <!-- 极简页头：整合统计与操作 -->
     <div class="flex sticky top-0 items-center h-14 justify-between gap-4 mb-3 px-5 py-2 rounded-xl bg-base-100/80 backdrop-blur-md z-30 border border-base-content/5 shadow-sm mx-1">
       <div class="flex items-center gap-6">
@@ -400,6 +425,7 @@ const handleCopyProxyId = async (proxyId: string) => {
           <th class="font-black text-[13px] uppercase opacity-60 tracking-[0.1em]" style="width: 100px">{{ t('configuration.remotePort') }}</th>
           <th class="font-black text-[13px] uppercase opacity-60 tracking-[0.1em]" style="width: 180px">{{ t('configuration.destination') }}</th>
           <th class="font-black text-[13px] uppercase opacity-60 tracking-[0.1em]" style="width: 100px">{{ t('configuration.protocol') }}</th>
+          <th class="font-black text-[13px] uppercase opacity-60 tracking-[0.1em]" style="width: 150px">{{ t('configuration.visitor.title') }}</th>
           <th class="font-black text-[13px] uppercase opacity-60 tracking-[0.1em]" style="width: 200px">{{ t('menu.security.strategy.title') }}</th>
           <th class="font-black text-[13px] uppercase opacity-60 tracking-[0.1em]" style="width: 190px">{{ t('configuration.status') }}</th>
           <th class="font-black text-[13px] uppercase opacity-60 tracking-[0.1em]" style="width: 150px">{{ t('server.runtime') }}</th>
@@ -449,6 +475,22 @@ const handleCopyProxyId = async (proxyId: string) => {
             <div :class="['badge badge-soft flex items-center gap-1.5 w-fit px-3 py-2.5 border border-current/5', protocolIcons[config.protocol]?.class || 'badge-ghost']">
               <Icon :icon="protocolIcons[config.protocol]?.icon || 'brook-Down-'" style="font-size: 14px;" />
               <span class="font-black text-[10px] tracking-widest uppercase">{{ config.protocol }}</span>
+            </div>
+          </td>
+          <td>
+            <div v-if="config.visitor" class="w-fit rounded-2xl border border-primary/10 bg-primary/5 px-3 py-2">
+              <div class="flex items-center gap-1.5 text-primary">
+                <Icon icon="brook-token" style="font-size: 13px;" />
+                <span class="text-[10px] font-black uppercase tracking-widest">{{ t('configuration.visitor.title') }}</span>
+              </div>
+              <div class="mt-1 flex items-center gap-1 font-mono text-xs font-black tracking-tight">
+                <span class="opacity-35">{{ t('configuration.visitor.localPort') }}</span>
+                <span>{{ config.visitor.localPort }}</span>
+              </div>
+            </div>
+            <div v-else class="flex items-center gap-1.5 text-xs font-black opacity-20 uppercase tracking-widest">
+              <span class="w-1.5 h-1.5 rounded-full bg-base-content/30"></span>
+              Off
             </div>
           </td>
           <td>
@@ -523,6 +565,7 @@ const handleCopyProxyId = async (proxyId: string) => {
         </tbody>
       </table>
     </div>
+    </template>
   </div>
 </template>
 

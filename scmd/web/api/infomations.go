@@ -91,19 +91,27 @@ type WebConfigInfo struct {
 }
 
 type ProxyConfig struct {
-	Idx         int    `json:"id"`
-	Name        string `json:"name"`
-	Tag         string `json:"tag"`
-	RemotePort  int    `json:"remotePort"`
-	ProxyID     string `json:"proxyId"`
-	Protocol    string `json:"protocol"`
-	State       int    `json:"state"`
-	Destination string `json:"destination"`
-	StrategyId  *int   `json:"strategyId"`
-	IsRunning   bool   `json:"isRunning"`
-	Runtime     string `json:"runtime"`
-	IsExistWeb  bool   `json:"isExistWeb"`
-	Clients     int    `json:"clients"`
+	Idx         int            `json:"id"`
+	Name        string         `json:"name"`
+	Tag         string         `json:"tag"`
+	RemotePort  int            `json:"remotePort"`
+	ProxyID     string         `json:"proxyId"`
+	Protocol    string         `json:"protocol"`
+	State       int            `json:"state"`
+	Destination string         `json:"destination"`
+	StrategyId  *int           `json:"strategyId"`
+	IsRunning   bool           `json:"isRunning"`
+	Runtime     string         `json:"runtime"`
+	IsExistWeb  bool           `json:"isExistWeb"`
+	Clients     int            `json:"clients"`
+	Visitor     *VisitorConfig `json:"visitor"`
+}
+
+type VisitorConfig struct {
+	Id        int    `json:"id"`
+	ProxyId   int64  `json:"proxyId"`
+	Token     string `json:"token"`
+	LocalPort int    `json:"localPort"`
 }
 
 type Certificate struct {
@@ -169,6 +177,15 @@ func newProxyConfig(config *sql.ProxyConfig) *ProxyConfig {
 			strategyId = &v
 		}
 	}
+	var visitor *VisitorConfig
+	if v, err := sql.GetVisitorConfig(config.Idx); err == nil && v != nil {
+		visitor = &VisitorConfig{
+			Id:        v.Id,
+			ProxyId:   v.ProxyId,
+			Token:     v.Token,
+			LocalPort: v.LocalPort,
+		}
+	}
 	return &ProxyConfig{
 		Idx:         config.Idx,
 		Name:        config.Name,
@@ -179,6 +196,7 @@ func newProxyConfig(config *sql.ProxyConfig) *ProxyConfig {
 		State:       config.State,
 		Destination: config.Destination.String,
 		StrategyId:  strategyId,
+		Visitor:     visitor,
 	}
 }
 

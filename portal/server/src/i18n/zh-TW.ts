@@ -412,6 +412,14 @@ export default {
         proxyIdTip: "供用戶端連線使用",
         certInfoEmpty: "暂无憑證可供選擇，請前往我的設定新增",
         routeConflictTip: "路由衝突規則：不同的明確網域允許使用相同路徑；相同網域或被萬用網域覆蓋時，重疊路徑會判定為衝突，例如 /* 與 /webDev。",
+        visitor: {
+            title: "Visitor",
+            desc: "為此通道啟用本機存取入口",
+            token: "存取 Token",
+            tokenPlaceholder: "輸入 visitor token",
+            localPort: "本機連接埠",
+            localPortPlaceholder: "例如：3307",
+        },
         protocols: {
             http: {
                 title: "HTTP",

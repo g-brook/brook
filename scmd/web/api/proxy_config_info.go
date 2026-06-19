@@ -112,6 +112,15 @@ func genClientConfig(*Request[any]) *Response {
 				ProxyId:     cfg.ProxyID,
 				Destination: s,
 			}
+			if vt, _ := sql.GetVisitorConfig(cfg.Idx); vt != nil {
+				tcfg.Visitor = &configs.VisitorConfig{
+					Token:     vt.Token,
+					LocalPort: vt.LocalPort,
+					Pos:       configs.NetLeft,
+				}
+				tunnelCfgs = append(tunnelCfgs, tcfg)
+				continue
+			}
 			if tcfg.ProxyId == "UDP" {
 				tcfg.UdpSize = 1500
 			}
@@ -148,6 +157,7 @@ func delProxyConfig(req *Request[ProxyConfig]) *Response {
 	if req.Body.Idx <= 0 {
 		return NewResponseFail(errs.CodeSysErr, "idx is empty")
 	}
+	_ = sql.DelVisitorConfig(req.Body.Idx)
 	err := sql.DelProxyConfig(req.Body.Idx)
 	if err != nil {
 		return NewResponseFail(errs.CodeSysErr, "delete proxy configs failed")
@@ -160,9 +170,15 @@ func updateProxyConfig(req *Request[ProxyConfig]) *Response {
 	if req.Body.Idx <= 0 {
 		return NewResponseFail(errs.CodeSysErr, "idx is empty")
 	}
+	if err := validateVisitorConfig(&req.Body); err != nil {
+		return NewResponseFail(errs.CodeSysErr, err.Error())
+	}
 	err := sql.UpdateProxyConfig(req.Body.toDb())
 	if err != nil {
 		return NewResponseFail(errs.CodeSysErr, "update proxy configs failed")
+	}
+	if err = saveVisitorConfig(req.Body.Idx, &req.Body); err != nil {
+		return NewResponseFail(errs.CodeSysErr, "update visitor configs failed")
 	}
 	toPushConfig(req.Body.Idx)
 	return NewResponseSuccess(nil)
@@ -275,11 +291,17 @@ func addProxyConfigs(req *Request[ProxyConfig]) *Response {
 	if body.ProxyID == "" {
 		return NewResponseFail(errs.CodeSysErr, "proxyId is empty")
 	}
+	if err := validateVisitorConfig(&body); err != nil {
+		return NewResponseFail(errs.CodeSysErr, err.Error())
+	}
 	body.State = 1
 	err, id := sql.AddProxyConfig(body.toDb())
 	if err != nil {
 		log.Error(err.Error())
 		return NewResponseFail(errs.CodeSysErr, "add configs failed")
+	}
+	if err = saveVisitorConfig(int(id), &body); err != nil {
+		return NewResponseFail(errs.CodeSysErr, "add visitor configs failed")
 	}
 	if body.IsHttpOrHttps() {
 		config := &sql.WebProxyConfig{
@@ -295,6 +317,30 @@ func addProxyConfigs(req *Request[ProxyConfig]) *Response {
 	}
 	base.TunnelCfm.Push(body.ProxyID)
 	return NewResponseSuccess(nil)
+}
+
+func validateVisitorConfig(body *ProxyConfig) error {
+	if body.Visitor == nil {
+		return nil
+	}
+	if body.Visitor.Token == "" {
+		return fmt.Errorf("visitor token is empty")
+	}
+	if body.Visitor.LocalPort <= 0 || body.Visitor.LocalPort > 65535 {
+		return fmt.Errorf("visitor local port is invalid")
+	}
+	return nil
+}
+
+func saveVisitorConfig(proxyId int, body *ProxyConfig) error {
+	if body.Visitor == nil {
+		return sql.DelVisitorConfig(proxyId)
+	}
+	return sql.SaveVisitorConfig(&sql.VisitorConfig{
+		ProxyId:   int64(proxyId),
+		Token:     body.Visitor.Token,
+		LocalPort: body.Visitor.LocalPort,
+	})
 }
 
 func toPushConfig(id int) {

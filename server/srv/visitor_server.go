@@ -144,52 +144,57 @@ func (t *VisitorServer) Start(_ ...ServerOption) error {
 				}
 				return
 			}
-			trChannel, ok := channel.(transport.Channel)
-			if !ok {
-				_ = channel.Close()
-				err = errors.New("visitor channel does not implement transport.Channel")
-				log.Error("Visitor server accept error: %v", err)
-				t.doError(nil, err)
-				continue
-			}
-			t.active.Add(1)
-			if err = t.doOpen(trChannel); err != nil {
-				t.active.Add(-1)
-				_ = trChannel.Close()
-				log.Error("Visitor server open error: %v", err)
-				t.doError(trChannel, err)
-				continue
-			}
 			threading.GoSafe(func() {
-				defer t.active.Add(-1)
-				defer func() {
-					if err := t.doClose(trChannel); err != nil {
-						log.Error("Visitor server close error: %v", err)
-					}
-					_ = trChannel.Close()
-				}()
-				for {
-					select {
-					case <-t.ctx.Done():
-						return
-					default:
-					}
-					err := t.doReader(trChannel)
-					if err != nil {
-						if !errors.Is(err, io.EOF) {
-							log.Error("Visitor server reader error: %v", err)
-							t.doError(trChannel, err)
-						}
-						return
-					}
-					if trChannel.IsClose() {
-						return
-					}
-				}
+				t.handleChannel(channel)
 			})
 		}
 	})
 	return nil
+}
+
+func (t *VisitorServer) handleChannel(channel net.Conn) {
+	rawChannel, ok := channel.(transport.Channel)
+	if !ok {
+		_ = channel.Close()
+		err := errors.New("visitor channel does not implement transport.Channel")
+		log.Error("Visitor server accept error: %v", err)
+		t.doError(nil, err)
+		return
+	}
+	trChannel := NewVisitorContextChannel(rawChannel)
+	t.active.Add(1)
+	if err := t.doOpen(trChannel); err != nil {
+		t.active.Add(-1)
+		_ = trChannel.Close()
+		log.Error("Visitor server open error: %v", err)
+		t.doError(trChannel, err)
+		return
+	}
+	defer t.active.Add(-1)
+	defer func() {
+		if err := t.doClose(trChannel); err != nil {
+			log.Error("Visitor server close error: %v", err)
+		}
+		_ = trChannel.Close()
+	}()
+	for {
+		select {
+		case <-t.ctx.Done():
+			return
+		default:
+		}
+		err := t.doReader(trChannel)
+		if err != nil {
+			if !errors.Is(err, io.EOF) {
+				log.Error("Visitor server reader error: %v", err)
+				t.doError(trChannel, err)
+			}
+			return
+		}
+		if trChannel.IsClose() {
+			return
+		}
+	}
 }
 
 func (t *VisitorServer) AddLastChannel(channel transport.Channel) error {

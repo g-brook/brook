@@ -412,6 +412,14 @@ export default {
         proxyIdTip: "供客户端连接使用",
         certInfoEmpty: "暂无证书可供选择，请前往我的设置添加",
         routeConflictTip: "路由冲突规则：不同的显式域名允许使用相同路径；相同域名或被通配域名覆盖时，重叠路径会判定为冲突，例如 /* 与 /webDev。",
+        visitor: {
+            title: "Visitor",
+            desc: "为该隧道启用本地访问入口",
+            token: "访问 Token",
+            tokenPlaceholder: "输入 visitor token",
+            localPort: "本地端口",
+            localPortPlaceholder: "例如：3307",
+        },
         protocols: {
             http: {
                 title: "HTTP",

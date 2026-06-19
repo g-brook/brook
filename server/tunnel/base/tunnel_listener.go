@@ -54,12 +54,18 @@ func RegisterVisitor(req *exchange.VisitorRegister, ch Channel) error {
 	if !b {
 		return fmt.Errorf("visitor server not start proxy id %v", req.ProxyId)
 	}
+	if server.GetConfig().Visitor == nil {
+		return fmt.Errorf("visitor config not found proxy id %v", req.ProxyId)
+	}
 	if server.GetConfig().Visitor.Token != req.Token {
 		return fmt.Errorf("visitor token not match %v", req.ProxyId)
 	}
-	visitorServer := server.GetServer().(*srv.VisitorServer)
-	if visitorServer != nil {
-		_ = visitorServer.AddLastChannel(ch)
+	visitorServer, ok := server.GetServer().(*srv.VisitorServer)
+	if !ok || visitorServer == nil {
+		return fmt.Errorf("server is not visitor server proxy id %v", req.ProxyId)
+	}
+	if err := visitorServer.AddLastChannel(ch); err != nil {
+		return err
 	}
 	return nil
 }
@@ -111,13 +117,20 @@ func running(config *configs.ServerTunnelConfig) (*tunnel.BaseTunnelServer, erro
 	baseServer := tunnel.NewBaseTunnelServer(config, config.ModelId)
 	var server tunnel.TunnelServer
 	var netWork lang.Network
+	var err error
 	if isVisitor {
-		netWork, server = newVisitorTunnel(config, baseServer)
+		netWork, server, err = newVisitorTunnel(config, baseServer)
 	} else {
 		netWork, server = newNormalTunnel(config, baseServer)
 	}
+	if err != nil {
+		return nil, err
+	}
+	if server == nil {
+		return nil, fmt.Errorf("the server %v:%s is not supported", config.Type, config.Id)
+	}
 	//Start the server.
-	err := server.Start(netWork)
+	err = server.Start(netWork)
 	if err != nil {
 		//Release the port if the server fails to start.
 		return nil, err
@@ -150,12 +163,20 @@ func newNormalTunnel(config *configs.ServerTunnelConfig, server *tunnel.BaseTunn
 	return
 }
 
-func newVisitorTunnel(config *configs.ServerTunnelConfig, server *tunnel.BaseTunnelServer) (network lang.Network, tserver tunnel.TunnelServer) {
+func newVisitorTunnel(config *configs.ServerTunnelConfig, server *tunnel.BaseTunnelServer) (network lang.Network, tserver tunnel.TunnelServer, err error) {
 	switch config.Type {
 	case lang.Tcp:
-		return lang.NetworkTcp, tcp.NewVTcpTunnelServer(server)
+		return lang.NetworkTcp, tcp.NewVTcpTunnelServer(server), nil
+	case lang.Udp:
+		return lang.NetworkUdp, tcp.NewUdpTunnelServer(server), nil
+	case lang.Http, lang.Https:
+		tunnelServer, err := http.NewHttpTunnelServer(server)
+		if err != nil {
+			return "", nil, fmt.Errorf("the visitor server %v:%s init error: %w", config.Type, config.Id, err)
+		}
+		return lang.NetworkTcp, tunnelServer, nil
 	}
-	return lang.NetworkUdp, nil
+	return "", nil, fmt.Errorf("visitor tunnel type %s is not supported", config.Type)
 }
 
 type PortPool struct {

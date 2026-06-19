@@ -45,11 +45,44 @@ func GetVisitorConfig(proxyId int) (*VisitorConfig, error) {
 	return nil, nil
 }
 
+func AddVisitorConfig(v *VisitorConfig) error {
+	return Exec(
+		"insert into visitor_proxy_cconfig(proxy_id,token,local_port) values(?,?,?)",
+		v.ProxyId,
+		v.Token,
+		v.LocalPort,
+	)
+}
+
+func UpdateVisitorConfig(v *VisitorConfig) error {
+	return Exec(
+		"update visitor_proxy_cconfig set token=?,local_port=? where proxy_id=?",
+		v.Token,
+		v.LocalPort,
+		v.ProxyId,
+	)
+}
+
+func SaveVisitorConfig(v *VisitorConfig) error {
+	old, err := GetVisitorConfig(int(v.ProxyId))
+	if err != nil {
+		return err
+	}
+	if old == nil {
+		return AddVisitorConfig(v)
+	}
+	return UpdateVisitorConfig(v)
+}
+
+func DelVisitorConfig(proxyId int) error {
+	return Exec("delete from visitor_proxy_cconfig where proxy_id = ?", proxyId)
+}
+
 func scanVisitor(rows *sql.Rows) (*VisitorConfig, error) {
 	var u VisitorConfig
 	err := rows.Scan(
 		&u.Id,
-		&u.LocalPort,
+		&u.ProxyId,
 		&u.Token,
 		&u.LocalPort,
 	)

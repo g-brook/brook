@@ -71,6 +71,7 @@ type MultipleTunnelClient struct {
 type tunnelClientWrapper struct {
 	multiClient *MultipleTunnelClient
 	config      *configs.ClientTunnelConfig
+	client      clis.TunnelClient
 }
 
 func (w *tunnelClientWrapper) Done() <-chan struct{} {
@@ -114,12 +115,10 @@ func (m *MultipleTunnelClient) messageListener() {
 func newTunnelClient(config *configs.ClientTunnelConfig, m *MultipleTunnelClient) (clis.TunnelClient, error) {
 	if config.IsVisitorLeft() {
 		switch config.TunnelType {
-		case lang.Tcp:
+		case lang.Tcp, lang.Http, lang.Https:
 			return NewVTcpTunnelClient(config, m)
 		case lang.Udp:
-			return NewUdpTunnelClient(config, m)
-		case lang.Http, lang.Https:
-			return NewHttpTunnelClient(config)
+			return NewVUdpTunnelClient(config, m)
 		}
 	} else {
 		switch config.TunnelType {
@@ -150,17 +149,14 @@ func (w *tunnelClientWrapper) openVisitor(session *smux.Session) error {
 	clis.ManagerTransport.PutConfig(w.config)
 	w.multiClient.sessions.Store(w.config.ProxyId, session)
 	log.Info("Begin Open %v visitor client:%v", w.config.TunnelType, w.config.ProxyId)
-	req := &exchange.WorkConnReq{
-		ProxyId: w.config.ProxyId,
-	}
-	request, err := exchange.NewRequest(req)
+	client, err := newTunnelClient(w.config, w.multiClient)
 	if err != nil {
-		log.Error("Create WorkConnReq error: %v", err)
 		return err
 	}
-	if err := clis.ManagerTransport.PushMessage(request); err != nil {
-		log.Error("Push WorkConnReq message error: %v", err)
+	if err = client.Open(session); err != nil {
+		return err
 	}
+	w.client = client
 	return nil
 }
 
@@ -213,6 +209,9 @@ func (m *MultipleTunnelClient) Close() {
 }
 
 func (w *tunnelClientWrapper) Close() {
+	if w.client != nil {
+		w.client.Close()
+	}
 	// Wrapper doesn't close the global client
 	// Only remove this session if needed
 	if w.config != nil {

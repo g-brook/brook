@@ -57,6 +57,18 @@ create table proxy_config
     ip_strategies INTEGER
 );
 
+create table visitor_proxy_cconfig
+(
+    id         integer
+        constraint visitor_proxy_cconfig_pk
+            primary key,
+    proxy_id   integer
+        constraint visitor_proxy_cconfig_pk_2
+            unique,
+    token      text,
+    local_port integer
+);
+
 create table web_logger
 (
     id       integer not null
@@ -101,5 +113,4 @@ create table users
     icon     text,
     is_admin bool
 );
-
 

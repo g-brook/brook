@@ -412,6 +412,14 @@ export default {
         proxyIdTip: "Used for client connection",
         certInfoEmpty: "No certificates available for selection, please add in My Settings",
         routeConflictTip: "Route conflict rule: different explicit domains may use the same path; overlapping paths are treated as conflicts under the same domain or when covered by a wildcard domain, for example /* and /webDev.",
+        visitor: {
+            title: "Visitor",
+            desc: "Enable a local access entry for this tunnel",
+            token: "Access Token",
+            tokenPlaceholder: "Enter visitor token",
+            localPort: "Local Port",
+            localPortPlaceholder: "e.g. 3307",
+        },
         protocols: {
             http: {
                 title: "HTTP",
