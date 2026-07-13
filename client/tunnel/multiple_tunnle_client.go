@@ -113,22 +113,16 @@ func (m *MultipleTunnelClient) messageListener() {
 }
 
 func newTunnelClient(config *configs.ClientTunnelConfig, m *MultipleTunnelClient) (clis.TunnelClient, error) {
-	if config.IsVisitorLeft() {
-		switch config.TunnelType {
-		case lang.Tcp, lang.Http, lang.Https:
-			return NewVTcpTunnelClient(config, m)
-		case lang.Udp:
-			return NewVUdpTunnelClient(config, m)
-		}
-	} else {
-		switch config.TunnelType {
-		case lang.Tcp:
-			return NewTcpTunnelClient(config, m)
-		case lang.Udp:
-			return NewUdpTunnelClient(config, m)
-		case lang.Http, lang.Https:
-			return NewHttpTunnelClient(config)
-		}
+	if config.IsVisitorConsumer() {
+		return NewVisitorTunnelClient(config)
+	}
+	switch config.TunnelType {
+	case lang.Tcp:
+		return NewTcpTunnelClient(config, m)
+	case lang.Udp:
+		return NewUdpTunnelClient(config, m)
+	case lang.Http, lang.Https:
+		return NewHttpTunnelClient(config)
 	}
 
 	return nil, errors.New("unknown tunnel type")
@@ -139,7 +133,7 @@ func (w *tunnelClientWrapper) Open(session *smux.Session) error {
 	// Create a new OpenTunnelReq struct with the proxy ID, tunnel type, and tunnel port.
 	// isVisitor left
 
-	if w.config.IsVisitorLeft() {
+	if w.config.IsVisitorConsumer() {
 		return w.openVisitor(session)
 	}
 	return w.openTunnel(session)
@@ -149,15 +143,14 @@ func (w *tunnelClientWrapper) openVisitor(session *smux.Session) error {
 	clis.ManagerTransport.PutConfig(w.config)
 	w.multiClient.sessions.Store(w.config.ProxyId, session)
 	log.Info("Begin Open %v visitor client:%v", w.config.TunnelType, w.config.ProxyId)
-	client, err := newTunnelClient(w.config, w.multiClient)
-	if err != nil {
-		return err
+	if w.client == nil {
+		client, err := newTunnelClient(w.config, w.multiClient)
+		if err != nil {
+			return err
+		}
+		w.client = client
 	}
-	if err = client.Open(session); err != nil {
-		return err
-	}
-	w.client = client
-	return nil
+	return w.client.Open(session)
 }
 
 func (w *tunnelClientWrapper) openTunnel(session *smux.Session) error {

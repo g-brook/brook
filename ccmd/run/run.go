@@ -128,7 +128,7 @@ func verilyBaseConfig(c *configs.ClientConfig) {
 			panic("Tunnels TunnelType（tcp、udp、http(s)） is null, system exit")
 		}
 		if it.Visitor != nil {
-			if it.Visitor.Pos == "" {
+			if it.Visitor.Role == "" {
 				panic("visitor Pos is null, system exit")
 			}
 		}

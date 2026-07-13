@@ -67,6 +67,7 @@ func RegisterVisitor(req *exchange.VisitorRegister, ch Channel) error {
 	if err := visitorServer.AddLastChannel(ch); err != nil {
 		return err
 	}
+	fmt.Printf("visitor server add last channel %v\n", ch)
 	return nil
 }
 

@@ -17,6 +17,8 @@
 package exchange
 
 import (
+	"encoding/json"
+
 	"github.com/g-brook/brook/common/lang"
 )
 
@@ -66,6 +68,11 @@ type RegisterReqAndRsp struct {
 	Token string `json:"token"`
 
 	LocalPort int `json:"local_port"`
+}
+
+func (r *RegisterReqAndRsp) String() string {
+	jsonBytes, _ := json.Marshal(r)
+	return string(jsonBytes)
 }
 
 func (r *RegisterReqAndRsp) GetTunnelPort() int {

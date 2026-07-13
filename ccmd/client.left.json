@@ -6,8 +6,12 @@
   "tunnels": [
     {
       "type": "tcp",
-      "destination": "127.0.0.1:3306",
-      "proxyId": "local_mysql"
+      "proxyId": "local_mysql",
+      "visitor": {
+        "token": "54bc8b3395217a6833ce73dd2920343a",
+        "role": "consumer",
+        "localPort": 2122
+      }
     }
   ]
 }

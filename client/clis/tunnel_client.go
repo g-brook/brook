@@ -20,6 +20,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"sync"
 	"time"
 
 	"github.com/g-brook/brook/common/configs"
@@ -130,6 +131,8 @@ type BaseTunnelClient struct {
 	isRetryOpen bool
 
 	isOpen bool
+
+	closeOnce sync.Once
 }
 
 // NewBaseTunnelClient creates a new BaseTunnelClient instance with the provided configuration
@@ -245,7 +248,9 @@ func (b *BaseTunnelClient) Done() <-chan struct{} {
 }
 
 func (b *BaseTunnelClient) Close() {
-	b.TcControl.cancel()
+	b.closeOnce.Do(func() {
+		b.TcControl.cancel()
+	})
 }
 
 // GetRegisterReq returns a RegisterReqAndRsp struct with configuration data from the BaseTunnelClient
@@ -264,14 +269,6 @@ func (b *BaseTunnelClient) GetRegisterReq() *exchange.RegisterReqAndRsp {
 		req.Token = b.GetCfg().Visitor.Token
 	}
 	return &req
-}
-
-func (b *BaseTunnelClient) GetVisitorReq() *exchange.VisitorRegister {
-	return &exchange.VisitorRegister{
-		ProxyId:   b.GetCfg().ProxyId,
-		Token:     b.GetCfg().Visitor.Token,
-		LocalPort: b.GetCfg().Visitor.LocalPort,
-	}
 }
 
 // Register is a method of BaseTunnelClient that handles the registration process
@@ -331,6 +328,14 @@ func (b *BaseTunnelClient) OpenWorker(rsp *exchange.RegisterReqAndRsp, isToManag
 	return nil
 }
 
+func (b *BaseTunnelClient) GetVisitorReq() *exchange.VisitorRegister {
+	return &exchange.VisitorRegister{
+		ProxyId:   b.GetCfg().ProxyId,
+		Token:     b.GetCfg().Visitor.Token,
+		LocalPort: b.GetCfg().Visitor.LocalPort,
+	}
+}
+
 // AsyncRegister is an asynchronous method that registers a callback handler for incoming messages
 // and sends a registration request to the server
 //
@@ -353,7 +358,7 @@ func (b *BaseTunnelClient) AsyncRegister(req exchange.InBound, readCallBack exch
 
 func (b *BaseTunnelClient) AsyncVisitorRegister(req exchange.InBound, readCallBack exchange.BucketRead) error {
 	if req == nil {
-		req = b.GetVisitorReq()
+		return errors.New("register error, req is null")
 	}
 	log.Debug("visitor register %v", req)
 	b.TcControl.Bucket.AddHandler(req.Cmd(), readCallBack)

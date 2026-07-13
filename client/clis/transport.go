@@ -135,13 +135,18 @@ func (b *CheckHandler) Read(r *exchange.Protocol, cct *ClientControl) error {
 
 func (b *CheckHandler) Timeout(cct *ClientControl) {
 	var proxyIds []string
+	var registerIds []string
 	for _, f := range b.transport.config.Tunnels {
 		proxyIds = append(proxyIds, f.ProxyId)
+		if f.Visitor == nil || !f.IsVisitorConsumer() {
+			registerIds = append(registerIds, f.ProxyId)
+		}
 	}
 	var h = &exchange.Heartbeat{
-		Value:     "PING",
-		StartTime: time.Now().UnixMilli(),
-		ProxyId:   proxyIds,
+		Value:           "PING",
+		StartTime:       time.Now().UnixMilli(),
+		ProxyId:         proxyIds,
+		ProxyIdRegister: registerIds,
 	}
 	request, _ := exchange.NewRequest(h)
 	_ = cct.Write(request.Bytes())

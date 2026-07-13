@@ -30,20 +30,19 @@ import (
 var DefServerPort = 8909
 var DefWebPort = 8000
 
-// NetPos Define visitor-only Net pos constants.
-// example: server(left)--*connect*--> client(right)
-type NetPos string
+// Role Define visitor-only Net pos constants.
+// example: Consumer(left)--*connect*--> Provider(right)
+type Role string
 
 const (
-	// NetLeft server mapper left
-	NetLeft NetPos = "LEFT"
-	// NetRight client mapper right.
-	NetRight NetPos = "RIGHT"
+	Consumer Role = "consumer"
+
+	Provider Role = "provider"
 )
 
-// NetIsLeft judge visitor net is left or right. it is left return true, otherwise  false.
-func NetIsLeft(pos NetPos) bool {
-	return strings.EqualFold(string(pos), string(NetLeft))
+// NetIsConsumer  judge visitor net is left or right. it is left return true, otherwise  false.
+func NetIsConsumer(role Role) bool {
+	return strings.EqualFold(string(role), string(Consumer))
 }
 
 // ServerConfig
@@ -100,14 +99,14 @@ type ClientTunnelConfig struct {
 	Visitor    *VisitorConfig `json:"visitor"`
 }
 
-func (t *ClientTunnelConfig) IsVisitorLeft() bool {
-	return t.Visitor != nil && NetIsLeft(t.Visitor.Pos)
+func (t *ClientTunnelConfig) IsVisitorConsumer() bool {
+	return t.Visitor != nil && NetIsConsumer(t.Visitor.Role)
 }
 
 type VisitorConfig struct {
 	Token     string `json:"token"`
 	LocalPort int    `json:"localPort"`
-	Pos       NetPos `json:"pos"`
+	Role      Role   `json:"role"`
 }
 
 // GetServerConfig

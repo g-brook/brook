@@ -116,7 +116,7 @@ func genClientConfig(*Request[any]) *Response {
 				tcfg.Visitor = &configs.VisitorConfig{
 					Token:     vt.Token,
 					LocalPort: vt.LocalPort,
-					Pos:       configs.NetLeft,
+					Role:      configs.Consumer,
 				}
 				tunnelCfgs = append(tunnelCfgs, tcfg)
 				continue

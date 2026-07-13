@@ -19,134 +19,87 @@ package tunnel
 import (
 	"context"
 	"errors"
-	"fmt"
 	"io"
 	"net"
 	"sync"
+	"time"
 
 	"github.com/g-brook/brook/client/clis"
 	"github.com/g-brook/brook/common/configs"
 	"github.com/g-brook/brook/common/exchange"
 	"github.com/g-brook/brook/common/iox"
 	"github.com/g-brook/brook/common/log"
-	"github.com/g-brook/brook/common/threading"
 	"github.com/g-brook/brook/common/transport"
 	"github.com/xtaci/smux"
 )
 
+const visitorRegisterTimeout = 5 * time.Second
+
 type VTCPTunnelClient struct {
 	*clis.BaseTunnelClient
-	session   *smux.Session
-	listener  net.Listener
 	closeOnce sync.Once
+	localConn net.Conn
 }
 
-func NewVTcpTunnelClient(config *configs.ClientTunnelConfig, _ *MultipleTunnelClient) (*VTCPTunnelClient, error) {
+func (c *VTCPTunnelClient) OpenVisitor(session *smux.Session, localConn net.Conn) error {
+	c.localConn = localConn
+	c.DoOpen = c.openVisitorStream
+	return c.Open(session)
+}
+
+func NewVTcpTunnelClient(config *configs.ClientTunnelConfig) (*VTCPTunnelClient, error) {
 	tunnelClient := clis.NewBaseTunnelClient(config, false)
 	client := VTCPTunnelClient{
 		BaseTunnelClient: tunnelClient,
 	}
-	client.BaseTunnelClient.DoOpen = client.initOpen
 	return &client, nil
-}
-
-func (c *VTCPTunnelClient) initOpen(ch *transport.SChannel) error {
-	return c.AsyncVisitorRegister(nil, func(p *exchange.Protocol, rw io.ReadWriteCloser, ctx context.Context) error {
-		if !p.IsSuccess() {
-			return errors.New("vtcp tunnel open fail")
-		}
-		//open local server.
-		return nil
-	})
 }
 
 func (c *VTCPTunnelClient) GetName() string {
 	return "VTcpTunnelClient"
 }
 
-func (c *VTCPTunnelClient) Open(session *smux.Session) error {
-	if c.GetCfg().Visitor == nil {
-		return errors.New("visitor config is nil")
+func (c *VTCPTunnelClient) openVisitorStream(stream *transport.SChannel) error {
+	defer func() {
+		_ = c.localConn.Close()
+		_ = stream.Close()
+	}()
+	finish := make(chan error, 1)
+	notifyFinish := func(err error) {
+		select {
+		case finish <- err:
+		default:
+		}
 	}
-	if c.GetCfg().Visitor.LocalPort <= 0 {
-		return errors.New("visitor local port is invalid")
-	}
-	c.session = session
-	addr := fmt.Sprintf(":%d", c.GetCfg().Visitor.LocalPort)
-	ln, err := net.Listen("tcp", addr)
+	err := c.AsyncVisitorRegister(c.GetVisitorReq(), func(p *exchange.Protocol, nch io.ReadWriteCloser, _ context.Context) error {
+		if !p.IsSuccess() {
+			log.Error("VTCP visitor register fail:%s", p.RspMsg)
+			notifyFinish(exchange.CloseError)
+			return exchange.CloseError
+		}
+		addHealthyCheckStream(stream)
+		errs := iox.Pipe(nch, c.localConn)
+		if len(errs) > 0 {
+			log.Debug("VTCP visitor pipe exit:%v", errs)
+			notifyFinish(exchange.CloseError)
+			return exchange.CloseError
+		}
+		notifyFinish(nil)
+		return nil
+	})
 	if err != nil {
 		return err
 	}
-	c.listener = ln
-	log.Info("VTCP visitor client listen local:%s proxyId:%s", addr, c.GetCfg().ProxyId)
-	threading.GoSafe(c.acceptLoop)
-	return nil
-}
-
-func (c *VTCPTunnelClient) Close() {
-	c.closeOnce.Do(func() {
-		c.BaseTunnelClient.Close()
-		if c.listener != nil {
-			_ = c.listener.Close()
-		}
-	})
-}
-
-func (c *VTCPTunnelClient) acceptLoop() {
-	for {
-		conn, err := c.listener.Accept()
-		if err != nil {
-			select {
-			case <-c.Done():
-				return
-			default:
-			}
-			log.Error("VTCP visitor accept error:%v", err)
-			return
-		}
-		threading.GoSafe(func() {
-			c.openVisitorStream(conn)
-		})
-	}
-}
-
-func (c *VTCPTunnelClient) openVisitorStream(localConn net.Conn) {
-	defer func() {
-		_ = localConn.Close()
-	}()
-	if c.session == nil || c.session.IsClosed() {
-		log.Error("VTCP visitor session closed proxyId:%s", c.GetCfg().ProxyId)
-		return
-	}
-	stream, err := c.session.OpenStream()
-	if err != nil {
-		log.Error("VTCP visitor open stream error:%v", err)
-		return
-	}
-	channel := transport.NewSChannel(stream, c.TcControl.Context(), true)
-	bucket := exchange.NewMessageBucket(channel, channel.Ctx())
-	bucket.AddHandler(exchange.RegisterVisitor, func(p *exchange.Protocol, _ io.ReadWriteCloser, _ context.Context) error {
-		if !p.IsSuccess() {
-			log.Error("VTCP visitor register fail:%s", p.RspMsg)
-			return exchange.CloseError
-		}
-		errs := iox.Pipe(channel, localConn)
-		if len(errs) > 0 {
-			log.Debug("VTCP visitor pipe exit:%v", errs)
-		}
-		return exchange.CloseError
-	})
-	bucket.Run()
-	if err = bucket.PushWitchRequest(c.GetVisitorReq()); err != nil {
-		log.Error("VTCP visitor register push error:%v", err)
-		bucket.Close()
-		_ = channel.Close()
-		return
-	}
+	timer := time.NewTimer(visitorRegisterTimeout)
+	defer timer.Stop()
 	select {
-	case <-bucket.Done():
+	case err = <-finish:
+		return err
+	case <-timer.C:
+		return errors.New("visitor register timeout")
+	case <-stream.Done():
+		return nil
 	case <-c.Done():
-		bucket.Close()
-		_ = channel.Close()
+		return nil
 	}
 }

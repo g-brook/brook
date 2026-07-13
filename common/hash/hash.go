@@ -21,6 +21,9 @@ import (
 	"math"
 )
 
+var EMP = struct {
+}{}
+
 func GetHash32(data string) int {
 	h := fnv.New32a()
 	_, _ = h.Write([]byte(data))
@@ -38,4 +41,15 @@ func MapToArray[K comparable, V any](m map[K]V) []*V {
 		i++
 	}
 	return slice
+}
+
+func ArrayToMap[K comparable, V struct{}](keys []K) map[K]V {
+	m := make(map[K]V)
+	if keys == nil || len(keys) <= 0 {
+		return m
+	}
+	for _, key := range keys {
+		m[key] = EMP
+	}
+	return m
 }

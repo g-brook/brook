@@ -23,7 +23,10 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/g-brook/brook/common/iox"
 	"github.com/g-brook/brook/common/lang"
+	"github.com/g-brook/brook/common/log"
+	"github.com/g-brook/brook/common/threading"
 	"github.com/g-brook/brook/common/transport"
 )
 
@@ -35,6 +38,7 @@ type VisitorContextChannel struct {
 	buf        []byte
 	mu         sync.Mutex
 	remoteAddr net.Addr
+	pipeOnce   sync.Once
 }
 
 func NewVisitorContextChannel(ch transport.Channel) *VisitorContextChannel {
@@ -46,6 +50,10 @@ func NewVisitorContextChannel(ch transport.Channel) *VisitorContextChannel {
 		ctx:        ctx,
 		remoteAddr: &net.UDPAddr{IP: net.IPv4zero, Port: port},
 	}
+}
+
+func (c *VisitorContextChannel) GetVisitorChannel() *VisitorPendingChannel {
+	return c.Channel.(*VisitorPendingChannel)
 }
 
 func (c *VisitorContextChannel) GetContext() *ConnContext {
@@ -128,4 +136,19 @@ func (c *VisitorContextChannel) LastTime() time.Time {
 
 func (c *VisitorContextChannel) ActiveTime() time.Time {
 	return c.Channel.ActiveTime()
+}
+
+func (c *VisitorContextChannel) Pipe() {
+	c.pipeOnce.Do(func() {
+		threading.GoSafe(func() {
+			channel := c.Channel
+			if t, ok := channel.(*VisitorPendingChannel); ok {
+				target := t.target
+				errors := iox.Pipe(t, target)
+				if errors != nil {
+					log.Error("pipe error: %s", errors)
+				}
+			}
+		})
+	})
 }

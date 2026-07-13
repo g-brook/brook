@@ -19,11 +19,14 @@ package srv
 import (
 	"context"
 	"errors"
+	"fmt"
 	"io"
 	"net"
 	"sync"
 	"sync/atomic"
+	"time"
 
+	"github.com/g-brook/brook/common/lang"
 	"github.com/g-brook/brook/common/log"
 	"github.com/g-brook/brook/common/modules"
 	"github.com/g-brook/brook/common/threading"
@@ -33,6 +36,45 @@ import (
 var VisitorServerPlugin = modules.ModuleID("visitor_server_plugin")
 
 var errVisitorListenerClosed = errors.New("visitor listener closed")
+
+var SkipError = errors.New("skip error")
+
+const visitorOpenReadyTimeout = 10 * time.Second
+
+const VisitorOpenReadyKey lang.KeyType = "visitor_open_ready"
+
+//const returnNext = errors.New("return next")
+
+type VisitorOpenReadyFunc func(error)
+
+type VisitorPendingChannel struct {
+	transport.Channel
+	ready  chan error
+	once   sync.Once
+	target transport.Channel
+}
+
+func newVisitorPendingChannel(ch transport.Channel) *VisitorPendingChannel {
+	return &VisitorPendingChannel{
+		Channel: ch,
+		ready:   make(chan error, 1),
+	}
+}
+
+func (v *VisitorPendingChannel) notifyReady(err error) {
+	v.once.Do(func() {
+		v.ready <- err
+		close(v.ready)
+	})
+}
+
+func (v *VisitorPendingChannel) TargetChannel(target transport.Channel) {
+	v.target = target
+}
+
+func (v *VisitorPendingChannel) GetTargetChannel() transport.Channel {
+	return v.target
+}
 
 type VisitorServer struct {
 	port     int
@@ -162,20 +204,33 @@ func (t *VisitorServer) handleChannel(channel net.Conn) {
 		return
 	}
 	trChannel := NewVisitorContextChannel(rawChannel)
+	pending, _ := channel.(*VisitorPendingChannel)
+	if pending != nil {
+		trChannel.GetContext().AddAttr(VisitorOpenReadyKey, VisitorOpenReadyFunc(pending.notifyReady))
+	}
 	t.active.Add(1)
 	if err := t.doOpen(trChannel); err != nil {
+		if pending != nil {
+			pending.notifyReady(err)
+		}
 		t.active.Add(-1)
 		_ = trChannel.Close()
 		log.Error("Visitor server open error: %v", err)
 		t.doError(trChannel, err)
 		return
 	}
-	defer t.active.Add(-1)
+	if pending != nil {
+		pending.notifyReady(nil)
+	}
+	isNeedClose := true
 	defer func() {
-		if err := t.doClose(trChannel); err != nil {
-			log.Error("Visitor server close error: %v", err)
+		if isNeedClose {
+			t.active.Add(-1)
+			if err := t.doClose(trChannel); err != nil {
+				log.Error("Visitor server close error: %v", err)
+			}
+			_ = trChannel.Close()
 		}
-		_ = trChannel.Close()
 	}()
 	for {
 		select {
@@ -185,6 +240,12 @@ func (t *VisitorServer) handleChannel(channel net.Conn) {
 		}
 		err := t.doReader(trChannel)
 		if err != nil {
+			isSkip := errors.Is(err, SkipError)
+			if isSkip {
+				log.Info("is skip error:%v", err, err, errors.Is(err, SkipError))
+				isNeedClose = false
+				return
+			}
 			if !errors.Is(err, io.EOF) {
 				log.Error("Visitor server reader error: %v", err)
 				t.doError(trChannel, err)
@@ -201,13 +262,28 @@ func (t *VisitorServer) AddLastChannel(channel transport.Channel) error {
 	if t.ln == nil {
 		return errors.New("visitor listener is nil")
 	}
+	pending := newVisitorPendingChannel(channel)
 	select {
 	case <-t.ctx.Done():
 		return errVisitorListenerClosed
 	case <-t.ln.closeCh:
 		return errVisitorListenerClosed
-	case t.ln.sourceChannel <- channel:
-		return nil
+	case t.ln.sourceChannel <- pending:
+	}
+	select {
+	case err := <-pending.ready:
+		return err
+	case <-t.ctx.Done():
+		return errVisitorListenerClosed
+	case <-t.ln.closeCh:
+		return errVisitorListenerClosed
+	case <-channel.Done():
+		return io.EOF
+	case <-time.After(visitorOpenReadyTimeout):
+		err := fmt.Errorf("visitor open ready timeout")
+		pending.notifyReady(err)
+		_ = channel.Close()
+		return err
 	}
 }
 

@@ -81,6 +81,9 @@ func registerVisitor(request *exchange.VisitorRegister, ch transport.Channel) (a
 	if err != nil {
 		return nil, err
 	}
+	if channel, ok := ch.(*transport.SChannel); ok {
+		channel.IsOpenTunnel = true
+	}
 	return request, nil
 }
 

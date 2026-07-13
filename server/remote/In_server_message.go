@@ -21,6 +21,7 @@ import (
 	"time"
 
 	"github.com/g-brook/brook/common/exchange"
+	"github.com/g-brook/brook/common/hash"
 	"github.com/g-brook/brook/common/log"
 	"github.com/g-brook/brook/common/transport"
 	"github.com/g-brook/brook/server/tunnel"
@@ -77,13 +78,18 @@ func ManagerTunnelServer(req *exchange.Heartbeat, ch transport.Channel) error {
 	if proxyIds == nil || len(proxyIds) == 0 {
 		log.Error("proxy id is empty")
 	}
+	registers := req.ProxyIdRegister
+	toMap := hash.ArrayToMap(registers)
 	for _, id := range proxyIds {
 		if req.StartTime > 0 {
 			if t := tunnel.GetTunnelById(id); t != nil {
 				t.ObserveLatency(time.Since(time.UnixMilli(req.StartTime)))
 			}
 		}
-		_ = ManagerTunnelServerFun(id, ch)
+		_, o := toMap[id]
+		if o {
+			_ = ManagerTunnelServerFun(id, ch)
+		}
 	}
 	return nil
 }

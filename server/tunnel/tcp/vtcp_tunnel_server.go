@@ -18,10 +18,10 @@ package tcp
 
 import (
 	"errors"
+	"fmt"
 	"sync"
 
 	"github.com/g-brook/brook/common/exchange"
-	"github.com/g-brook/brook/common/iox"
 	"github.com/g-brook/brook/common/log"
 	trp "github.com/g-brook/brook/common/transport"
 	"github.com/g-brook/brook/server/srv"
@@ -45,20 +45,37 @@ func NewVTcpTunnelServer(server *tunnel.BaseTunnelServer) *TunnelVTcpServer {
 	return tunnelServer
 }
 
-func (b *TunnelVTcpServer) Open(ch trp.Channel, _ srv.TraverseBy) error {
-	conn, err := b.resources.get()
+func notifyVisitorOpenReady(ch trp.Channel, err error) {
+	ready, ok := ch.GetAttr(srv.VisitorOpenReadyKey)
+	if !ok {
+		return
+	}
+	if notify, ok := ready.(srv.VisitorOpenReadyFunc); ok {
+		notify(err)
+	}
+}
+
+func (htl *TunnelVTcpServer) Reader(ch trp.Channel, _ srv.TraverseBy) error {
+	fmt.Println("xxxdddddddd")
+	if context, ok := ch.(*srv.VisitorContextChannel); ok {
+		context.Pipe()
+		return srv.SkipError
+	}
+	return errors.New("not a visitor channel")
+}
+
+func (htl *TunnelVTcpServer) Open(ch trp.Channel, _ srv.TraverseBy) error {
+	conn, err := htl.resources.get()
 	if err != nil {
+		notifyVisitorOpenReady(ch, err)
 		return err
 	}
-	errs := iox.Pipe(ch, conn)
-	if errs != nil {
-		for i, err := range errs {
-			if err != nil {
-				log.Error("iox.Pipe error:%d:%s", i, err.Error())
-			}
-		}
+	if context, ok := ch.(*srv.VisitorContextChannel); ok {
+		context.GetVisitorChannel().TargetChannel(conn)
+		notifyVisitorOpenReady(ch, nil)
+		return nil
 	}
-	return nil
+	return errors.New("not supported")
 }
 
 func (htl *TunnelVTcpServer) OpenWorker(ch trp.Channel, request *exchange.ClientWorkConnReq) error {
@@ -73,9 +90,9 @@ func (htl *TunnelVTcpServer) OpenWorker(ch trp.Channel, request *exchange.Client
 	return errors.New("channel is nil or closed")
 }
 
-func (b *TunnelVTcpServer) startAfter() error {
-	tunnel.AddTunnel(b)
-	b.Server.AddHandler(b)
-	log.Info("VTCP tunnel server started:%v", b.Port())
+func (htl *TunnelVTcpServer) startAfter() error {
+	tunnel.AddTunnel(htl)
+	htl.Server.AddHandler(htl)
+	log.Info("VTCP tunnel server started:%v", htl.Port())
 	return nil
 }
