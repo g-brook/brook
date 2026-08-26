@@ -1,0 +1,103 @@
+name: Bug report
+description: Report a reproducible problem in Brook
+title: "[Bug]: "
+labels:
+  - bug
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for helping improve g-brook/brook. Search existing Issues first and remove credentials, tokens, private keys, public IP addresses, and personal data from every field and log.
+
+        Do not report vulnerabilities in a public Issue. Use the private route described in SECURITY.md after the maintainer enables it.
+
+  - type: input
+    id: version
+    attributes:
+      label: Brook version or commit
+      description: Use the output of the version command or a full commit SHA.
+      placeholder: v0.3.2 or 8302cc6...
+    validations:
+      required: true
+
+  - type: dropdown
+    id: component
+    attributes:
+      label: Component
+      options:
+        - Server
+        - Client
+        - Web management panel
+        - TCP tunnel
+        - UDP tunnel
+        - HTTP or HTTPS tunnel
+        - WebSocket tunnel
+        - Visitor mode
+        - Installation or service management
+        - Documentation
+        - Other
+    validations:
+      required: true
+
+  - type: input
+    id: environment
+    attributes:
+      label: Operating system and architecture
+      placeholder: Ubuntu 24.04 amd64 server, macOS arm64 client
+    validations:
+      required: true
+
+  - type: textarea
+    id: configuration
+    attributes:
+      label: Minimal redacted configuration
+      description: Keep only fields needed to reproduce. Replace every secret with REDACTED.
+      render: json
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: Include the smallest repeatable sequence and whether it reproduces every time.
+      placeholder: |
+        1. Start the server with...
+        2. Start the client with...
+        3. Send traffic using...
+        4. Observe...
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Redacted logs
+      description: Set the narrowest useful log level and remove secrets before submitting.
+      render: shell
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Submission checks
+      options:
+        - label: I searched existing Issues and Discussions.
+          required: true
+        - label: I removed tokens, passwords, private keys, public IP addresses, and personal data.
+          required: true
+        - label: This is not a vulnerability report.
+          required: true

@@ -1,0 +1,60 @@
+name: Feature request
+description: Propose a use case or an improvement
+title: "[Feature]: "
+labels:
+  - enhancement
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Start with the user problem rather than a proposed implementation. Large protocol or compatibility changes should be discussed before a pull request is opened.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem or use case
+      description: Who has this problem, in what environment, and how often?
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed behavior
+      description: Describe the smallest outcome that would solve the problem.
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: Include configuration-only or documentation-only alternatives when applicable.
+
+  - type: dropdown
+    id: compatibility
+    attributes:
+      label: Compatibility impact
+      options:
+        - No protocol or configuration change
+        - Backward-compatible protocol or configuration extension
+        - Breaking protocol or configuration change
+        - Unsure
+    validations:
+      required: true
+
+  - type: textarea
+    id: security
+    attributes:
+      label: Security and operational impact
+      description: Consider authentication, network exposure, resource limits, logging, rollback, and failure behavior.
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: contribution
+    attributes:
+      label: Contribution
+      options:
+        - label: I can help implement or test this change.
+        - label: I can provide a reproducible environment or workload.

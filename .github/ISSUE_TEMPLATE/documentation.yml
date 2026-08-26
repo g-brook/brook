@@ -1,0 +1,35 @@
+name: Documentation improvement
+description: Report missing, incorrect, or unclear documentation
+title: "[Docs]: "
+labels:
+  - documentation
+body:
+  - type: input
+    id: location
+    attributes:
+      label: Page or section
+      placeholder: README.md - Quick Start
+    validations:
+      required: true
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: What is unclear or incorrect?
+      description: Quote the relevant sentence or link to the exact section.
+    validations:
+      required: true
+
+  - type: textarea
+    id: suggested
+    attributes:
+      label: Suggested improvement
+      description: Include tested commands or configuration when possible.
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Checks
+      options:
+        - label: I checked both the English and Chinese documentation for the same issue.
+        - label: I tested any commands or configuration included in this report.

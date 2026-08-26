@@ -5,7 +5,7 @@
 <h1 align="center">Brook</h1>
 
 <p align="center">
-  <strong>High-performance, Cross-platform, Minimal Configuration Intranet Penetration & Proxy Tool</strong>
+  <strong>Self-hosted TCP / UDP / HTTP(S) / WebSocket tunnels with a Web management panel</strong>
 </p>
 
 <p align="center">
@@ -36,7 +36,19 @@
 
 ---
 
-**Brook** is a high-performance network tunnel tool designed specifically for intranet penetration, developed in Go. It not only supports multiple transmission protocols (TCP, UDP, HTTP, WebSocket) but also simplifies complex tunnel configurations through an intuitive Web management interface. Whether for developer debugging, exposing intranet services, or building private network channels, Brook is your ideal choice.
+**g-brook/brook** is a self-hosted network tunnel written in Go. It connects services behind NAT to a server you control and supports TCP, UDP, HTTP(S), and WebSocket tunnels through a Web management interface.
+
+## What can I use it for?
+
+| Use case | How Brook helps |
+| :--- | :--- |
+| Preview a local Web app | Publish a temporary HTTP(S) route without opening an inbound port on the client network. |
+| Reach a TCP or UDP service | Forward SSH, databases, game servers, or custom protocols through a Brook server. |
+| Operate several tunnels | Create tokens and routes in the Web panel and inspect connection status in one place. |
+| Run on mixed environments | Use pre-built server and client packages for Linux, macOS, and Windows. |
+
+> [!NOTE]
+> When sharing or searching for this project, use the full repository name **`g-brook/brook`**. The name “Brook” is also used by other network projects.
 
 ## ✨ Key Highlights
 
@@ -51,7 +63,7 @@
 
 ## 📸 Interface Preview
 
-<details>
+<details open>
 <summary>Click to expand and view management interface screenshots</summary>
 
 | **Initialization Wizard** | **Secure Login** |
@@ -65,6 +77,9 @@
 ---
 
 ## ⚡ Quick Start
+
+> [!IMPORTANT]
+> Brook exposes services across network boundaries. In the reviewed v0.3.2 code path, the manager and smux data connections are not wrapped in TLS. Use an encrypted overlay plus application-layer TLS/SSH, restrict access with firewall rules, and place the Web panel behind TLS or a trusted network before using it beyond local testing. Review [`install.sh`](../install.sh) before running the one-line installer; manual downloads and SHA-256 digests are available on the [Releases](https://github.com/g-brook/brook/releases) page.
 
 ### 1. One-click Online Installation (Recommended)
 ```shell

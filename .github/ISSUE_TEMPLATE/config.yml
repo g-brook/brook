@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Questions and deployment help
+    url: https://github.com/g-brook/brook/discussions
+    about: Ask usage questions and share deployment patterns in Discussions.
+  - name: Releases and downloads
+    url: https://github.com/g-brook/brook/releases
+    about: Download supported builds and review release notes and asset digests.

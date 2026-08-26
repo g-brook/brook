@@ -7,7 +7,7 @@
 </p>
 
 <p align="center">
-  <strong>一款高性能、跨平台、极简配置的内网穿透与网络代理工具</strong>
+  <strong>支持 TCP / UDP / HTTP(S) / WebSocket 与 Web 管理面板的自托管网络隧道</strong>
 </p>
 
 <p align="center">
@@ -38,7 +38,19 @@
 
 ---
 
-**Brook** 是一款专为内网穿透设计的高性能网络隧道工具，采用 Go 语言开发。它不仅支持多种传输协议（TCP, UDP, HTTP, WebSocket），更通过直观的 Web 管理界面，将复杂的隧道配置变得极其简单。无论是开发者调试、内网服务暴露，还是构建私有网络通道，Brook 都是您的理想选择。
+**g-brook/brook** 是一个使用 Go 编写的自托管网络隧道。它把 NAT 后方的服务连接到您自行控制的服务端，并通过 Web 管理界面管理 TCP、UDP、HTTP(S) 和 WebSocket 隧道。
+
+## 适用场景
+
+| 场景 | Brook 可以做什么 |
+| :--- | :--- |
+| 预览本地 Web 应用 | 无需在客户端网络开放入站端口，即可临时发布 HTTP(S) 路由。 |
+| 访问 TCP 或 UDP 服务 | 通过 Brook 服务端转发 SSH、数据库、游戏服务或自定义协议。 |
+| 管理多条隧道 | 在 Web 面板中创建 Token 和路由，并集中查看连接状态。 |
+| 混合系统部署 | 使用 Linux、macOS 和 Windows 的服务端及客户端预编译包。 |
+
+> [!NOTE]
+> 分享或搜索本项目时，请使用完整仓库名 **`g-brook/brook`**。“Brook”这个名称也被其他网络工具使用。
 
 ## ✨ 核心亮点
 
@@ -53,7 +65,7 @@
 
 ## 📸 界面预览
 
-<details>
+<details open>
 <summary>点击展开查看管理界面截图</summary>
 
 | **初始化向导** | **安全登录** |
@@ -67,6 +79,9 @@
 ---
 
 ## ⚡ 快速开始
+
+> [!IMPORTANT]
+> Brook 会跨越网络边界暴露服务。经核验，v0.3.2 的管理连接和 smux 数据连接未默认封装 TLS。用于本地测试以外的环境前，请使用加密覆盖网络与应用层 TLS/SSH，配置防火墙，并将 Web 管理面板置于 TLS 反向代理或可信网络之后。执行一键安装前请先审阅 [`install.sh`](install.sh)；也可以从 [Releases](https://github.com/g-brook/brook/releases) 手动下载并核对 SHA-256 摘要。
 
 ### 1. 一键在线安装 (推荐)
 ```shell
